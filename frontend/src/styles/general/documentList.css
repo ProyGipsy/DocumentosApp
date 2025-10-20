@@ -1,5 +1,3 @@
-/* documentList.css */
-
 /* --- Estilos Generales del Contenedor de la Lista --- */
 .document-list-container {
     padding: 30px;
@@ -16,7 +14,7 @@
     margin-top: 0;
     margin-bottom: 5px;
     font-weight: 600;
-    font-size: 2em;
+    font-size: 1.5em;
 }
 
 /* --- Breadcrumb --- */

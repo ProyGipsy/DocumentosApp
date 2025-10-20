@@ -1,0 +1,179 @@
+/* --- Estilos Generales del Contenedor de la Lista --- */
+.document-list-container {
+    padding: 30px;
+    background-color: white;
+    min-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.search-and-controls {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.search-input-doc-list-sendDocuments {
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1em;
+    color: #191c16;
+    background-color: #f9f9f9;
+    flex-grow: 1;
+    min-width: 200px;
+    max-width: 800px !important;
+}
+
+.search-input-doc-list-sendDocuments:focus {
+    outline: none;
+    border-color: #8b56ed;
+    background-color: #fff;
+    box-shadow: 0 0 0 1px rgba(139, 86, 237, 0.2);
+}
+
+/* Estilo para los botones de "Filtrar por" (simulados en el diseño) */
+.filter-button-admin {
+    padding: 12px 20px;
+    background-color: #421d83;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.filter-button-admin:hover {
+    background-color: #8b56ed;
+}
+
+/* Layout específico para la vista de Envío de Documentos */
+.send-documents-layout {
+    justify-content: center !important; 
+    max-width: 100%;
+    margin-bottom: 20px;
+}
+
+.send-documents-layout .search-input-doc-list-sendDocuments {
+    max-width: 600px;
+    flex-grow: 0;
+}
+
+/* Botón "Enviar Selección" */
+.send-selection-button {
+    padding: 10px 15px;
+    background-color: #421d83;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+}
+
+.send-selection-button:hover:not(:disabled) {
+    background-color: #8b56ed;
+}
+
+.send-selection-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.documents-send-style {
+    width: 100%;
+}
+
+.folder-title-sendDocuments {
+    color: #421d83;
+    text-align: center;
+    width: 100%;
+    margin: 0 auto 12px auto;
+}
+
+/* Table styles intentionally omitted here to reuse shared styles from documentList.css */
+
+/* Estilo para el checkbox y columna de selección */
+.checkbox-column {
+    width: 40px;
+    text-align: center !important;
+    padding: 12px 5px !important;
+}
+
+.documents-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #421d83;
+}
+
+/* Estilo visual para la fila seleccionada (se usa la clase shared 'selected-row') */
+.documents-table tbody tr.selected-row {
+    background-color: #f0ebf8;
+}
+
+/* --- Estilos de Paginación --- */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 20px;
+    gap: 15px;
+}
+
+.pagination-button {
+    padding: 8px 15px;
+    background-color: #421d83;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s;
+    font-weight: bold;
+}
+
+.pagination-button:hover:not(:disabled) {
+    background-color: #8b56ed;
+}
+
+.pagination-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 5px;
+}
+
+.page-number-button {
+    width: 35px;
+    height: 35px;
+    background-color: #f9f9f9;
+    color: #421d83;
+    border: 1px solid #421d83;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.2s, color 0.2s;
+}
+
+.page-number-button:hover:not(.active) {
+    background-color: #eee;
+}
+
+.page-number-button.active {
+    background-color: #421d83;
+    color: white;
+    font-weight: bold;
+}

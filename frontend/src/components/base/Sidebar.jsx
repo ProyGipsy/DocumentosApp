@@ -34,7 +34,7 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             </li>
             <li>
               <div className={`optionContainer ${isActive('sendDocuments') ? 'active' : ''}`}>
-                <Link to="/" className="optionLink" onClick={closeSidebar}>Enviar Documentos</Link>
+                <Link to="/send-documents" className="optionLink" onClick={closeSidebar}>Enviar Documentos</Link>
               </div>
             </li>
             {/* Funciones para usuarios de Rol Administrador */}

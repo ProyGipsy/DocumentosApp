@@ -1,4 +1,9 @@
 /*  Base style  */
+
+body {
+    font-family: Arial, sans-serif;
+}
+
 .content {
     padding: 0% 3% 3% 3%;
     flex: 1;
