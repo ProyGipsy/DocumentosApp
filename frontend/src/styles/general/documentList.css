@@ -226,19 +226,3 @@
     color: #61608b;
     font-size: 1.1em;
 }
-
-
-/* Media Query para responsividad en la barra de búsqueda */
-
-@media (max-width: 768px) {
-    .search-filter-group.users-table-style {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .search-input-doc-list, .filter-select-admin {
-        max-width: 100%;
-        width: 100%;
-        min-width: unset;
-    }
-}

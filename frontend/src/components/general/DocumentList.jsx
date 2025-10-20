@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import LayoutBaseAdmin from '../base/LayoutBase'; // Revisa si es 'LayoutBase' o 'LayoutBaseAdmin'
+import LayoutBaseAdmin from '../base/LayoutBase';
 import eyeIcon from '../../assets/IMG/eye.png';
 import editIcon from '../../assets/IMG/edit.png';
 import '../../styles/general/documentList.css';
@@ -158,7 +158,7 @@ const DocumentList = ({ folderName }) => {
                     </button>
                 </div>
 
-                {/* Tabla de Documentos (sin cambios significativos) */}
+                {/* Tabla de Documentos */}
                 <div className="documents-table-wrapper">
                     {filteredDocuments.length > 0 ? (
                         <table className="documents-table">
