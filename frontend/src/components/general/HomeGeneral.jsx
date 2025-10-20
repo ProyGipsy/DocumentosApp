@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
 import searchIcon from '../../assets/IMG/Lupa.png';
 import folderIcon from '../../assets/IMG/folder.png'
@@ -23,6 +24,7 @@ const mockFolders = [
 const HomeAdmin = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredFolders, setFilteredFolders] = useState(mockFolders);
+    const navigate = useNavigate();
 
     // Efecto para simular el filtrado de las carpetas
     useEffect(() => {
@@ -35,7 +37,8 @@ const HomeAdmin = () => {
     // Navegación al hacer clic en carpeta
     const handleFolderClick = (folderName) => {
         console.log(`Navegando a la carpeta: ${folderName}`);
-        // Lógica de navegación
+        const encodedFolderName = encodeURIComponent(folderName);
+        navigate(`/${encodedFolderName}`);
     };
 
     return (
