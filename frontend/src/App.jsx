@@ -4,7 +4,7 @@ import AppRoutes from './AppRoutes';
 
 export default function App() {
   return (
-    <Router>
+    <Router basename="/documents">
       <AppRoutes />
     </Router>
   );
