@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/SendDocuments.css'; 
+import SendDocumentModal from './SendDocumentModal';
 
 // Datos simulados para la tabla (similares a los del diseño)
 const mockDocuments = [
@@ -31,6 +32,8 @@ const SendDocuments = () => {
     const [primaryFilter, setPrimaryFilter] = useState('');
     const [secondaryFilter, setSecondaryFilter] = useState('');
     const [secondaryFilterOptions, setSecondaryFilterOptions] = useState([]);
+
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
     
     // Lógica de Filtrado y Opciones Dinámicas
     useEffect(() => {
@@ -132,7 +135,21 @@ const SendDocuments = () => {
             alert('Por favor, selecciona al menos un documento para enviar.');
             return;
         }
-        alert(`Enviar documentos seleccionados: ${selectedDocuments.join(', ')}`);
+        
+        setIsSendModalOpen(true);
+    };
+
+    const handleCloseSendModal = () => {
+        setIsSendModalOpen(false);
+    };
+
+    const onConfirmSend = (ids, companyId, message) => {
+        // Lógica de API para enviar los documentos
+        console.log(`Confirmando envío de ${ids.length} documentos a Empresa ID ${companyId} con mensaje: "${message}"`);
+        alert(`Envío a empresa ID ${companyId} iniciado. Documentos: ${ids.join(', ')}`);
+
+        // Deseleccionar los documentos después de enviar
+        setSelectedDocuments([]); 
     };
 
     // --- Lógica de Paginación ---
@@ -284,6 +301,17 @@ const SendDocuments = () => {
                     </div>
                 )}
             </div>
+
+            {/* Compute selected document names from ids and pass them to the modal */}
+            <SendDocumentModal
+                isOpen={isSendModalOpen}
+                onClose={handleCloseSendModal}
+                selectedDocuments={selectedDocuments}
+                selectedDocumentNames={allDocuments
+                    .filter(d => selectedDocuments.includes(d.id))
+                    .map(d => d.name)}
+                onSend={onConfirmSend}
+            />
         </LayoutBase>
     );
 };
