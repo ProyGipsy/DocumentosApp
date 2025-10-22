@@ -145,7 +145,7 @@ const SendDocuments = () => {
 
     return (
         <LayoutBase activePage="sendDocuments">
-            <div className="document-list-container">
+            <div className="sendDocument-list-container">
                 <h2 className="folder-title-sendDocuments">Envío de Documentos</h2>
                 <br></br>
                 
@@ -155,7 +155,7 @@ const SendDocuments = () => {
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
                             type="text"
-                            placeholder="Buscar por Nombre del Documento..."
+                            placeholder="Buscar por Nombre..."
                             className="search-input-doc-list-sendDocuments"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,7 +187,7 @@ const SendDocuments = () => {
                                 <option value="">
                                     {primaryFilter === 'year' && 'Seleccione un año'}
                                     {primaryFilter === 'company' && 'Seleccione una empresa'}
-                                    {primaryFilter === 'type' && 'Seleccione un tipo'} {/* 💡 AJUSTE 3: Nuevo placeholder */}
+                                    {primaryFilter === 'type' && 'Seleccione un tipo'}
                                 </option>
                                 {secondaryFilterOptions.map(option => (
                                     <option key={option.value} value={option.value}>
