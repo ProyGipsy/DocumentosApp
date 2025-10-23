@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import LayoutBase from '../base/LayoutBase'; 
 import '../../styles/general/documentTypeForm.css'; 
-import trash from '../../assets/IMG/trash.png';
-import edit from '../../assets/IMG/edit.png';
+import trash from '../../assets/img/trash.png';
+import edit from '../../assets/img/edit.png';
 import SpecificValuesModal from './SpecificValuesModal';
 
 const initialField = { 
