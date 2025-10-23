@@ -196,6 +196,48 @@
     padding-bottom: 5px;
 }
 
+/* Contenedor para select + botón de editar valores (misma línea) */
+.select-with-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Botón que muestra solo el icono de editar, colocado a la derecha del input/select */
+.edit-values-button {
+    background-color: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: filter 0.15s, background-color 0.15s;
+}
+
+.edit-values-button img {
+    width: 20px;
+    height: 20px;
+    filter: grayscale(0%) brightness(1) saturate(0%); /* icon initially monochrome using SVG stroke */
+    transition: filter 0.15s, transform 0.15s;
+}
+
+/* Al pasar el mouse, oscurece (simula darken) el icono */
+.edit-values-button:hover img {
+    filter: grayscale(0%) brightness(0.6) saturate(120%);
+    transform: scale(1.03);
+}
+
+/* Asegurarse que el select/input ocupe el espacio sobrante cuando hay el botón */
+.select-with-edit .table-select,
+.select-with-edit .table-input {
+    flex: 1 1 auto;
+    width: auto; /* evitar 100% que rompe el espacio compartido */
+}
+
 .add-field-button {
     background-color: #421d83a3;
     color: white;
