@@ -14,7 +14,6 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && company) {
-        // Descomponer rif si viene con guion
         const rifParts = (company.rif || '').split('-');
         setFormData({
           id: company.id || '',
