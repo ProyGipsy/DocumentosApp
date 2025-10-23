@@ -24,7 +24,7 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             </li>
             <li>
               <div className={`optionContainer ${isActive('documentType') ? 'active' : ''}`}>
-                <Link to="/" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
+                <Link to="/document-type" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
               </div>
             </li>
             <li>

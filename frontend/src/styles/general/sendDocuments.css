@@ -1,9 +1,8 @@
 /* --- Estilos Generales del Contenedor de la Lista --- */
-.document-list-container {
+.sendDocument-list-container {
     padding: 30px;
     background-color: white;
     min-height: calc(100vh - 40px);
-    display: flex;
     flex-direction: column;
     width: 100%;
 }

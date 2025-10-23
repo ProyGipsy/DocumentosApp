@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/SendDocuments.css'; 
+import SendDocumentModal from './SendDocumentModal';
 
 // Datos simulados para la tabla (similares a los del diseño)
 const mockDocuments = [
@@ -31,6 +32,8 @@ const SendDocuments = () => {
     const [primaryFilter, setPrimaryFilter] = useState('');
     const [secondaryFilter, setSecondaryFilter] = useState('');
     const [secondaryFilterOptions, setSecondaryFilterOptions] = useState([]);
+
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
     
     // Lógica de Filtrado y Opciones Dinámicas
     useEffect(() => {
@@ -132,7 +135,21 @@ const SendDocuments = () => {
             alert('Por favor, selecciona al menos un documento para enviar.');
             return;
         }
-        alert(`Enviar documentos seleccionados: ${selectedDocuments.join(', ')}`);
+        
+        setIsSendModalOpen(true);
+    };
+
+    const handleCloseSendModal = () => {
+        setIsSendModalOpen(false);
+    };
+
+    const onConfirmSend = (ids, companyId, message) => {
+        // Lógica de API para enviar los documentos
+        console.log(`Confirmando envío de ${ids.length} documentos a Empresa ID ${companyId} con mensaje: "${message}"`);
+        alert(`Envío a empresa ID ${companyId} iniciado. Documentos: ${ids.join(', ')}`);
+
+        // Deseleccionar los documentos después de enviar
+        setSelectedDocuments([]); 
     };
 
     // --- Lógica de Paginación ---
@@ -145,7 +162,7 @@ const SendDocuments = () => {
 
     return (
         <LayoutBase activePage="sendDocuments">
-            <div className="document-list-container">
+            <div className="sendDocument-list-container">
                 <h2 className="folder-title-sendDocuments">Envío de Documentos</h2>
                 <br></br>
                 
@@ -155,7 +172,7 @@ const SendDocuments = () => {
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
                             type="text"
-                            placeholder="Buscar por Nombre del Documento..."
+                            placeholder="Buscar por Nombre..."
                             className="search-input-doc-list-sendDocuments"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,7 +204,7 @@ const SendDocuments = () => {
                                 <option value="">
                                     {primaryFilter === 'year' && 'Seleccione un año'}
                                     {primaryFilter === 'company' && 'Seleccione una empresa'}
-                                    {primaryFilter === 'type' && 'Seleccione un tipo'} {/* 💡 AJUSTE 3: Nuevo placeholder */}
+                                    {primaryFilter === 'type' && 'Seleccione un tipo'}
                                 </option>
                                 {secondaryFilterOptions.map(option => (
                                     <option key={option.value} value={option.value}>
@@ -284,6 +301,17 @@ const SendDocuments = () => {
                     </div>
                 )}
             </div>
+
+            {/* Compute selected document names from ids and pass them to the modal */}
+            <SendDocumentModal
+                isOpen={isSendModalOpen}
+                onClose={handleCloseSendModal}
+                selectedDocuments={selectedDocuments}
+                selectedDocumentNames={allDocuments
+                    .filter(d => selectedDocuments.includes(d.id))
+                    .map(d => d.name)}
+                onSend={onConfirmSend}
+            />
         </LayoutBase>
     );
 };

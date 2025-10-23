@@ -1,0 +1,326 @@
+.modal-overlay-user {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.359);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99;
+    backdrop-filter: blur(2px);
+    transform: translateX(200px);
+}
+
+.modal-content-user {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    font-family: Arial, sans-serif;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header-user {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.modal-header-user h3 {
+    color: #421d83;
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.close-button-user {
+    background: none;
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    color: #421d83;
+    transition: color 0.2s ease;
+}
+
+.close-button-user:hover {
+    color: #8b56ed;
+}
+
+.modal-body-user {
+    flex-grow: 1;
+    padding-right: 10px;
+}
+
+.form-group-user {
+    margin-bottom: 15px;
+}
+
+.form-group-user label {
+    display: block;
+    margin-bottom: 5px;
+    color: #191c16;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.modal-content-user select,
+.modal-content-user textarea,
+.modal-content-user input[type="tel"],
+.modal-content-user input[type="text"],
+.modal-content-user input[type="date"],
+.modal-content-user input[type="email"],
+.modal-content-user input[type="number"],
+.modal-content-user input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    color: #191c16;
+    background-color: #f9f9f9;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+.modal-content-user input:focus,
+.modal-content-user select:focus,
+.modal-content-user input[type="number"]:focus,
+.modal-content-user textarea:focus {
+    outline: none;
+    border-color: #8b56ed;
+    box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
+    background-color: #fff;
+}
+
+.modal-content-user textarea {
+    resize: vertical;
+}
+
+.modal-content-user input:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #adb5bd;
+}
+
+.checkbox-group-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group-user label {
+    margin-bottom: 0;
+}
+
+.checkbox-group-user input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-group-user input[type="checkbox"] {
+    /* Ocultar el checkbox original */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+/* Estilo para el check cuando está marcado */
+.checkbox-group-user input[type="checkbox"]:checked {
+    background-color: #8b56ed;
+    border-color: #8b56ed;
+}
+
+/* Pseudo-elemento para crear el visto */
+.checkbox-group-user input[type="checkbox"]:checked::before {
+    content: '';
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Efecto de enfoque para accesibilidad */
+.checkbox-group-user input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
+}
+
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+/*    width: 100%; /* Ensure container fills parent width */
+}
+
+.password-input-container input {
+    padding-right: 40px;
+/*    width: 100%; /* Ensure container fills parent width */
+}
+
+.password-input-container-modal {
+    position: relative;
+    display: flex;
+    align-items: center;
+/*    width: 100%; /* Ensure container fills parent width */
+}
+
+.password-input-container input-modal {
+    padding-right: 40px;
+/*    width: 100%; /* Ensure container fills parent width */
+}
+
+.password-toggle-button-modal {
+    position: absolute;
+    right: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.password-toggle-button-modal img {
+    width: 20px;
+    height: auto;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.password-toggle-button-modal:hover img {
+    opacity: 1;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-webkit-reveal {
+  display: none;
+}
+
+.modal-footer-user {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ccc;
+}
+
+.modal-button-user {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-button-user.save-button-user {
+    background-color: #421d83;
+    color: white;
+}
+
+.modal-button-user.save-button-user:hover {
+    background-color: #8b56ed;
+}
+
+.modal-button-user.cancel-button-user {
+    background-color: #6c757d;
+    color: white;
+}
+
+.modal-button-user.cancel-button-user:hover {
+    background-color: #5a6268;
+}
+
+.required-asterisk {
+  color: #ff4d4f;
+  margin-left: 3px;
+  font-weight: bold;
+}
+
+.phone-container-modal,
+.national-id-container-modal {
+    display: flex;
+    width: 100%;
+    margin: 12px 0;
+    gap: 8px;
+    align-items: center;
+}
+
+.phone-container-modal select,
+.phone-container-modal input,
+.national-id-container-modal select,
+.national-id-container-modal input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f9f9f9;
+    box-sizing: border-box;
+    height: auto;
+    margin: 0;
+}
+
+.phone-container-modal .phone-type,
+.national-id-container-modal .national-id-type-modal {
+  flex: 1.5;
+}
+
+.phone-container-modal .phone-number,
+.national-id-container-modal .national-id-modal {
+  flex: 3.2;
+}
+
+.rif-container-modal {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    align-items: center;
+}
+
+.rif-type {
+    flex: 2;
+}
+
+.rif-number{
+    flex: 5;
+}
+
+.rif-container-modal select,
+.rif-container-modal input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f9f9f9;
+    box-sizing: border-box;
+    margin: 0;
+    height: 100% !important;
+    width: 100% !important;
+}
