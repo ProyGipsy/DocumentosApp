@@ -109,7 +109,7 @@ const CreateDocumentType = () => {
                                 id="docTypeName"
                                 value={documentTypeName}
                                 onChange={(e) => setDocumentTypeName(e.target.value)}
-                                placeholder="Ej: Registro Único de Información Fiscal (RIF)"
+                                placeholder="Ingrese el nombre del tipo de documento"
                                 className="text-input"
                                 required
                             />
@@ -125,7 +125,7 @@ const CreateDocumentType = () => {
                                 id="docTypeAlias"
                                 value={documentTypeAlias}
                                 onChange={(e) => setDocumentTypeAlias(e.target.value)}
-                                placeholder="Ej: RIF"
+                                placeholder="Ingrese las siglas del tipo de documento"
                                 className="text-input"
                                 required
                             />
@@ -139,7 +139,7 @@ const CreateDocumentType = () => {
                             <textarea
                                 id="docTypeDescription"
                                 name="docTypeDescription"
-                                placeholder="Ej: Documento obligatorio de identificación tributaria asignado por el SENIAT"
+                                placeholder="Ingrese una breve descripción del tipo de documento"
                                 className="text-input textarea-input"
                                 rows="3"
                             />
@@ -181,7 +181,7 @@ const CreateDocumentType = () => {
                                                         name="fieldName"
                                                         value={field.fieldName}
                                                         onChange={(e) => handleFieldChange(field.id, e)}
-                                                        placeholder="Ej: RIF, Nombre Cliente, Monto"
+                                                        placeholder="Ingrese el nombre del campo"
                                                         className="table-input"
                                                         required
                                                     />
@@ -196,8 +196,8 @@ const CreateDocumentType = () => {
                                                             onChange={(e) => handleFieldChange(field.id, e)}
                                                             className="table-select"
                                                         >
-                                                            <option value="char">Caracter (Letra)</option>
-                                                            <option value="date">Fecha</option>
+                                                            <option value="char">Caracter (1 Letra)</option>
+                                                            <option value="date">Fecha (DD/MM/AAAA)</option>
                                                             <option value="bool">Marcar Sí o No</option>
                                                             <option value="int">Número Entero</option>
                                                             <option value="float">Número Decimal</option>
