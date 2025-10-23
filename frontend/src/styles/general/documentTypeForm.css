@@ -1,14 +1,11 @@
-/* createDocumentType.css */
-
 /* --- Estilo de la Página Completa (Fondo Gris) --- */
 .document-type-wrapper-page {
-    /* Fondo gris claro como en la imagen */
     background-color: #f1efef; 
     min-height: 100vh;
     padding: 40px 20px;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Alinea arriba para evitar centrado vertical excesivo */
+    align-items: flex-start;
     box-sizing: border-box;
 }
 
@@ -19,7 +16,7 @@
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
     width: 100%;
-    max-width: 900px; /* Ancho máximo para el card */
+    max-width: 900px;
     margin: 0 auto;
 }
 
@@ -33,16 +30,16 @@
 }
 
 .section-subtitle {
-    color: #421d83; /* Morado oscuro */
+    color: #421d83;
     margin-top: 0;
     margin-bottom: 15px;
     font-weight: 600;
-    border-bottom: 2px solid #8b56ed; /* Línea de énfasis morada */
+    border-bottom: 2px solid #8b56ed;
     padding-bottom: 8px;
 }
 
 .required-asterisk {
-    color: #ff4d4f; /* Rojo de error/requerido */
+    color: #ff4d4f;
     margin-left: 3px;
     font-weight: bold;
 }
@@ -89,7 +86,6 @@
 
 /* --- Sección de Campos Dinámicos (Tabla) --- */
 .fields-table-section {
-    /* Eliminamos el fondo gris del contenedor interior, ya estamos en el card blanco */
     background-color: transparent; 
     border: none;
     border-radius: 0;
@@ -100,7 +96,7 @@
 .fields-table-wrapper {
     overflow-x: auto;
     margin-bottom: 15px;
-    border: 1px solid #ddd; /* Borde alrededor de la tabla */
+    border: 1px solid #ddd;
     border-radius: 8px;
 }
 
@@ -108,6 +104,23 @@
     width: 100%;
     min-width: 650px; 
     border-collapse: collapse;
+}
+
+.fields-table thead th:nth-child(1) { /* Nombre del Campo */
+    width: 30%; 
+}
+.fields-table thead th:nth-child(2) { /* Tipo de Dato */
+    width: 30%; 
+}
+.fields-table thead th:nth-child(3) { /* Longitud */
+    width: 15%; 
+}
+.fields-table thead th:nth-child(4) { /* Precisión */
+    width: 15%; 
+}
+.fields-table thead th:nth-child(5) { /* Acciones */
+    width: 5%;
+    min-width: 80px;
 }
 
 .fields-table th, .fields-table td {
@@ -118,8 +131,8 @@
 }
 
 .fields-table th {
-    background-color: #e6e6fa; /* Fondo muy claro para la cabecera */
-    color: #421d83; /* Texto morado oscuro */
+    background-color: #e6e6fa;
+    color: #421d83;
     font-weight: bold;
     font-size: 0.95em;
 }
@@ -144,35 +157,37 @@
 /* --- Acciones y Botones --- */
 .actions-cell-doc-type {
     text-align: center;
-    width: 100px;
 }
 
-.remove-field-button {
-    /* Estilo sin cambios, utiliza el rojo de advertencia */
-    background-color: #dc3545; 
-    color: white;
+.remove-field-button.icon-button {
+    background-color: transparent; 
     border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 1.5em;
-    line-height: 1;
-    cursor: pointer;
+    border-radius: 4px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    line-height: normal;
     transition: background-color 0.2s;
-    font-weight: bold;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
 }
 
-.remove-field-button:hover:not(:disabled) {
-    background-color: #c82333;
+.remove-field-button.icon-button:hover:not(:disabled) {
+    background-color: rgba(220, 53, 69, 0.1); /* Fondo rojo claro al pasar el ratón */
 }
 
-.remove-field-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-    opacity: 0.5;
+.remove-field-button.icon-button:disabled {
+    background-color: transparent;
+}
+
+.remove-field-button.icon-button img {
+    width: 22px; 
+    height: 22px;
+    filter: invert(24%) sepia(85%) saturate(3000%) hue-rotate(338deg) brightness(70%) contrast(80%); /*Color del icon*/
+    transition: filter 0.2s;
+}
+
+.remove-field-button.icon-button:disabled img {
+    /* Color más claro/opaco cuando está deshabilitado */
+    filter: invert(80%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(120%) contrast(90%); 
 }
 
 .button-group-table {
@@ -182,9 +197,9 @@
 }
 
 .add-field-button {
-    background-color: #421d83a3; /* Morado Oscuro */
+    background-color: #421d83a3;
     color: white;
-    padding: 10px 15px;
+    padding: 10px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -195,7 +210,7 @@
 }
 
 .add-field-button:hover {
-    background-color: #8b56ed; /* Morado Claro */
+    background-color: #8b56ed;
 }
 
 .form-footer-buttons {
@@ -205,7 +220,7 @@
 }
 
 .save-document-type-button {
-    background-color: #421d83; /* Verde de éxito/guardar */
+    background-color: #421d83;
     color: white;
     padding: 15px 30px;
     border: none;

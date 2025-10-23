@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 // Usaremos LayoutBase (asumiendo que tiene la estructura de fondo)
 import LayoutBase from '../base/LayoutBase'; 
 import '../../styles/general/documentTypeForm.css'; 
+import trash from '../../assets/IMG/trash.png';
 
 // Estructura inicial del campo (sin cambios)
 const initialField = { 
     id: Date.now(),
     fieldName: '', 
-    fieldType: 'text' 
+    fieldType: 'char' 
 };
 
 const CreateDocumentType = () => {
@@ -141,6 +142,7 @@ const CreateDocumentType = () => {
                                             <th>Tipo de Dato</th>
                                             <th>Longitud</th>
                                             <th>Precisión</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -167,11 +169,14 @@ const CreateDocumentType = () => {
                                                         onChange={(e) => handleFieldChange(field.id, e)}
                                                         className="table-select"
                                                     >
-                                                        <option value="text">Texto (Corto)</option>
-                                                        <option value="number">Número</option>
+                                                        <option value="char">Caracter (Letra)</option>
                                                         <option value="date">Fecha</option>
-                                                        <option value="textarea">Texto (Largo)</option>
-                                                        <option value="email">Correo Electrónico</option>
+                                                        <option value="bool">Marcar Sí o No</option>
+                                                        <option value="int">Número Entero</option>
+                                                        <option value="float">Número Decimal</option>
+                                                        <option value="text">Texto Corto</option>
+                                                        <option value="textarea">Texto Largo (Párrafo)</option>
+                                                        <option value="specificValues">Valores Específicos</option>
                                                     </select>
                                                 </td>
 
@@ -206,10 +211,10 @@ const CreateDocumentType = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveField(field.id)}
-                                                        className="remove-field-button"
+                                                        className="remove-field-button icon-button"
                                                         disabled={fields.length === 1}
                                                     >
-                                                        &times;
+                                                        <img src={trash} alt="Eliminar" />
                                                     </button>
                                                 </td>
                                             </tr>
