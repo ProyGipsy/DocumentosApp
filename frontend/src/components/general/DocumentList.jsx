@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
-import eyeIcon from '../../assets/IMG/eye.png';
-import editIcon from '../../assets/IMG/edit.png';
+import eyeIcon from '../../assets/img/eye.png';
+import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/documentList.css';
 
 // Datos simulados para la tabla de documentos
