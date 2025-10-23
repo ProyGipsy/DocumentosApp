@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-// Usaremos LayoutBase (asumiendo que tiene la estructura de fondo)
 import LayoutBase from '../base/LayoutBase'; 
 import '../../styles/general/documentTypeForm.css'; 
 import trash from '../../assets/IMG/trash.png';
+import edit from '../../assets/IMG/edit.png';
+import SpecificValuesModal from './SpecificValuesModal';
 
-// Estructura inicial del campo (sin cambios)
 const initialField = { 
     id: Date.now(),
     fieldName: '', 
-    fieldType: 'char' 
+    fieldType: 'char',
+    specificValues: [],
 };
 
 const CreateDocumentType = () => {
     const [documentTypeName, setDocumentTypeName] = useState('');
     const [documentTypeAlias, setDocumentTypeAlias] = useState('');
-    const [fields, setFields] = useState([initialField]); 
+    const [fields, setFields] = useState([initialField]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentField, setCurrentField] = useState(null);
 
 
     const handleAddField = () => {
@@ -34,11 +37,34 @@ const CreateDocumentType = () => {
 
     const handleFieldChange = (id, event) => {
         const { name, value } = event.target;
+        
+        if (name === 'fieldType' && value === 'specificValues') {
+            const fieldToEdit = fields.find(f => f.id === id);
+            setCurrentField(fieldToEdit);
+            setIsModalOpen(true);
+        }
+
         setFields(prevFields => 
             prevFields.map(field => 
                 field.id === id ? { ...field, [name]: value } : field
             )
         );
+    };
+
+    const handleSaveSpecificValues = (fieldId, values) => {
+        setFields(prevFields => 
+            prevFields.map(field => 
+                field.id === fieldId ? { ...field, specificValues: values } : field
+            )
+        );
+        setCurrentField(null);
+    };
+
+    const handleOpenModalForEdit = (field) => {
+        if (field.fieldType === 'specificValues') {
+            setCurrentField(field);
+            setIsModalOpen(true);
+        }
     };
 
     const handleSubmit = (e) => {
@@ -138,7 +164,7 @@ const CreateDocumentType = () => {
                                 <table className="fields-table">
                                     <thead>
                                         <tr>
-                                            <th>Nombre del Campo <span className="required-asterisk">*</span></th>
+                                            <th>Nombre del Campo</th>
                                             <th>Tipo de Dato</th>
                                             <th>Longitud</th>
                                             <th>Precisión</th>
@@ -163,21 +189,34 @@ const CreateDocumentType = () => {
                                                 
                                                 {/* Columna 2: Tipo de Dato (Select) */}
                                                 <td>
-                                                    <select
-                                                        name="fieldType"
-                                                        value={field.fieldType}
-                                                        onChange={(e) => handleFieldChange(field.id, e)}
-                                                        className="table-select"
-                                                    >
-                                                        <option value="char">Caracter (Letra)</option>
-                                                        <option value="date">Fecha</option>
-                                                        <option value="bool">Marcar Sí o No</option>
-                                                        <option value="int">Número Entero</option>
-                                                        <option value="float">Número Decimal</option>
-                                                        <option value="text">Texto Corto</option>
-                                                        <option value="textarea">Texto Largo (Párrafo)</option>
-                                                        <option value="specificValues">Valores Específicos</option>
-                                                    </select>
+                                                    <div className="select-with-edit"> {/* Contenedor para el select y el botón */}
+                                                        <select
+                                                            name="fieldType"
+                                                            value={field.fieldType}
+                                                            onChange={(e) => handleFieldChange(field.id, e)}
+                                                            className="table-select"
+                                                        >
+                                                            <option value="char">Caracter (Letra)</option>
+                                                            <option value="date">Fecha</option>
+                                                            <option value="bool">Marcar Sí o No</option>
+                                                            <option value="int">Número Entero</option>
+                                                            <option value="float">Número Decimal</option>
+                                                            <option value="text">Texto Corto</option>
+                                                            <option value="textarea">Texto Largo (Párrafo)</option>
+                                                            <option value="specificValues">Valores Específicos</option>
+                                                        </select>
+
+                                                        {/* Botón de editar si el tipo es Valores Específicos */}
+                                                        {field.fieldType === 'specificValues' && (
+                                                            <button
+                                                                type="button"
+                                                                className="edit-values-button"
+                                                                onClick={() => handleOpenModalForEdit(field)}
+                                                            >
+                                                                <img src={edit} alt="Editar Valores" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
 
                                                 {/* Columna 3: Longitud */}
@@ -233,6 +272,14 @@ const CreateDocumentType = () => {
                         </div>
                     </form>
                 </div>
+                {currentField && (
+                    <SpecificValuesModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        field={currentField}
+                        onSaveValues={handleSaveSpecificValues}
+                    />
+                )}
             </div>
         </LayoutBase>
     );
