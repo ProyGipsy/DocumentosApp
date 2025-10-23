@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/SendDocuments.css'; 
+import '../../styles/general/sendDocuments.css'; 
 import editIcon from '../../assets/img/edit.png';
 
 // Datos simulados de empresas

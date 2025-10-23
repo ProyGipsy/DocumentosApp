@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // Asume que esta ruta apunta al icono de basura que estás usando
-import trash from '../../assets/IMG/trash.png'; 
+import trash from '../../assets/img/trash.png'; 
 // Reutilizamos estilos del modal de usuario para la base
 import '../../styles/general/sendDocModal.css'; 
 // Asume que necesitas estilos específicos para la tabla de valores
