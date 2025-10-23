@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/SendDocuments.css'; 
+import '../../styles/general/sendDocuments.css'; 
 import SendDocumentModal from './SendDocumentModal';
 
 // Datos simulados para la tabla (similares a los del diseño)

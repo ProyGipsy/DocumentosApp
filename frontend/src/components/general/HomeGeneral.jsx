@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
-import searchIcon from '../../assets/IMG/Lupa.png';
-import folderIcon from '../../assets/IMG/folder.png'
-import editIcon from '../../assets/IMG/edit.png';
+import searchIcon from '../../assets/img/Lupa.png';
+import folderIcon from '../../assets/img/folder.png'
+import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/homeGeneral.css';
 
 // Datos simulados para las carpetas
