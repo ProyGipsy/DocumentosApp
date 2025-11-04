@@ -3,61 +3,54 @@ import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/sendDocuments.css'; 
 import editIcon from '../../assets/img/edit.png';
 
-// Datos simulados de empresas
-const mockCompanies = [
-    { id: 1, name: 'Gipsy S.A.', rif: 'J-12345678-9' },
-    { id: 2, name: 'Empresa Beta', rif: 'J-98765432-1' },
-    { id: 3, name: 'Empresa Delta', rif: 'J-11223344-5' },
-    { id: 4, name: 'Empresa Alpha', rif: 'J-55667788-0' },
-    { id: 5, name: 'Comercial XYZ', rif: 'J-22334455-6' },
-    { id: 6, name: 'Servicios ABC', rif: 'J-33445566-7' },
-    { id: 7, name: 'Industrias LMN', rif: 'J-44556677-8' },
-    { id: 8, name: 'Distribuciones QRS', rif: 'J-55667788-9' },
-    { id: 9, name: 'Logística TUV', rif: 'J-66778899-0' },
-    { id: 10, name: 'Soluciones 123', rif: 'J-77889900-1' },
-    { id: 11, name: 'Compañía Nuevo', rif: 'J-88990011-2' },
+// Datos simulados de roles
+const mockRoles = [
+    { id: 1, name: 'Administrador', rif: 'J-12345678-9' },
+    { id: 2, name: 'Editor', rif: 'J-98765432-1' },
+    { id: 3, name: 'Visualizador', rif: 'J-11223344-5' },
+    { id: 4, name: 'Invitado', rif: 'J-55667788-0' },
 ];
 
 const ITEMS_PER_PAGE = 100;
 
 const Roles = () => {
-    const [allCompanies] = useState(mockCompanies);
+    const [allRoles] = useState(mockRoles);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [filteredCompanies, setFilteredCompanies] = useState(allCompanies);
+    const [filteredRoles, setFilteredRoles] = useState(allRoles);
 
     useEffect(() => {
-        let results = [...allCompanies];
+        let results = [...allRoles];
         if (searchTerm && searchTerm.trim() !== '') {
             const q = searchTerm.toLowerCase();
             results = results.filter(c =>
                 c.name.toLowerCase().includes(q) || c.rif.toLowerCase().includes(q)
             );
         }
-        setFilteredCompanies(results);
-    }, [searchTerm, allCompanies]);
+        setFilteredRoles(results);
+    }, [searchTerm, allRoles]);
 
-    const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE) || 1;
+    const totalPages = Math.ceil(filteredRoles.length / ITEMS_PER_PAGE) || 1;
 
     const paginated = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredCompanies.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredCompanies, currentPage]);
+        return filteredRoles.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredRoles, currentPage]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filteredCompanies.length]);
+    }, [searchTerm, filteredRoles.length]);
 
     const goToPage = (page) => {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
 
-    const handleAddCompany = () => {
-        alert('Abrir modal para crear compañía.');
+    const handleAddRole = () => {
+        alert('Abrir modal para crear un rol.');
     };
 
-    const handleEditCompany = () => {
-        alert('Abrir modal para crear compañía, pero con datos existentes.');
+    const handleEditRole = () => {
+        alert('Abrir modal para editar un rol.');
     };
 
     return (
@@ -80,7 +73,7 @@ const Roles = () => {
 
                 {/* Botón de Agregar Rol */}
                 <div className="add-doc-button-container">
-                    <button className="add-doc-button" onClick={handleAddCompany}>
+                    <button className="add-doc-button" onClick={handleAddRole}>
                         + Agregar Rol
                     </button>
                 </div>
@@ -91,8 +84,8 @@ const Roles = () => {
                             <table className="documents-table">
                                 <thead>
                                     <tr>
-                                        <th>NOMBRE EMPRESA</th>
-                                        <th>RIF</th>
+                                        <th>ROL</th>
+                                        <th>PERMISOS</th>
                                         <th>ACCIONES</th>
                                     </tr>
                                 </thead>
@@ -104,7 +97,7 @@ const Roles = () => {
                                             <td className="actions-cell">
                                                 <button 
                                                     className="view-button" 
-                                                    onClick={() => handleEditCompany(company.id)}
+                                                    onClick={() => handleEditRole(company.id)}
                                                     title="Editar Empresa"
                                                 >
                                                     <img src={editIcon} alt="Editar" />
@@ -115,13 +108,13 @@ const Roles = () => {
                                 </tbody>
                             </table>
                         ) : (
-                            <p className="no-documents">No se encontraron empresas.</p>
+                            <p className="no-documents">No se encontraron roles.</p>
                         )}
                     </div>
                 </div>
 
                 {/* Paginación */}
-                {filteredCompanies.length > ITEMS_PER_PAGE && (
+                {filteredRoles.length > ITEMS_PER_PAGE && (
                     <div className="pagination-controls">
                         <button 
                             onClick={() => goToPage(currentPage - 1)} 
