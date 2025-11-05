@@ -5,6 +5,7 @@ import HomeGeneral from './components/general/HomeGeneral.jsx';
 import DocumentList from './components/general/DocumentList.jsx';
 import SendDocuments from './components/general/SendDocuments.jsx';
 import CreateDocumentType from './components/general/DocumentTypeForm.jsx';
+import CreateDocument from './components/general/CreateDocumentForm.jsx';
 
 import Companies from './components/admin/Companies.jsx';
 
@@ -27,6 +28,11 @@ export default function AppRoutes(){
             <Route 
                 path="/document-type" 
                 element={<CreateDocumentType />} 
+            />
+
+            <Route 
+                path="/document-create" 
+                element={<CreateDocument />} 
             />
 
             {/* Rutas de Admin*/}

@@ -324,3 +324,26 @@ input[type="password"]::-webkit-reveal {
     height: 100% !important;
     width: 100% !important;
 }
+
+
+/*Carga de archivo pdf en DocumentFieldsModal.jsx*/
+
+.file-upload-group {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #E6E6FA; /* Lila claro como separador */
+}
+
+.file-input {
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+}
+
+.form-input-doc-create {
+    padding: 10px;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box; 
+}
