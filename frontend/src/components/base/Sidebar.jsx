@@ -39,12 +39,12 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             </li>
             {/* Funciones para usuarios de Rol Administrador */}
             <li className="AdminMenu">
-              <div className={`optionContainer ${isActive('home') ? '' : ''}`}>
-                <Link to="/" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
+              <div className={`optionContainer ${isActive('roles') ? '' : ''}`}>
+                <Link to="/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
               </div>
             </li>
             <li>
-              <div className={`optionContainer ${isActive('login') ? 'active' : ''}`}>
+              <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
                 <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Empresas</Link>
               </div>
             </li>

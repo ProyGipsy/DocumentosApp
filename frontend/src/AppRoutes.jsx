@@ -8,6 +8,7 @@ import CreateDocumentType from './components/general/DocumentTypeForm.jsx';
 import CreateDocument from './components/general/CreateDocumentForm.jsx';
 
 import Companies from './components/admin/Companies.jsx';
+import Roles from './components/admin/Roles.jsx';
 
 export default function AppRoutes(){
     return (
@@ -39,6 +40,11 @@ export default function AppRoutes(){
             <Route 
                 path="/companies" 
                 element={<Companies />} 
+            />
+
+            <Route
+                path="/roles"
+                element={<Roles />}
             />
         </Routes>
     );
