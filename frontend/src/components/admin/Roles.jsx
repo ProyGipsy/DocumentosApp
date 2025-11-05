@@ -5,10 +5,71 @@ import editIcon from '../../assets/img/edit.png';
 
 // Datos simulados de roles
 const mockRoles = [
-    { id: 1, name: 'Administrador', rif: 'J-12345678-9' },
-    { id: 2, name: 'Editor', rif: 'J-98765432-1' },
-    { id: 3, name: 'Visualizador', rif: 'J-11223344-5' },
-    { id: 4, name: 'Invitado', rif: 'J-55667788-0' },
+    { 
+        id: 1,
+        name: 'Administrador',
+        permisos: [
+            'PermisoAdministrador', 
+            'Gráficos Flujo de Caja', 
+            'Reportes de Ventas', 
+            'Reportes Flujo de Caja' 
+        ],
+        usuarios: [
+            'Login1965',
+        ]
+    },
+    { 
+        id: 2, 
+        name: 'Vendedor', 
+        permisos: [
+            'PermisoVendedor',
+            'Reportes de Ventas'
+        ],
+        usuarios: [
+            'fhenao'
+        ]
+    },
+    { 
+        id: 3, 
+        name: 'Supervisor', 
+        permisos: [
+            'PermisoAdministrador', 
+            'Reportes Saldos de Cuentas',
+            'Reportes Comisiones de Vendedores'
+        ],
+        usuarios: [
+            'armandoc',
+            'josem'
+        ]
+    },
+    { 
+        id: 4, 
+        name: 'Sistemas', 
+        permisos: [
+            'PermisoAdministrador',
+            'Reportes Flujo de Caja', 
+            'Reportes Resumen IVA',
+            'Reportes de Ventas',
+            'Reportes de Garantías',
+        ],
+        usuarios: [
+            'tinadivasta',
+            'jars',
+            'yarima',
+            'danielhdez'
+        ]
+    },
+    { 
+        id: 5, 
+        name: 'Almacén', 
+        permisos: [
+            'PermisoVendedor', 
+            'Gráficos Flujo de Caja'
+        ],
+        usuarios: [
+            
+        ]
+    },
 ];
 
 const ITEMS_PER_PAGE = 100;
@@ -86,6 +147,7 @@ const Roles = () => {
                                     <tr>
                                         <th>ROL</th>
                                         <th>PERMISOS</th>
+                                        <th>USUARIOS</th>
                                         <th>ACCIONES</th>
                                     </tr>
                                 </thead>
@@ -93,7 +155,9 @@ const Roles = () => {
                                     {paginated.map(company => (
                                         <tr key={company.id}>
                                             <td>{company.name}</td>
-                                            <td>{company.rif}</td>
+                                            <td>{company.permisos ? company.permisos.join(' - ') : 'Ninguno'}</td>
+                                            {/*<td>{company.usuarios ? company.usuarios.length : 0}</td>*/}
+                                            <td>{company.usuarios ? company.usuarios.join(', ') : 'Ninguno'}</td>
                                             <td className="actions-cell">
                                                 <button 
                                                     className="view-button" 
