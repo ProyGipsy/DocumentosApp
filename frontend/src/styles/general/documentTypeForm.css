@@ -1,12 +1,15 @@
 /* --- Estilo de la Página Completa (Fondo Gris) --- */
 .document-type-wrapper-page {
-    background-color: #f1efef; 
+    background-color: #f1efef;
     min-height: 100vh;
     padding: 40px 20px;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     box-sizing: border-box;
+    /* Permitir que los hijos (card + modal) ocupen nuevas líneas en dispositivos grandes
+       y así el modal puede mostrarse debajo del card principal. */
+    flex-wrap: wrap;
 }
 
 /* --- Contenedor Card (Blanco, Centralizado) --- */
@@ -16,7 +19,7 @@
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
     width: 100%;
-    max-width: 900px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
