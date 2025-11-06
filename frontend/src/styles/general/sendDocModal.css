@@ -313,7 +313,9 @@ input[type="password"]::-webkit-reveal {
 }
 
 .rif-container-modal select,
-.rif-container-modal input {
+.rif-container-modal input,
+.permisos-container-modal select,
+.users-container-modal select {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #ccc;
@@ -346,4 +348,94 @@ input[type="password"]::-webkit-reveal {
     font-size: 1em;
     width: 100%;
     box-sizing: border-box; 
+}
+/* --- Dropdown multi-select styles for permisos/usuarios --- */
+.permiso-dropdown-toggle,
+.usuario-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #f9f9f9;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    min-height: 40px;
+    box-sizing: border-box;
+}
+
+.permiso-dropdown-toggle:hover,
+.usuario-dropdown-toggle:hover {
+    border-color: #8b56ed;
+    box-shadow: 0 0 0 3px rgba(139,86,237,0.06);
+}
+
+.selected-summary {
+    color: #191c16;
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.caret {
+    margin-left: 8px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.dropdown-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    background: #fff;
+    z-index: 1000;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    box-sizing: border-box;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.checkbox-item {
+    cursor: pointer;
+    font-size: 0.95em;
+    color: #191c16;
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.checkbox-item span {
+    user-select: none;
+}
+
+/* Small scrollbar styling for dropdown panels */
+.dropdown-panel::-webkit-scrollbar {
+    width: 8px;
+}
+.dropdown-panel::-webkit-scrollbar-thumb {
+    background: #e0d6f6;
+    border-radius: 6px;
+}
+
+/* Ensure inputs inside items get focus ring similar to modal inputs */
+.checkbox-item input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139,86,237,0.12);
 }

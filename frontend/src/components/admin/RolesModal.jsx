@@ -1,61 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/general/sendDocModal.css';
 
-const RIFtypeOptions = ['J', 'G', 'V', 'E', 'P'];
+const PermissionOptions = [
+  'PermisoAdministrador',
+  'PermisoVendedor',
+  'Gráficos Flujo de Caja',
+  'Reportes de Ventas',
+  'Reportes Flujo de Caja',
+  'Reportes Saldos de Cuentas',
+  'Reportes Comisiones de Vendedores',
+  'Reportes Resumen IVA',
+  'Reportes de Garantías',
+  'RIF',
+  'Contrato de Arrendamiento',
+  'Vehículos',
+  'Poderes',
+  'Permiso Sanitario Locales',
+  'Registros Mercantiles',
+  'Patente',
+  'Corpoelec',
+  'Registro Sanitario',
+  'Pólizas Seguro',
+  'Dominios',
+];
 
-const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave }) => {
+const UserOptions = [
+  'Login1965',
+  'fhenao',
+  'armandoc',
+  'josem',
+  'tinadivasta',
+  'jars',
+  'yarima',
+  'danielhdez'
+]
+
+const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const [formData, setFormData] = useState({
     id: '',
     name: '',
-    RIFtype: '',
-    RIF: ''
+    // store permisos and usuarios as arrays so multiple selections are possible
+    permisos: [],
+    usuarios: []
   });
 
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'edit' && company) {
-        const rifParts = (company.rif || '').split('-');
+      if (mode === 'edit' && role) {
         setFormData({
-          id: company.id || '',
-          name: company.name || '',
-          RIFtype: rifParts[0] || '',
-          RIF: rifParts.slice(1).join('-') || ''
+          id: role.id || '',
+          name: role.name || '',
+          // ensure permisos and usuarios are arrays
+          permisos: Array.isArray(role.permisos) ? role.permisos : (role.permisos ? [role.permisos] : []),
+          usuarios: Array.isArray(role.usuarios) ? role.usuarios : (role.usuarios ? [role.usuarios] : [])
         });
       } else {
-        setFormData({ id: '', name: '', RIFtype: '', RIF: '' });
+        setFormData({ id: '', name: '', permisos: [], usuarios: [] });
       }
     }
-  }, [isOpen, mode, company]);
+  }, [isOpen, mode, role]);
+
+  const [isPermisosOpen, setIsPermisosOpen] = useState(false);
+  const [isUsuariosOpen, setIsUsuariosOpen] = useState(false);
+  const permisoRef = useRef(null);
+  const usuarioRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false);
+      if (usuarioRef.current && !usuarioRef.current.contains(e.target)) setIsUsuariosOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Si es RIF y es number type, limitar longitud a 10
-    if (name === 'RIF') {
-      const val = String(value).replace(/[^0-9-]/g, '');
-      // limitar a 10 dígitos (sin contar guiones)
-      const digits = val.replace(/-/g, '').slice(0, 10);
-      setFormData(prev => ({ ...prev, [name]: digits }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTogglePermiso = (permiso) => {
+    setFormData(prev => {
+      const exists = prev.permisos.includes(permiso);
+      const permisos = exists ? prev.permisos.filter(p => p !== permiso) : [...prev.permisos, permiso];
+      return { ...prev, permisos };
+    });
+  };
+
+  const handleToggleUsuario = (usuario) => {
+    setFormData(prev => {
+      const exists = prev.usuarios.includes(usuario);
+      const usuarios = exists ? prev.usuarios.filter(u => u !== usuario) : [...prev.usuarios, usuario];
+      return { ...prev, usuarios };
+    });
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.RIFtype || !formData.RIF) {
-      alert('Por favor, complete Nombre y RIF (tipo y número).');
+    // validate required fields: name, at least one permiso, at least one usuario
+    if (!formData.name || !formData.permisos || formData.permisos.length === 0 || !formData.usuarios || formData.usuarios.length === 0) {
+      alert('Por favor, complete Nombre, seleccione al menos un Permiso y al menos un Usuario.');
       return;
     }
 
-    const rifCombined = `${formData.RIFtype}-${formData.RIF}`;
-    const companyToSave = {
+    const roleToSave = {
       id: formData.id || Date.now() + Math.floor(Math.random() * 1000),
       name: formData.name,
-      rif: rifCombined
+      permisos: formData.permisos,
+      usuarios: formData.usuarios
     };
 
-    onSave && onSave(companyToSave, mode);
+    onSave && onSave(roleToSave, mode);
     onClose();
   };
 
@@ -63,7 +120,7 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
     <div className="modal-overlay-user">
       <div className="modal-content-user" style={{ maxWidth: '500px' }}>
         <div className="modal-header-user">
-          <h3>{mode === 'edit' ? 'Editar Empresa' : 'Agregar Nueva Empresa'}</h3>
+          <h3>{mode === 'edit' ? 'Editar Rol' : 'Agregar Nuevo Rol'}</h3>
           <button className="close-button-user" onClick={onClose}>&times;</button>
         </div>
 
@@ -82,49 +139,96 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
             </div>
           )}
 
-          {/* Campo Nombre de la Empresa */}
+          {/* Campo Nombre del Rol */}
           <div className="form-group-user">
-            <label>Nombre de la Empresa <span className="required-asterisk">*</span></label>
+            <label>Nombre del Rol <span className="required-asterisk">*</span></label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Ej: Gipsy S.A."
+              placeholder="Ej: Administrador"
             />
           </div>
 
-          {/* Campo RIF */}
+          {/* Campo Permisos */}
           <div className="form-group-user">
-            <label>RIF <span className="required-asterisk">*</span></label>
-            <div className="rif-container-modal">
-              {/* Tipo de Rif (Prefijo) */}
-              <div className="rif-type">
-                <select
-                  id="RIFtype"
-                  name="RIFtype"
-                  value={formData.RIFtype}
-                  onChange={handleChange}
+            <label>Permisos <span className="required-asterisk">*</span></label>
+            <div className="permisos-container-modal" ref={permisoRef} style={{ position: 'relative' }}>
+              {/* Dropdown toggle showing selected permisos */}
+              <div
+                className="permiso-dropdown-toggle"
+                onClick={(e) => { e.stopPropagation(); setIsPermisosOpen(prev => !prev); }}
+                role="button"
+                aria-expanded={isPermisosOpen}
+                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
+              >
+                <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
+                  {formData.permisos && formData.permisos.length > 0 ? formData.permisos.join(', ') : 'Seleccione los permisos ...'}
+                </div>
+                <div className="caret">▾</div>
+              </div>
+
+              {isPermisosOpen && (
+                <div
+                  className="dropdown-panel"
+                  style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
                 >
-                  <option value="">Tipo</option>
-                  {RIFtypeOptions.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                  <div className="permiso-type checkbox-list">
+                    {PermissionOptions.map(opt => (
+                      <label key={opt} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                        <input
+                          type="checkbox"
+                          name="permisos"
+                          value={opt}
+                          checked={formData.permisos.includes(opt)}
+                          onChange={() => handleTogglePermiso(opt)}
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <br />
+            {/* Campo Usuarios */}
+            <label>Usuarios <span className="required-asterisk">*</span></label>
+            <div className="users-container-modal" ref={usuarioRef} style={{ position: 'relative' }}>
+              <div
+                className="usuario-dropdown-toggle"
+                onClick={(e) => { e.stopPropagation(); setIsUsuariosOpen(prev => !prev); }}
+                role="button"
+                aria-expanded={isUsuariosOpen}
+                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
+              >
+                <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
+                  {formData.usuarios && formData.usuarios.length > 0 ? formData.usuarios.join(', ') : 'Seleccione los usuarios ...'}
+                </div>
+                <div className="caret">▾</div>
               </div>
-              {/* Número de Rif */}
-              <div className="rif-number">
-                <input
-                  type="number"
-                  id="RIF"
-                  name="RIF"
-                  placeholder="Número de RIF"
-                  max={9999999999}
-                  required
-                  value={formData.RIF}
-                  onChange={handleChange}
-                />
-              </div>
+
+              {isUsuariosOpen && (
+                <div
+                  className="dropdown-panel"
+                  style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
+                >
+                  <div className="usuario-type checkbox-list">
+                    {UserOptions.map(opt => (
+                      <label key={opt} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                        <input
+                          type="checkbox"
+                          name="usuarios"
+                          value={opt}
+                          checked={formData.usuarios.includes(opt)}
+                          onChange={() => handleToggleUsuario(opt)}
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -140,4 +244,4 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
   );
 };
 
-export default CompaniesModal;
+export default RolesModal;
