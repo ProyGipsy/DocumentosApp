@@ -1,0 +1,282 @@
+/* --- Estilo de la Página Completa (Fondo Gris) --- */
+.document-type-wrapper-page {
+    background-color: #f1efef;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+    /* Permitir que los hijos (card + modal) ocupen nuevas líneas en dispositivos grandes
+       y así el modal puede mostrarse debajo del card principal. */
+    flex-wrap: wrap;
+}
+
+/* --- Contenedor Card (Blanco, Centralizado) --- */
+.cardContainerDocType {
+    background: #fff;
+    padding: 35px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* --- Título y Subtítulos --- */
+.main-title {
+    color: #421d83;
+    margin-top: 0;
+    margin-bottom: 30px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.section-subtitle {
+    color: #421d83;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 600;
+    border-bottom: 2px solid #8b56ed;
+    padding-bottom: 8px;
+}
+
+.required-asterisk {
+    color: #ff4d4f;
+    margin-left: 3px;
+    font-weight: bold;
+}
+
+/* --- Grupos de Formulario (Labels y Inputs) --- */
+.document-type-form {
+    width: 100%;
+}
+
+.form-group-doc-type {
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.form-group-doc-type label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #191c16;
+}
+
+.text-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #f9f9f9; 
+}
+
+.text-input.textarea-input {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.text-input:focus {
+    border-color: #8b56ed;
+    box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
+    outline: none;
+    background: white;
+}
+
+/* --- Sección de Campos Dinámicos (Tabla) --- */
+.fields-table-section {
+    background-color: transparent; 
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 30px;
+}
+
+.fields-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.fields-table {
+    width: 100%;
+    min-width: 650px; 
+    border-collapse: collapse;
+}
+
+.fields-table thead th:nth-child(1) { /* Nombre del Campo */
+    width: 30%; 
+}
+.fields-table thead th:nth-child(2) { /* Tipo de Dato */
+    width: 30%; 
+}
+.fields-table thead th:nth-child(3) { /* Longitud */
+    width: 15%; 
+}
+.fields-table thead th:nth-child(4) { /* Precisión */
+    width: 15%; 
+}
+.fields-table thead th:nth-child(5) { /* Acciones */
+    width: 5%;
+    min-width: 80px;
+}
+
+.fields-table th, .fields-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.fields-table th {
+    background-color: #e6e6fa;
+    color: #421d83;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+/* Estilos de inputs y selects dentro de la tabla */
+.table-input, .table-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.95em;
+    box-sizing: border-box;
+    background: white;
+}
+
+.table-input:focus, .table-select:focus {
+    border-color: #8b56ed;
+    box-shadow: 0 0 0 2px rgba(139, 86, 237, 0.2);
+    outline: none;
+}
+
+/* --- Acciones y Botones --- */
+.actions-cell-doc-type {
+    text-align: center;
+}
+
+.remove-field-button.icon-button {
+    background-color: transparent; 
+    border: none;
+    border-radius: 4px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    line-height: normal;
+    transition: background-color 0.2s;
+}
+
+.remove-field-button.icon-button:hover:not(:disabled) {
+    background-color: rgba(220, 53, 69, 0.1); /* Fondo rojo claro al pasar el ratón */
+}
+
+.remove-field-button.icon-button:disabled {
+    background-color: transparent;
+}
+
+.remove-field-button.icon-button img {
+    width: 22px; 
+    height: 22px;
+    filter: invert(24%) sepia(85%) saturate(3000%) hue-rotate(338deg) brightness(70%) contrast(80%); /*Color del icon*/
+    transition: filter 0.2s;
+}
+
+.remove-field-button.icon-button:disabled img {
+    /* Color más claro/opaco cuando está deshabilitado */
+    filter: invert(80%) sepia(0%) saturate(100%) hue-rotate(0deg) brightness(120%) contrast(90%); 
+}
+
+.button-group-table {
+    display: flex;
+    justify-content: flex-start;
+    padding-bottom: 5px;
+}
+
+/* Contenedor para select + botón de editar valores (misma línea) */
+.select-with-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Botón que muestra solo el icono de editar, colocado a la derecha del input/select */
+.edit-values-button {
+    background-color: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: filter 0.15s, background-color 0.15s;
+}
+
+.edit-values-button img {
+    width: 20px;
+    height: 20px;
+    filter: grayscale(0%) brightness(1) saturate(0%); /* icon initially monochrome using SVG stroke */
+    transition: filter 0.15s, transform 0.15s;
+}
+
+/* Al pasar el mouse, oscurece (simula darken) el icono */
+.edit-values-button:hover img {
+    filter: grayscale(0%) brightness(0.6) saturate(120%);
+    transform: scale(1.03);
+}
+
+/* Asegurarse que el select/input ocupe el espacio sobrante cuando hay el botón */
+.select-with-edit .table-select,
+.select-with-edit .table-input {
+    flex: 1 1 auto;
+    width: auto; /* evitar 100% que rompe el espacio compartido */
+}
+
+.add-field-button {
+    background-color: #421d83a3;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.add-field-button:hover {
+    background-color: #8b56ed;
+}
+
+.form-footer-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.save-document-type-button {
+    background-color: #421d83;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.2);
+}
+
+.save-document-type-button:hover {
+    background-color: #8b56ed;
+}

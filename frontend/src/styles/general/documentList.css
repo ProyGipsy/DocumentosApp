@@ -1,0 +1,226 @@
+/* --- Estilos Generales del Contenedor de la Lista --- */
+.document-list-container {
+    padding: 30px;
+    background-color: white;
+    min-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Alinea los elementos a la izquierda */
+    width: 100%;
+}
+
+.folder-title {
+    color: #421d83;
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 1.5em;
+}
+
+/* --- Breadcrumb --- */
+.breadcrumb {
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    color: #61608b;
+}
+
+.breadcrumb-item {
+    text-decoration: none;
+    color: #61608b;
+}
+
+.breadcrumb-item.active {
+    font-weight: bold;
+    color: #421d83; /* Color principal */
+}
+
+.breadcrumb-separator {
+    margin: 0 5px;
+}
+
+
+/* --- Barra de Búsqueda, Filtro y Botón Agregar --- */
+.search-and-controls {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.search-filter-group.users-table-style {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    justify-content: flex-start; 
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+.search-input-doc-list {
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1em;
+    color: #191c16;
+    background-color: #f9f9f9;
+    flex-grow: 1;
+    min-width: 200px;
+    max-width: 600px;
+}
+
+.search-input-doc-list:focus {
+    outline: none;
+    border-color: #8b56ed;
+    background-color: #fff;
+    box-shadow: 0 0 0 1px rgba(139, 86, 237, 0.2);
+}
+
+.search-button-doc-list {
+    padding: 12px 15px;
+    background-color: #421d83;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 55px;
+}
+
+.search-button-doc-list:hover {
+    background-color: #8b56ed;
+}
+
+.search-button-doc-list img {
+    width: 20px;
+    height: 20px;
+}
+
+.filter-select-admin {
+    padding: 12px 20px;
+    border: 1px solid #421d83;
+    border-radius: 8px;
+    font-size: 1em;
+    color: white;
+    background-color: #421d83;
+    cursor: pointer;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2C114.7L146.2%2C255.5L5.4%2C114.7H287z%22%2F%3E%3C%2Fsvg%3E'); /* Flecha blanca SVG */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    min-width: 150px;
+}
+
+.filter-select-admin:hover {
+    background-color: #8b56ed;
+    border-color: #8b56ed;
+}
+
+.filter-select-admin:focus {
+    outline: none;
+    border-color: #421d83;
+    box-shadow: 0 0 0 3px rgba(66, 29, 131, 0.2);
+}
+
+/* Botón de Agregar Documento */
+.add-doc-button-container {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.add-doc-button {
+    padding: 10px 15px;
+    background-color: #421d83;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.add-doc-button:hover {
+    background-color: #8b56ed;
+}
+
+/* --- Estilos de la Tabla de Documentos --- */
+.documents-table-wrapper {
+    width: 95%;
+    overflow-x: auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    background-color: white;
+}
+
+.documents-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+    background-color: white;
+}
+
+.documents-table th {
+    padding: 12px 15px;
+    text-align: left;
+    background-color: #f9f9f9;
+    color: #421d83;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    border-bottom: 2px solid #8b56ed;
+}
+
+.documents-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    color: #191c16;
+    vertical-align: middle;
+}
+
+.documents-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Estilo para la celda de acciones */
+.actions-cell {
+    width: 100px;
+}
+
+.view-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    height: auto;
+}
+
+.view-button:hover {
+    background: none; 
+}
+
+.view-button img {
+    width: 22px;
+    height: 22px;
+    filter: grayscale(100%) brightness(0.7); 
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.view-button:hover img {
+    transform: scale(1.2); 
+    filter: invert(15%) sepia(35%) saturate(300%) hue-rotate(240deg) brightness(0.8); 
+}
+
+.no-documents {
+    text-align: center;
+    padding: 50px;
+    color: #61608b;
+    font-size: 1.1em;
+}
