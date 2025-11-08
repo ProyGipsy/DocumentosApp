@@ -41,6 +41,15 @@ const HomeAdmin = () => {
         navigate(`/${encodedFolderName}`);
     };
 
+    // Función para manejar el clic en el ícono de edición
+    const handleEditClick = (e, folderName) => {
+        e.stopPropagation(); 
+        
+        navigate('/document-type', {
+            state: { folderName: folderName, isEditing: true }
+        });
+    };
+
     return (
         <LayoutBaseAdmin activePage="home">
             <div className="home-admin-container">
@@ -72,11 +81,10 @@ const HomeAdmin = () => {
                                 <div key={folder.id} className="folder-card" onClick={() => handleFolderClick(folder.name)}>
                                     <div className="folder-icon-container">
                                         <img src={folderIcon} alt="Carpeta" className="folder-icon" />
-                                        <button className="edit-documentType" onClick={(e) => {
-                                            e.stopPropagation(); // Evita que se active el handleFolderClick del padre
-                                            console.log(`Acceso directo a: ${folder.name}`);
-                                            // Lógica para abrir el enlace externo si es necesario
-                                        }}>
+                                        <button 
+                                            className="edit-documentType" 
+                                            onClick={(e) => handleEditClick(e, folder.name)} 
+                                        >
                                             <img src={editIcon} alt="Editar" />
                                         </button>
                                     </div>
