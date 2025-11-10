@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import LayoutBase from '../base/LayoutBase'; 
 import '../../styles/general/documentTypeForm.css'; 
 import trash from '../../assets/img/trash.png';
@@ -10,14 +11,64 @@ const initialField = {
     fieldName: '', 
     fieldType: 'char',
     specificValues: [],
+    fieldLength: 0,
+    fieldPrecision: 0,
+};
+
+// Simulación de datos para la edición
+const mockDocumentTypeData = {
+    'Contrato de Arrendamiento': { // Debe coincidir con el folderName
+        name: 'Contrato de Arrendamiento',
+        alias: 'CARR',
+        description: 'Documento legal para alquiler de bienes inmuebles.',
+        fields: [
+            { id: 1, fieldName: 'Fecha Inicio', fieldType: 'date', fieldPrecision: 10, fieldLength: 0 },
+            { id: 2, fieldName: 'Canon Mensual', fieldType: 'float', fieldPrecision: 15, fieldLength: 2 },
+            { id: 3, fieldName: 'Moneda', fieldType: 'specificValues', specificValues: ['USD', 'VES'], fieldPrecision: 5, fieldLength: 0 },
+            { id: 4, fieldName: 'Dirección', fieldType: 'textarea', fieldPrecision: 255, fieldLength: 0 },
+        ]
+    },
+};
+
+const fetchDocumentTypeData = (name) => {
+    // Aquí iría el fetch(API_ENDPOINT/tipos-documento/${name})
+    return mockDocumentTypeData[name]; 
 };
 
 const CreateDocumentType = () => {
+    const location = useLocation();
+    const { folderName, isEditing } = location.state || {};
+
     const [documentTypeName, setDocumentTypeName] = useState('');
     const [documentTypeAlias, setDocumentTypeAlias] = useState('');
+    const [documentTypeDescription, setDocumentTypeDescription] = useState('');
     const [fields, setFields] = useState([initialField]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentField, setCurrentField] = useState(null);
+
+    // useEffect para cargar datos en modo EDICIÓN
+    useEffect(() => {
+        if (isEditing && folderName) {
+            // 1. Simular la llamada para obtener todos los datos del documento
+            const dataToEdit = fetchDocumentTypeData(folderName);
+
+            if (dataToEdit) {
+                // 2. Pre-llenar todos los campos del formulario con los datos cargados
+                setDocumentTypeName(dataToEdit.name);
+                setDocumentTypeAlias(dataToEdit.alias);
+                setDocumentTypeDescription(dataToEdit.description); 
+                setFields(dataToEdit.fields);
+            } else {
+                console.error(`Error: No se encontró data para editar el documento: ${folderName}`);
+            }
+        } else {
+            // Si es modo CREACIÓN, asegurar estados iniciales
+            setDocumentTypeName('');
+            setDocumentTypeAlias('');
+            setDocumentTypeDescription('');
+            setFields([initialField]);
+        }
+    }, [isEditing, folderName]);
 
 
     const handleAddField = () => {
@@ -82,12 +133,25 @@ const CreateDocumentType = () => {
 
         const documentTypeData = {
             name: documentTypeName,
-            fields: fields.map(f => ({ name: f.fieldName, type: f.fieldType }))
+            alias: documentTypeAlias, 
+            description: documentTypeDescription,
+            fields: fields.map(f => ({ 
+                name: f.fieldName, 
+                type: f.fieldType,
+                precision: f.fieldPrecision,
+                length: f.fieldLength 
+            }))
         };
 
-        console.log("Datos a enviar al API:", documentTypeData);
-        alert(`Tipo de Documento "${documentTypeName}" y ${fields.length} campos listos para enviar.`);
-        // Aquí iría la llamada API
+        if (isEditing) {
+            console.log("Datos para ACTUALIZAR:", documentTypeData);
+            alert(`Tipo de Documento "${documentTypeName}" ACTUALIZADO.`);
+            // Aquí iría la llamada API de tipo PUT/PATCH para actualizar
+        } else {
+            console.log("Datos para CREAR:", documentTypeData);
+            alert(`Tipo de Documento "${documentTypeName}" listo para CREAR.`);
+            // Aquí iría la llamada API de tipo POST para crear
+        }
     };
 
     return (
@@ -96,7 +160,9 @@ const CreateDocumentType = () => {
                 {/* Contenedor de la tarjeta blanca */}
                 <div className="cardContainerDocType"> 
                     
-                    <h2 className="main-title">Creación de Tipo de Documento</h2>
+                    <h2 className="main-title">
+                        {isEditing ? 'Editar Tipo de Documento' : 'Creación de Tipo de Documento'} 
+                    </h2>
                     <form onSubmit={handleSubmit} className="document-type-form">
                         
                         {/* Input 1: Nombre del Tipo de Documento */}
@@ -139,6 +205,7 @@ const CreateDocumentType = () => {
                             <textarea
                                 id="docTypeDescription"
                                 name="docTypeDescription"
+                                value={documentTypeDescription}
                                 placeholder="Ingrese una breve descripción del tipo de documento"
                                 className="text-input textarea-input"
                                 rows="3"

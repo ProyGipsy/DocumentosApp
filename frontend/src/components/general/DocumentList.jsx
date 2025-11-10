@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
 import eyeIcon from '../../assets/img/eye.png';
 import editIcon from '../../assets/img/edit.png';
@@ -15,6 +15,17 @@ const mockDocuments = [
     { id: 6, name: 'Documento 6', company: 'Empresa Alpha', date: '05/01/2024' },
 ];
 
+// Mock para detalles de documentos
+const mockDocumentDetails = {
+    // ID 1: 'Documento 1' (Factura de Venta)
+    1: { docTypeId: 'invoice', docTypeName: 'Factura de Venta', companyId: '1', companyName: 'Empresa Alpha', attachment: 'doc1_factura.pdf', fieldsData: { 'Número de Factura': 'FV-00123', 'Fecha de Emisión': '2020-03-01', 'Monto Neto': 150.00, 'IVA (16%)': 24.00, 'Método de Pago': 'Transferencia' } },
+    // ID 2: 'Documento 2' (Contrato Laboral)
+    2: { docTypeId: 'hr-contract', docTypeName: 'Contrato Laboral', companyId: '2', companyName: 'Empresa Beta', attachment: 'doc2_contrato.pdf', fieldsData: { 'Cédula de Identidad': 98765432, 'Fecha de Ingreso': '2023-03-15', 'Puesto': 'Gerente', 'Salario Base': 2000.50 } },
+    // ID 3: 'Documento 3' (RIF)
+    3: { docTypeId: 'rif', docTypeName: 'Registro de Identificación Fiscal (RIF)', companyId: '1', companyName: 'Empresa Alpha', attachment: 'doc3_rif_alpha.pdf', fieldsData: { 'Prefijo RIF': 'J', 'Número RIF': 12345678, 'Razón Social': 'ACME C.A.', 'Dirección Fiscal': 'Av. Principal, Edificio Central, Piso 5' } }
+};
+const fetchDocumentDetails = (docId) => mockDocumentDetails[docId];
+
 const DocumentList = ({ folderName }) => {
     const [allDocuments] = useState(mockDocuments); // Fuente de datos completa
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +33,7 @@ const DocumentList = ({ folderName }) => {
     const [primaryFilter, setPrimaryFilter] = useState('');
     const [secondaryFilter, setSecondaryFilter] = useState('');
     const [secondaryFilterOptions, setSecondaryFilterOptions] = useState([]);
+    const navigate = useNavigate();
 
     // Lógica de Filtrado y Opciones Dinámicas
     useEffect(() => {
@@ -75,15 +87,31 @@ const DocumentList = ({ folderName }) => {
 
 
     const handleAddDocument = () => {
-        alert('Llevar a interfaz de Crear Documento, marcando el tipo de documento según la carpeta actual.');
+        navigate('/document-create', { 
+            state: { folderName: folderName, mode: 'create' }
+        });
     };
 
     const handleViewDocument = (docId) => {
-        alert(`Abrir modal para ver detalles del documento ID: ${docId}`);
+        const details = fetchDocumentDetails(docId);
+        if (details) {
+            navigate('/document-create', { 
+                state: { docId: docId, mode: 'view', documentDetails: details } 
+            });
+        } else {
+            alert('Detalles del documento no encontrados.');
+        }
     };
 
     const handleEditDocument = (docId) => {
-        alert(`Llevar a interfaz de Crear Documento, rellenando los campos con la información actual. Cambiar título y botón.`);
+        const details = fetchDocumentDetails(docId);
+        if (details) {
+            navigate('/document-create', { 
+                state: { docId: docId, mode: 'edit', documentDetails: details } 
+            });
+        } else {
+            alert('Detalles del documento no encontrados.');
+        }
     };
 
     return (
