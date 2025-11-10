@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import LayoutBase from '../base/LayoutBase'; 
 import '../../styles/general/documentTypeForm.css'; 
 import DocumentFieldsModal from './DocumentFieldsModal';
+import SendDocumentModal from './SendDocumentModal';
 
 
 // --- Tipos de Documentos con Campos Dinámicos ---
@@ -73,6 +74,9 @@ const CreateDocumentForm = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [operationMode, setOperationMode] = useState(mode || 'create');
 
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+    const [documentToSend, setDocumentToSend] = useState(null);
+
     // Título dinámico
     const formTitle = operationMode === 'view' 
         ? 'Visualización de Documento' 
@@ -129,6 +133,21 @@ const CreateDocumentForm = () => {
         console.log("Campos Rellenados:", documentData.fieldsData);
         console.log("Archivo Adjunto:", documentData.attachment);
         alert(`Documento de tipo "${documentData.docTypeName}" registrado con éxito.`);
+    };
+
+    const handleDocumentCreatedAndReadyToSend = (documentData) => {
+        // 1. Guardar el documento antes de abrir el modal de envío (persistencia)
+        handleSaveDocument(documentData); 
+        
+        // 2. Almacenar los datos del documento y abrir el modal de envío
+        setDocumentToSend(documentData);
+        setIsSendModalOpen(true);
+    };
+
+    const handleSendDocument = (sendData) => {
+        console.log("Datos de envío de correo:", sendData);
+        setIsSendModalOpen(false);
+        setDocumentToSend(null);
     };
 
 
@@ -209,6 +228,21 @@ const CreateDocumentForm = () => {
                         mode={operationMode}
                         initialFormData={documentDetails?.fieldsData || {}}
                         initialAttachmentName={documentDetails?.attachment}
+                        onDocumentCreatedAndReadyToSend={handleDocumentCreatedAndReadyToSend}
+                    />
+                )}
+
+                {/* Renderizado Condicional del Modal de ENVÍO */}
+                {documentToSend && (
+                    <SendDocumentModal
+                        isOpen={isSendModalOpen}
+                        onClose={() => {
+                            setIsSendModalOpen(false);
+                            setDocumentToSend(null);
+                        }}
+                        selectedDocuments={[documentToSend]} 
+                        selectedDocumentNames={[`${documentToSend.docTypeName} - ${documentToSend.companyName}`]} 
+                        onSend={handleSendDocument}
                     />
                 )}
             </div>
