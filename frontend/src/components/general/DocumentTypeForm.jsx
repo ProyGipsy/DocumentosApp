@@ -74,7 +74,7 @@ const CreateDocumentType = () => {
     const handleAddField = () => {
         setFields(prevFields => [
             ...prevFields,
-            { id: Date.now(), fieldName: '', fieldType: 'text' }
+            { id: Date.now(), fieldName: '', fieldType: 'char' }
         ]);
     };
 
