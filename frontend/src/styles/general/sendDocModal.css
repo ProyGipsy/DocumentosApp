@@ -434,8 +434,85 @@ input[type="password"]::-webkit-reveal {
     border-radius: 6px;
 }
 
-/* Ensure inputs inside items get focus ring similar to modal inputs */
 .checkbox-item input[type="checkbox"]:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(139,86,237,0.12);
+}
+
+
+/* --- ESTILOS PARA EL CHECKBOX DE ENVÍO (DocumentFieldsModal) --- */
+
+.send-checkbox-group {
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+.send-checkbox-label {
+    display: flex; 
+    align-items: center;
+    position: relative;
+    padding-left: 35px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 1em;
+    user-select: none;
+    font-weight: normal;
+    color: #495057;
+}
+
+/* Ocultar el checkbox nativo */
+.send-checkbox-group input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Creación del checkmark customizado (el cuadrado) */
+.custom-checkmark {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: #eee;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    border: 1px solid #ccc;
+}
+
+/* Al pasar el mouse, cambiar color de fondo */
+.send-checkbox-label:hover input ~ .custom-checkmark {
+    background-color: #ccc;
+}
+
+/* Cuando el checkbox está marcado, cambiar el color de fondo a morado */
+.send-checkbox-group input[type="checkbox"]:checked ~ .custom-checkmark {
+    background-color: #8b56ed;
+    border-color: #8b56ed;
+}
+
+/* Crear el checkmark real (blanco) */
+.custom-checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+/* Mostrar el checkmark cuando está marcado */
+.send-checkbox-group input[type="checkbox"]:checked ~ .custom-checkmark:after {
+    display: block;
+}
+
+/* Estilo del checkmark */
+.send-checkbox-group .custom-checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
 }

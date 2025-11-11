@@ -14,10 +14,11 @@ const MOCK_DATA_TYPES = [
 ];
 
 
-const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDocument, mode = 'create', initialFormData = {}, initialAttachmentName}) => {
+const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDocument, onDocumentCreatedAndReadyToSend, mode = 'create', initialFormData = {}, initialAttachmentName}) => {
     const [formData, setFormData] = useState({}); 
     const [attachment, setAttachment] = useState(null);
     const [attachmentName, setAttachmentName] = useState('');
+    const [sendDocument, setSendDocument] = useState(false);
 
     const isViewing = mode === 'view';
     const isEditing = mode === 'edit';
@@ -34,27 +35,16 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                 setFormData(initialData);
                 setAttachment(null);
                 setAttachmentName('');
+                setSendDocument(false);
             } else {
                 // Modo Ver/Editar: cargar datos iniciales
                 setFormData(initialFormData);
                 setAttachment(null); // No cargar el objeto de archivo, solo el nombre -- OJO: Revisar esto
                 setAttachmentName(initialAttachmentName);
+                setSendDocument(false);
             }
         }
     }, [isOpen, documentType, isCreating, initialFormData, initialAttachmentName]);
-
-
-    // Reinicia el estado cada vez que el modal se abre o el tipo de documento cambia
-    useEffect(() => {
-        if (isOpen && documentType) {
-            const initialData = documentType.fields.reduce((acc, field) => {
-                acc[field.name] = '';
-                return acc;
-            }, {});
-            setFormData(initialData);
-            setAttachment(null);
-        }
-    }, [isOpen, documentType]);
 
 
     if (!isOpen || !documentType) return null;
@@ -74,7 +64,9 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
     };
 
     const handleFileChange = (event) => {
-        setAttachment(event.target.files[0]);
+        const file = event.target.files[0];
+        setAttachment(file);
+        setAttachmentName(file ? file.name : '');
     };
 
 
@@ -83,7 +75,6 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
 
         // Si es Creación o Edición, procede al guardado
         if (isCreating || isEditing) {
-            // ... (validación de adjunto y lógica de guardado existente) ...
             
             const documentToSave = {
                 docTypeId: documentType.id,
@@ -92,21 +83,37 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                 companyName: company.name,
                 fieldsData: formData,
                 attachment: attachment.name,
-                fileObject: attachment
+                fileObject: attachment,
+                shouldSend: isCreating ? sendDocument : false
             };
             
             if (isEditing) {
                 console.log("==> Proceso de EDICIÓN Completado <==");
                 alert(`Documento de tipo "${documentType.name}" editado con éxito.`);
+                onSaveDocument(documentToSave);
+                onClose();
+            
             } else { // isCreating
                 console.log("==> Proceso de Creación Completado <==");
-                alert(`Documento de tipo "${documentType.name}" registrado con éxito.`);
+                if (sendDocument) {
+                    onClose(); 
+                    onDocumentCreatedAndReadyToSend(documentToSave); 
+                } else {
+                    onSaveDocument(documentToSave); 
+                    onClose();
+                }
             }
 
             onSaveDocument(documentToSave);
             onClose();
         } 
     };
+
+    const buttonText = isEditing 
+        ? 'Guardar Cambios' 
+        : isCreating 
+            ? (sendDocument ? 'Crear y Enviar' : 'Crear Documento') 
+            : '';
 
     return (
         <div className="modal-overlay-user" onClick={onClose}>
@@ -208,13 +215,30 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                          )}
                     </div>
 
+                    {isCreating && (
+                        <div className="form-group-user send-checkbox-group">
+                            <label htmlFor="send-doc-checkbox" className="send-checkbox-label">
+                                ¿Desea enviar el documento luego de crearlo?
+                                <input 
+                                    type="checkbox" 
+                                    id="send-doc-checkbox"
+                                    checked={sendDocument} 
+                                    onChange={(e) => setSendDocument(e.target.checked)}
+                                    className="custom-send-checkbox" 
+                                />
+                                <span className="custom-checkmark"></span>
+                            </label>
+                        </div>
+                    )}
+
                     {isCreating || isEditing ? (
                         <div className="modal-footer-user">
                             <button type="submit" className="modal-button-user save-button-user">
-                                {isEditing ? 'Guardar Cambios' : 'Crear Documento'}
+                                {buttonText} 
                             </button>
                         </div>
                     ) : null}
+                    
                 </form>
             </div>
         </div>
