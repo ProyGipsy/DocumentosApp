@@ -62,7 +62,7 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             </li>
             <li>
               <div className={`optionContainer ${isActive('login') ? 'active' : ''}`}>
-                <a href={`${apiUrl}`} className="optionLink">Cerrar Sesión</a>
+                <a href={`${apiUrl}/`} className="optionLink">Cerrar Sesión</a>
               </div>
             </li>
           </ul>
