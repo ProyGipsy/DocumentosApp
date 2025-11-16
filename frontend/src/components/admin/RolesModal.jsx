@@ -236,7 +236,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
 
         <div className="modal-footer-user">
           <button className="modal-button-user save-button-user" onClick={handleSave}>
-            {mode === 'edit' ? 'Guardar cambios' : 'Agregar Empresa'}
+            {mode === 'edit' ? 'Guardar cambios' : 'Agregar Rol'}
           </button>
         </div>
       </div>
