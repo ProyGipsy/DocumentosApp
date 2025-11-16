@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import '../../styles/base/menu.css';
 import logo from '../../assets/img/Gipsy_imagotipo_color.png'
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
   const isActive = (page) => activePage === page;
 
@@ -54,12 +57,12 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             {/* Redireccionamiento a templates de Flask */}
             <li>
               <div className={`optionContainer ${isActive('home') ? '' : ''}`}>
-                <a href="/welcome" className="optionLink" onClick={closeSidebar}>Menú Principal</a>
+                <a href={`${apiUrl}/welcome`} className="optionLink" onClick={closeSidebar}>Menú Principal</a>
               </div>
             </li>
             <li>
               <div className={`optionContainer ${isActive('login') ? 'active' : ''}`}>
-                <a href="/login" className="optionLink">Cerrar Sesión</a>
+                <a href={`${apiUrl}`} className="optionLink">Cerrar Sesión</a>
               </div>
             </li>
           </ul>
