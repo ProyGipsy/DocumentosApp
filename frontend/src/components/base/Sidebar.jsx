@@ -8,8 +8,6 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
   const isActive = (page) => activePage === page;
-  
-  console.log(apiUrl)
 
   return (
     <>
