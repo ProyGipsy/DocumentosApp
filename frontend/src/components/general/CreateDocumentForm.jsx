@@ -5,8 +5,11 @@ import '../../styles/general/documentTypeForm.css';
 import DocumentFieldsModal from './DocumentFieldsModal';
 import SendDocumentModal from './SendDocumentModal';
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 // --- Tipos de Documentos con Campos Dinámicos ---
+/*
 const MOCK_DOCUMENT_TYPES = [
     {
         id: 'rif',
@@ -44,14 +47,16 @@ const MOCK_DOCUMENT_TYPES = [
         ]
     }
 ];
+*/
 
 // --- Empresas Asociadas  ---
+/*
 const MOCK_COMPANIES = [
     { id: '1', name: 'ACME C.A.' },
     { id: '2', name: 'Gipsy Solutions' },
     { id: '3', name: 'Industrias Vega' },
 ];
-
+*/
 
 // Mapear nombre de carpeta a ID de Tipo de Documento
 const getDocTypeIdFromFolderName = (folderName) => {
@@ -62,16 +67,20 @@ const getDocTypeIdFromFolderName = (folderName) => {
     return type ? type.id : '';
 };
 
-
 const CreateDocumentForm = () => {
 
     const location = useLocation(); 
     const { folderName, docId, mode, documentDetails } = location.state || {};
 
+    const [MOCK_DOCUMENT_TYPES, setMockDocumentTypes] = useState([]);
+    const [MOCK_COMPANIES, setMockCompanies] = useState([]);
+
     const [selectedDocTypeId, setSelectedDocTypeId] = useState('');
     const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
     const [operationMode, setOperationMode] = useState(mode || 'create');
 
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -83,6 +92,52 @@ const CreateDocumentForm = () => {
         : operationMode === 'edit' 
         ? 'Edición de Documento' 
         : 'Creación de Documento';
+
+    // Cargar los tipos de documentos y empresas desde el backend
+    useEffect(() => {
+        const fetchMockDocumentType = async () => {
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/documents/getDocType`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+                setMockDocumentTypes(data);
+            } catch (err) {
+                console.error('Error al obtener los tipos de documentos:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const fetchMockCompanies = async () => {
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/documents/getDocCompanies`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+                setMockCompanies(data);
+            } catch (err) {
+                console.error('Error al obtener las empresas:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMockDocumentType();
+        fetchMockCompanies();
+    }, [])
 
     const currentDocType = useMemo(() => {
         return MOCK_DOCUMENT_TYPES.find(dt => dt.id === selectedDocTypeId);

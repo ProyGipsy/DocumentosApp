@@ -6,6 +6,9 @@ import trash from '../../assets/img/trash.png';
 import edit from '../../assets/img/edit.png';
 import SpecificValuesModal from './SpecificValuesModal';
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 const initialField = { 
     id: Date.now(),
     fieldName: '', 
@@ -118,7 +121,7 @@ const CreateDocumentType = () => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         if (!documentTypeName.trim()) {
@@ -151,6 +154,27 @@ const CreateDocumentType = () => {
             console.log("Datos para CREAR:", documentTypeData);
             alert(`Tipo de Documento "${documentTypeName}" listo para CREAR.`);
             // Aquí iría la llamada API de tipo POST para crear
+            try {
+                const response = await fetch(`${apiUrl}/documents/createDocType`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(documentTypeData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log(`${result.message}, ID: ${result.docType_id}`);
+                alert('Tipo de Documento creado.');
+
+            } catch (error) {
+                console.error('Error al crear Tipo de Documento: ', error);
+                alert('Error al crear Tipo de Documento')
+            }
         }
     };
 
@@ -206,6 +230,7 @@ const CreateDocumentType = () => {
                                 id="docTypeDescription"
                                 name="docTypeDescription"
                                 value={documentTypeDescription}
+                                onChange={(e) => setDocumentTypeDescription(e.target.value)}
                                 placeholder="Ingrese una breve descripción del tipo de documento"
                                 className="text-input textarea-input"
                                 rows="3"
@@ -290,8 +315,8 @@ const CreateDocumentType = () => {
                                                 <td>
                                                     <input
                                                         type="number"
-                                                        name="fieldPrecision"
-                                                        value={field.fieldPrecision}
+                                                        name="fieldLength"
+                                                        value={field.fieldLength}
                                                         onChange={(e) => handleFieldChange(field.id, e)}
                                                         placeholder="0"
                                                         className="table-input"
@@ -303,8 +328,8 @@ const CreateDocumentType = () => {
                                                 <td>
                                                     <input
                                                         type="number"
-                                                        name="fieldLength"
-                                                        value={field.fieldLength}
+                                                        name="fieldPrecision"
+                                                        value={field.fieldPrecision}
                                                         onChange={(e) => handleFieldChange(field.id, e)}
                                                         placeholder="0"
                                                         className="table-input"
