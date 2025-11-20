@@ -8,6 +8,7 @@ const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 // Datos simulados de roles
+/*
 const mockRoles = [
     { 
         id: 1,
@@ -72,6 +73,7 @@ const mockRoles = [
         ],
     },
 ];
+*/
 
 const ITEMS_PER_PAGE = 100;
 
