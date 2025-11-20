@@ -4,6 +4,9 @@ import '../../styles/general/sendDocuments.css';
 import editIcon from '../../assets/img/edit.png';
 import RolesModal from './RolesModal';
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 // Datos simulados de roles
 const mockRoles = [
     { 
@@ -73,13 +76,38 @@ const mockRoles = [
 const ITEMS_PER_PAGE = 100;
 
 const Roles = () => {
-    const [allRoles, setAllRoles] = useState(mockRoles);
+    const [allRoles, setAllRoles] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [filteredRoles, setFilteredRoles] = useState(allRoles);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
     const [roleToEdit, setRoleToEdit] = useState(null);
+
+    useEffect(() => {
+        const fetchAllRoles = async () => {
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/documents/getRoles`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+                setAllRoles(data);
+            } catch (err) {
+                console.error('Error al obtener los roles:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllRoles();
+    }, []);
 
     useEffect(() => {
         let results = [...allRoles];

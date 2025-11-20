@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/general/sendDocModal.css';
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 const RIFtypeOptions = ['J', 'G', 'V', 'E', 'P'];
 
 const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave }) => {
@@ -14,12 +17,12 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && company) {
-        const rifParts = (company.rif || '').split('-');
+        
         setFormData({
           id: company.id || '',
           name: company.name || '',
-          RIFtype: rifParts[0] || '',
-          RIF: rifParts.slice(1).join('-') || ''
+          RIFtype: company.rifType || '',
+          RIF: company.rifNumber || ''
         });
       } else {
         setFormData({ id: '', name: '', RIFtype: '', RIF: '' });
@@ -42,7 +45,7 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.RIFtype || !formData.RIF) {
       alert('Por favor, complete Nombre y RIF (tipo y número).');
       return;
@@ -52,10 +55,49 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
     const companyToSave = {
       id: formData.id || Date.now() + Math.floor(Math.random() * 1000),
       name: formData.name,
+      rifType: formData.RIFtype,
+      rifNumber: formData.RIF,
       rif: rifCombined
     };
 
-    onSave && onSave(companyToSave, mode);
+    if (mode == 'add'){
+      try {
+        const response = await fetch(`${apiUrl}/documents/createDocCompany`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(companyToSave)
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al crear la compañía');
+        }
+
+        const data = await response.json();
+        console.log(data);
+        onSave(data, mode);
+      } catch (error) {
+        alert('Error al crear la compañía: ' + error.message);
+      }
+    } else {
+      try{
+        const response = await fetch(`${apiUrl}/documents/updateDocCompany`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(companyToSave)
+        });
+        if (!response.ok) {
+          throw new Error('Error al actualizar la compañía');
+        }
+        const data = await response.json();
+        onSave(data, mode);
+      } catch (error) {
+        alert('Error al actualizar la compañía: ' + error.message);
+      }
+    }
     onClose();
   };
 

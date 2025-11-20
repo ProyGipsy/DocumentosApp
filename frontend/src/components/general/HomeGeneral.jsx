@@ -6,7 +6,11 @@ import folderIcon from '../../assets/img/folder.png'
 import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/homeGeneral.css';
 
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 // Datos simulados para las carpetas
+/*
 const mockFolders = [
     { id: 1, name: 'Contrato de Arrendamiento' },
     { id: 2, name: 'RIF' },
@@ -20,20 +24,56 @@ const mockFolders = [
     { id: 10, name: 'Pólizas Seguro' },
     { id: 11, name: 'Dominios' },
 ];
+*/
 
 const HomeAdmin = () => {
+    const [mockFolders, setMockFolders] = useState([])
     const [searchTerm, setSearchTerm] = useState('');
-    const [filteredFolders, setFilteredFolders] = useState(mockFolders);
+    const [message, setMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [filteredFolders, setFilteredFolders] = useState([]);
     const navigate = useNavigate();
 
-    // Efecto para simular el filtrado de las carpetas
     useEffect(() => {
+        const fetchFolders = async () => {
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/documents/getDocType`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setMockFolders(data);
+            } catch (err) {
+                setError(err.message);
+                setMessage('Error al cargar las carpetas.');
+                console.error('Error al obtener las carpetas:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFolders();
+    }, []);
+    // Efecto para simular el filtrado de las carpetas
+    
+    useEffect(() => {
+        if(!searchTerm) {
+            setFilteredFolders(mockFolders);
+            return;
+        }
+
         const results = mockFolders.filter(folder =>
             folder.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        setFilteredFolders(results);
-    }, [searchTerm]);
 
+        setFilteredFolders(results);
+    }, [mockFolders, searchTerm]);
+   
     // Navegación al hacer clic en carpeta
     const handleFolderClick = (folderName) => {
         console.log(`Navegando a la carpeta: ${folderName}`);
@@ -48,7 +88,7 @@ const HomeAdmin = () => {
         navigate('/document-type', {
             state: { folderName: folderName, isEditing: true }
         });
-    };
+    };   
 
     return (
         <LayoutBaseAdmin activePage="home">

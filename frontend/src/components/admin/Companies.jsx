@@ -4,38 +4,51 @@ import '../../styles/general/sendDocuments.css';
 import editIcon from '../../assets/img/edit.png';
 import CompaniesModal from './CompaniesModal';
 
-// Datos simulados de empresas
-const mockCompanies = [
-    { id: 1, name: 'Gipsy S.A.', rif: 'J-123456789' },
-    { id: 2, name: 'Empresa Beta', rif: 'J-987654321' },
-    { id: 3, name: 'Empresa Delta', rif: 'J-112233445' },
-    { id: 4, name: 'Empresa Alpha', rif: 'J-556677880' },
-    { id: 5, name: 'Comercial XYZ', rif: 'J-223344556' },
-    { id: 6, name: 'Servicios ABC', rif: 'J-334455667' },
-    { id: 7, name: 'Industrias LMN', rif: 'J-445566778' },
-    { id: 8, name: 'Distribuciones QRS', rif: 'J-556677889' },
-    { id: 9, name: 'Logística TUV', rif: 'J-667788990' },
-    { id: 10, name: 'Soluciones 123', rif: 'J-778899001' },
-    { id: 11, name: 'Compañía Nuevo', rif: 'J-889900112' },
-];
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 const ITEMS_PER_PAGE = 100;
 
 const Companies = () => {
-    const [allCompanies, setAllCompanies] = useState(mockCompanies);
+    const [allCompanies, setAllCompanies] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [filteredCompanies, setFilteredCompanies] = useState(allCompanies);
+    const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
     const [companyToEdit, setCompanyToEdit] = useState(null);
+
+    useEffect(() => {
+        const fetchAllCompanies = async () => {
+            setIsLoading(true);
+
+            try {
+                const response = await fetch(`${apiUrl}/documents/getDocCompanies`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+                setAllCompanies(data);
+            } catch (err) {
+                console.error('Error al obtener las empresas:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllCompanies();
+    }, []);
 
     useEffect(() => {
         let results = [...allCompanies];
         if (searchTerm && searchTerm.trim() !== '') {
             const q = searchTerm.toLowerCase();
             results = results.filter(c =>
-                c.name.toLowerCase().includes(q) || c.rif.toLowerCase().includes(q)
+                c.name.toLowerCase().includes(q) /*|| c.rifNumber.toLowerCase().includes(q)*/
             );
         }
         setFilteredCompanies(results);
@@ -94,7 +107,7 @@ const Companies = () => {
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
                             type="text"
-                            placeholder="Buscar por nombre o RIF..."
+                            placeholder="Buscar por nombre..."
                             className="search-input-doc-list-sendDocuments"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,7 +137,7 @@ const Companies = () => {
                                             {paginated.map(company => (
                                                 <tr key={company.id}>
                                                     <td>{company.name}</td>
-                                                    <td>{company.rif}</td>
+                                                    <td>{`${company.rifType} - ${company.rifNumber}`}</td>
                                                     <td className="actions-cell">
                                                         <button 
                                                             className="view-button" 
