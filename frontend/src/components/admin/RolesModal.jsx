@@ -1,41 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/general/sendDocModal.css';
 
-const PermissionOptions = [
-  'PermisoAdministrador',
-  'PermisoVendedor',
-  'Gráficos Flujo de Caja',
-  'Reportes de Ventas',
-  'Reportes Flujo de Caja',
-  'Reportes Saldos de Cuentas',
-  'Reportes Comisiones de Vendedores',
-  'Reportes Resumen IVA',
-  'Reportes de Garantías',
-  'RIF',
-  'Contrato de Arrendamiento',
-  'Vehículos',
-  'Poderes',
-  'Permiso Sanitario Locales',
-  'Registros Mercantiles',
-  'Patente',
-  'Corpoelec',
-  'Registro Sanitario',
-  'Pólizas Seguro',
-  'Dominios',
-];
-
-const UserOptions = [
-  'Login1965',
-  'fhenao',
-  'armandoc',
-  'josem',
-  'tinadivasta',
-  'jars',
-  'yarima',
-  'danielhdez'
-]
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
+
+  const [permissionOptions, setPermissionOptions] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -45,10 +18,59 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   });
 
   useEffect(() => {
+    // Fetch permission options from backend
+    const fetchPermissionOptions = async () => {
+      setIsLoading(true);
+
+      try {
+        const reponse = await fetch(`${apiUrl}/documents/getPermissions`);
+
+        if (!reponse.ok) {
+          throw new Error(`Error HTTP: ${reponse.status}`);
+        }
+
+        const data = await reponse.json();
+        setPermissionOptions(data);
+
+      } catch (error) {
+        console.error('Error fetching permission options:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPermissionOptions();
+  }, []);
+
+  useEffect(() => {
+    //Fetch users options from backend
+    const fetchUserOptions = async () => {
+
+      try {
+        const response = await fetch(`${apiUrl}/documents/getUsers`);
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setUserOptions(data);
+
+      } catch (error) {
+        console.error('Error fetching user options:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchUserOptions();
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && role) {
         setFormData({
-          id: role.id || '',
+          id: role.id,
           name: role.name || '',
           // ensure permisos and usuarios are arrays
           permisos: Array.isArray(role.permisos) ? role.permisos : (role.permisos ? [role.permisos] : []),
@@ -72,6 +94,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
       if (usuarioRef.current && !usuarioRef.current.contains(e.target)) setIsUsuariosOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -98,7 +121,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // validate required fields: name, at least one permiso, at least one usuario
     if (!formData.name || !formData.permisos || formData.permisos.length === 0 || !formData.usuarios || formData.usuarios.length === 0) {
       alert('Por favor, complete Nombre, seleccione al menos un Permiso y al menos un Usuario.');
@@ -111,6 +134,58 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
       permisos: formData.permisos,
       usuarios: formData.usuarios
     };
+
+    console.log(roleToSave);
+
+    if (mode == 'add') {
+
+      try {
+        const response = await fetch(`${apiUrl}/documents/addRole`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(roleToSave)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data) {
+          console.log('Rol agregado exitosamente:', data);
+        } else {
+          console.error('Error al agregar el rol:', data);
+        }
+      } catch (error) {
+        console.error('Error al agregar el rol:', error);
+      }
+    } else {
+
+      try {
+        const response = await fetch(`${apiUrl}/documents/editRole`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(roleToSave)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data) {
+          console.log('Rol editado exitosamente:', data);
+        } else {
+          console.error('Error al editar el rol:', data);
+        }
+      } catch (error) {
+        console.error('Error al editar el rol:', error);
+      }
+    }
 
     onSave && onSave(roleToSave, mode);
     onClose();
@@ -175,16 +250,16 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                   style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
                 >
                   <div className="permiso-type checkbox-list">
-                    {PermissionOptions.map(opt => (
-                      <label key={opt} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                    {permissionOptions.map(opt => (
+                      <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
                         <input
                           type="checkbox"
                           name="permisos"
-                          value={opt}
-                          checked={formData.permisos.includes(opt)}
-                          onChange={() => handleTogglePermiso(opt)}
+                          value={`${opt.id}-${opt.name}`}
+                          checked={formData.permisos.includes(`${opt.id}-${opt.name}`)}
+                          onChange={() => handleTogglePermiso(`${opt.id}-${opt.name}`)}
                         />
-                        <span>{opt}</span>
+                        <span>{`${opt.name}`}</span>
                       </label>
                     ))}
                   </div>
@@ -214,16 +289,16 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                   style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
                 >
                   <div className="usuario-type checkbox-list">
-                    {UserOptions.map(opt => (
-                      <label key={opt} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                    {userOptions.map(opt => (
+                      <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
                         <input
                           type="checkbox"
                           name="usuarios"
-                          value={opt}
-                          checked={formData.usuarios.includes(opt)}
-                          onChange={() => handleToggleUsuario(opt)}
+                          value={opt.fullName}
+                          checked={formData.usuarios.includes(opt.fullName)}
+                          onChange={() => handleToggleUsuario(opt.fullName)}
                         />
-                        <span>{opt}</span>
+                        <span>{opt.fullName}</span>
                       </label>
                     ))}
                   </div>

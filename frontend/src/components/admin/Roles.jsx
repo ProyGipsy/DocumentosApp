@@ -7,74 +7,6 @@ import RolesModal from './RolesModal';
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// Datos simulados de roles
-/*
-const mockRoles = [
-    { 
-        id: 1,
-        name: 'Administrador',
-        permisos: [
-            'PermisoAdministrador', 
-            'Gráficos Flujo de Caja', 
-            'Reportes de Ventas', 
-            'Reportes Flujo de Caja' 
-        ],
-        usuarios: [
-            'Login1965',
-        ]
-    },
-    { 
-        id: 2, 
-        name: 'Vendedor', 
-        permisos: [
-            'PermisoVendedor',
-            'Reportes de Ventas'
-        ],
-        usuarios: [
-            'fhenao'
-        ]
-    },
-    { 
-        id: 3, 
-        name: 'Supervisor', 
-        permisos: [
-            'PermisoAdministrador', 
-            'Reportes Saldos de Cuentas',
-            'Reportes Comisiones de Vendedores'
-        ],
-        usuarios: [
-            'armandoc',
-            'josem'
-        ]
-    },
-    { 
-        id: 4, 
-        name: 'Sistemas', 
-        permisos: [
-            'PermisoAdministrador',
-            'Reportes Flujo de Caja', 
-            'Reportes Resumen IVA',
-            'Reportes de Ventas',
-            'Reportes de Garantías',
-        ],
-        usuarios: [
-            'tinadivasta',
-            'jars',
-            'yarima',
-            'danielhdez'
-        ]
-    },
-    { 
-        id: 5, 
-        name: 'Almacén', 
-        permisos: [
-            'PermisoVendedor', 
-            'Gráficos Flujo de Caja'
-        ],
-    },
-];
-*/
-
 const ITEMS_PER_PAGE = 100;
 
 const Roles = () => {
@@ -99,7 +31,7 @@ const Roles = () => {
                 }
 
                 const data = await response.json();
-                console.log(data);
+
                 setAllRoles(data);
             } catch (err) {
                 console.error('Error al obtener los roles:', err);
@@ -207,8 +139,8 @@ const Roles = () => {
                                         <tr key={role.id}>
                                             <td>{role.name}</td>
                                             <td>{role.permisos ? role.permisos.join(' - ') : 'Ninguno'}</td>
-                                            {/*<td>{role.usuarios ? role.usuarios.length : 0}</td>*/}
-                                            <td>{role.usuarios ? role.usuarios.join(', ') : 'Ninguno'}</td>
+                                            {<td>{role.usuarios ? role.usuarios.length : 0}</td>}
+                                            {/*<td>{role.usuarios ? role.usuarios.join(', ') : 'Ninguno'}</td>*/}
                                             <td className="actions-cell">
                                                 <button 
                                                     className="view-button" 
