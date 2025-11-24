@@ -255,11 +255,11 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                         <input
                           type="checkbox"
                           name="permisos"
-                          value={opt}
-                          checked={formData.permisos.includes(opt.name)}
-                          onChange={() => handleTogglePermiso(opt)}
+                          value={`${opt.id}-${opt.name}`}
+                          checked={formData.permisos.includes(`${opt.id}-${opt.name}`)}
+                          onChange={() => handleTogglePermiso(`${opt.id}-${opt.name}`)}
                         />
-                        <span>{`${opt.id} - ${opt.name}`}</span>
+                        <span>{`${opt.name}`}</span>
                       </label>
                     ))}
                   </div>
