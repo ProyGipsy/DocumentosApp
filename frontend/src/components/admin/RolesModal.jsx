@@ -12,57 +12,42 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const [formData, setFormData] = useState({
     id: '',
     name: '',
-    // store permisos and usuarios as arrays so multiple selections are possible
-    permisos: [],
-    usuarios: []
+    permisos: [], // Array de objetos {id, name}
+    usuarios: []  // Array de objetos {id, fullName}
   });
 
   useEffect(() => {
-    // Fetch permission options from backend
     const fetchPermissionOptions = async () => {
       setIsLoading(true);
-
       try {
         const reponse = await fetch(`${apiUrl}/documents/getPermissions`);
-
-        if (!reponse.ok) {
-          throw new Error(`Error HTTP: ${reponse.status}`);
-        }
-
+        if (!reponse.ok) throw new Error(`Error HTTP: ${reponse.status}`);
         const data = await reponse.json();
+        console.log(data)
         setPermissionOptions(data);
-
       } catch (error) {
         console.error('Error fetching permission options:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchPermissionOptions();
   }, []);
 
   useEffect(() => {
-    //Fetch users options from backend
     const fetchUserOptions = async () => {
-
       try {
         const response = await fetch(`${apiUrl}/documents/getUsers`);
-
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         const data = await response.json();
+        console.log(data)
         setUserOptions(data);
-
       } catch (error) {
         console.error('Error fetching user options:', error);
       } finally {
         setIsLoading(false);
       }
     }
-
     fetchUserOptions();
   }, []);
 
@@ -72,7 +57,6 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
         setFormData({
           id: role.id,
           name: role.name || '',
-          // ensure permisos and usuarios are arrays
           permisos: Array.isArray(role.permisos) ? role.permisos : (role.permisos ? [role.permisos] : []),
           usuarios: Array.isArray(role.usuarios) ? role.usuarios : (role.usuarios ? [role.usuarios] : [])
         });
@@ -87,14 +71,12 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const permisoRef = useRef(null);
   const usuarioRef = useRef(null);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false);
       if (usuarioRef.current && !usuarioRef.current.contains(e.target)) setIsUsuariosOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
-
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -105,89 +87,74 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleTogglePermiso = (permiso) => {
+  // --- Lógica Permisos (Objetos) ---
+  const handleTogglePermiso = (permisoOption) => {
     setFormData(prev => {
-      const exists = prev.permisos.includes(permiso);
-      const permisos = exists ? prev.permisos.filter(p => p !== permiso) : [...prev.permisos, permiso];
-      return { ...prev, permisos };
+      const exists = prev.permisos.some(p => p.id === permisoOption.id);
+      let newPermisos;
+      if (exists) {
+        newPermisos = prev.permisos.filter(p => p.id !== permisoOption.id);
+      } else {
+        newPermisos = [...prev.permisos, permisoOption];
+      }
+      return { ...prev, permisos: newPermisos };
     });
   };
 
-  const handleToggleUsuario = (usuario) => {
+  // --- Lógica Usuarios (Objetos) ---
+  const handleToggleUsuario = (usuarioOption) => {
     setFormData(prev => {
-      const exists = prev.usuarios.includes(usuario);
-      const usuarios = exists ? prev.usuarios.filter(u => u !== usuario) : [...prev.usuarios, usuario];
-      return { ...prev, usuarios };
+      // Usamos .some() para verificar por ID en lugar de includes()
+      const exists = prev.usuarios.some(u => u.id === usuarioOption.id);
+      
+      let newUsuarios;
+      if (exists) {
+        // Filtramos por ID para eliminar
+        newUsuarios = prev.usuarios.filter(u => u.id !== usuarioOption.id);
+      } else {
+        // Agregamos el objeto completo
+        newUsuarios = [...prev.usuarios, usuarioOption];
+      }
+      
+      return { ...prev, usuarios: newUsuarios };
     });
   };
 
   const handleSave = async () => {
-    // validate required fields: name, at least one permiso, at least one usuario
     if (!formData.name || !formData.permisos || formData.permisos.length === 0 || !formData.usuarios || formData.usuarios.length === 0) {
       alert('Por favor, complete Nombre, seleccione al menos un Permiso y al menos un Usuario.');
       return;
     }
 
     const roleToSave = {
-      id: formData.id || Date.now() + Math.floor(Math.random() * 1000),
+      id: mode === 'edit' ? formData.id : 0,
       name: formData.name,
-      permisos: formData.permisos,
-      usuarios: formData.usuarios
+      permisos: formData.permisos, // Array de objetos
+      usuarios: formData.usuarios  // Array de objetos
     };
 
-    console.log(roleToSave);
+    console.log('Guardando rol:', roleToSave);
 
-    if (mode == 'add') {
+    const endpoint = mode === 'add' ? '/documents/addRole' : '/documents/editRole';
+    const method = mode === 'add' ? 'POST' : 'PUT';
 
-      try {
-        const response = await fetch(`${apiUrl}/documents/addRole`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(roleToSave)
-        });
+    try {
+      const response = await fetch(`${apiUrl}${endpoint}`, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(roleToSave)
+      });
 
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (data) {
-          console.log('Rol agregado exitosamente:', data);
-        } else {
-          console.error('Error al agregar el rol:', data);
-        }
-      } catch (error) {
-        console.error('Error al agregar el rol:', error);
+      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+      const data = await response.json();
+      if (data) {
+        const newRoleForState = { ...roleToSave, id: data.role_id}
+        onSave && onSave(newRoleForState, mode);
       }
-    } else {
-
-      try {
-        const response = await fetch(`${apiUrl}/documents/editRole`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(roleToSave)
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (data) {
-          console.log('Rol editado exitosamente:', data);
-        } else {
-          console.error('Error al editar el rol:', data);
-        }
-      } catch (error) {
-        console.error('Error al editar el rol:', error);
-      }
+    } catch (error) {
+      console.error(`Error al ${mode === 'add' ? 'agregar' : 'editar'} el rol:`, error);
     }
 
-    onSave && onSave(roleToSave, mode);
     onClose();
   };
 
@@ -199,7 +166,6 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
           <button className="close-button-user" onClick={onClose}>&times;</button>
         </div>
 
-        {/* Campo ID */}
         <div className="modal-body-user">
           {mode === 'edit' && (
             <div className="form-group-user">
@@ -208,13 +174,12 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                 type="text"
                 value={formData.id}
                 readOnly
-                disabled={mode === 'edit'}
-                className={mode === 'edit' ? 'text-input disabled-input' : 'text-input'}
+                disabled
+                className="text-input disabled-input"
               />
             </div>
           )}
 
-          {/* Campo Nombre del Rol */}
           <div className="form-group-user">
             <label>Nombre del Rol <span className="required-asterisk">*</span></label>
             <input
@@ -226,11 +191,10 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
             />
           </div>
 
-          {/* Campo Permisos */}
+          {/* --- SECCIÓN PERMISOS --- */}
           <div className="form-group-user">
             <label>Permisos <span className="required-asterisk">*</span></label>
             <div className="permisos-container-modal" ref={permisoRef} style={{ position: 'relative' }}>
-              {/* Dropdown toggle showing selected permisos */}
               <div
                 className="permiso-dropdown-toggle"
                 onClick={(e) => { e.stopPropagation(); setIsPermisosOpen(prev => !prev); }}
@@ -239,35 +203,39 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                 style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
               >
                 <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
-                  {formData.permisos && formData.permisos.length > 0 ? formData.permisos.join(', ') : 'Seleccione los permisos ...'}
+                  {formData.permisos && formData.permisos.length > 0 
+                    ? formData.permisos.map(p => p.name).join(', ') 
+                    : 'Seleccione los permisos ...'}
                 </div>
                 <div className="caret">▾</div>
               </div>
 
               {isPermisosOpen && (
-                <div
-                  className="dropdown-panel"
-                  style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
-                >
+                <div className="dropdown-panel" style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
                   <div className="permiso-type checkbox-list">
-                    {permissionOptions.map(opt => (
-                      <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
-                        <input
-                          type="checkbox"
-                          name="permisos"
-                          value={`${opt.id}-${opt.name}`}
-                          checked={formData.permisos.includes(`${opt.id}-${opt.name}`)}
-                          onChange={() => handleTogglePermiso(`${opt.id}-${opt.name}`)}
-                        />
-                        <span>{`${opt.name}`}</span>
-                      </label>
-                    ))}
+                    {permissionOptions.map(opt => {
+                        const isSelected = formData.permisos.some(p => p.id === opt.id);
+                        return (
+                          <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                            <input
+                              type="checkbox"
+                              name="permisos"
+                              value={opt.id}
+                              checked={isSelected}
+                              onChange={() => handleTogglePermiso(opt)}
+                            />
+                            <span>{opt.name}</span>
+                          </label>
+                        );
+                    })}
                   </div>
                 </div>
               )}
             </div>
+            
             <br />
-            {/* Campo Usuarios */}
+            
+            {/* --- SECCIÓN USUARIOS (ACTUALIZADA) --- */}
             <label>Usuarios <span className="required-asterisk">*</span></label>
             <div className="users-container-modal" ref={usuarioRef} style={{ position: 'relative' }}>
               <div
@@ -277,36 +245,43 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                 aria-expanded={isUsuariosOpen}
                 style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
               >
+                {/* Visualizar solo nombres (fullName) */}
                 <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
-                  {formData.usuarios && formData.usuarios.length > 0 ? formData.usuarios.join(', ') : 'Seleccione los usuarios ...'}
+                  {formData.usuarios && formData.usuarios.length > 0 
+                    ? formData.usuarios.map(u => u.fullName).join(', ') 
+                    : 'Seleccione los usuarios ...'}
                 </div>
                 <div className="caret">▾</div>
               </div>
 
               {isUsuariosOpen && (
-                <div
-                  className="dropdown-panel"
-                  style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}
-                >
+                <div className="dropdown-panel" style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
                   <div className="usuario-type checkbox-list">
-                    {userOptions.map(opt => (
-                      <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
-                        <input
-                          type="checkbox"
-                          name="usuarios"
-                          value={opt.fullName}
-                          checked={formData.usuarios.includes(opt.fullName)}
-                          onChange={() => handleToggleUsuario(opt.fullName)}
-                        />
-                        <span>{opt.fullName}</span>
-                      </label>
-                    ))}
+                    {userOptions.map(opt => {
+                      // Verificar si existe el ID en el estado
+                      const isSelected = formData.usuarios.some(u => {
+                        const storedID = u.userId || u.id;
+                        return storedID === opt.id;
+                      });
+                      return (
+                        <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                          <input
+                            type="checkbox"
+                            name="usuarios"
+                            value={opt.id}
+                            checked={isSelected}
+                            // Pasamos el objeto completo 'opt'
+                            onChange={() => handleToggleUsuario(opt)}
+                          />
+                          <span>{opt.fullName}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
           </div>
-
         </div>
 
         <div className="modal-footer-user">

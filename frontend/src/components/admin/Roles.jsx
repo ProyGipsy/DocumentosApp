@@ -31,7 +31,7 @@ const Roles = () => {
                 }
 
                 const data = await response.json();
-
+                console.log(data)
                 setAllRoles(data);
             } catch (err) {
                 console.error('Error al obtener los roles:', err);
@@ -138,7 +138,7 @@ const Roles = () => {
                                     {paginated.map(role => (
                                         <tr key={role.id}>
                                             <td>{role.name}</td>
-                                            <td>{role.permisos ? role.permisos.join(' - ') : 'Ninguno'}</td>
+                                            <td>{role.permisos && role.permisos.length > 0 ? role.permisos.map(p => p.name).join(', ') : 'Ninguno'}</td>
                                             {<td>{role.usuarios ? role.usuarios.length : 0}</td>}
                                             {/*<td>{role.usuarios ? role.usuarios.join(', ') : 'Ninguno'}</td>*/}
                                             <td className="actions-cell">
