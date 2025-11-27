@@ -1,33 +1,45 @@
-// DocumentFieldsModal.jsx
 import React, { useState, useEffect } from 'react';
 import '../../styles/general/sendDocModal.css'; 
 
+// --- Configuración de API ---
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// --- Tipos de Datos ---
-const MOCK_DATA_TYPES = [
+// --- Tipos de Datos (Sincronizados con tu Base de Datos SQL) ---
+const DATA_TYPE_CONFIG = [
+    { id: 'text', label: 'Texto Corto', inputType: 'text' },
+    { id: 'textarea', label: 'Texto Largo', inputType: 'textarea' },
+    { id: 'int', label: 'Número Entero', inputType: 'number', precision: 0 },
+    { id: 'float', label: 'Número Decimal', inputType: 'number', precision: 2 },
+    { id: 'date', label: 'Fecha', inputType: 'date' },
+    { id: 'specificValues', label: 'Valores Específicos', inputType: 'select' },
+    // Compatibilidad
     { id: 'text-short', label: 'Texto Corto', inputType: 'text' },
     { id: 'text-long', label: 'Texto Largo', inputType: 'textarea' },
-    { id: 'integer', label: 'Número Entero', inputType: 'number', precision: 0 },
-    { id: 'decimal', label: 'Número Decimal', inputType: 'number', precision: 2 },
-    { id: 'date', label: 'Fecha', inputType: 'date' },
-    { id: 'specific-values', label: 'Valores Específicos', inputType: 'select' },
 ];
 
-
-const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDocument, onDocumentCreatedAndReadyToSend, mode = 'create', initialFormData = {}, initialAttachmentName}) => {
+const DocumentFieldsModal = ({ 
+    isOpen, onClose, company, documentType, onSaveDocument, 
+    onDocumentCreatedAndReadyToSend, mode = 'create', 
+    initialFormData = {}, initialAttachmentName 
+}) => {
+    
     const [formData, setFormData] = useState({}); 
-    const [attachment, setAttachment] = useState(null);
-    const [attachmentName, setAttachmentName] = useState('');
+    const [attachment, setAttachment] = useState(null); 
+    const [attachmentName, setAttachmentName] = useState(''); 
     const [sendDocument, setSendDocument] = useState(false);
+    
+    // Nuevo estado para el loader de guardado
+    const [isSaving, setIsSaving] = useState(false);
 
     const isViewing = mode === 'view';
     const isEditing = mode === 'edit';
     const isCreating = mode === 'create';
 
+    // 1. Efecto de Inicialización
     useEffect(() => {
         if (isOpen && documentType) {
             if (isCreating) {
-                // Modo Creación: inicializar vacío
                 const initialData = documentType.fields.reduce((acc, field) => {
                     acc[field.name] = '';
                     return acc;
@@ -37,20 +49,18 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                 setAttachmentName('');
                 setSendDocument(false);
             } else {
-                // Modo Ver/Editar: cargar datos iniciales
                 setFormData(initialFormData);
-                setAttachment(null); // No cargar el objeto de archivo, solo el nombre -- OJO: Revisar esto
-                setAttachmentName(initialAttachmentName);
+                setAttachment(null); 
+                setAttachmentName(initialAttachmentName || '');
                 setSendDocument(false);
             }
         }
     }, [isOpen, documentType, isCreating, initialFormData, initialAttachmentName]);
 
-
     if (!isOpen || !documentType) return null;
     
     const getFieldInputType = (field) => {
-        const dataType = MOCK_DATA_TYPES.find(dt => dt.id === field.typeId);
+        const dataType = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId || dt.id === field.type);
         return dataType ? dataType.inputType : 'text'; 
     };
 
@@ -65,55 +75,134 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        setAttachment(file);
-        setAttachmentName(file ? file.name : '');
+        if (file) {
+            setAttachment(file);
+            setAttachmentName(file.name);
+        }
     };
 
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Si es Creación o Edición, procede al guardado
+        if (isCreating && !attachment) {
+            alert("El anexo es obligatorio.");
+            return;
+        }
+
         if (isCreating || isEditing) {
+            setIsSaving(true); // Activar loader
             
-            const documentToSave = {
-                docTypeId: documentType.id,
-                docTypeName: documentType.name,
-                companyId: company.id,
-                companyName: company.name,
-                fieldsData: formData,
-                attachment: attachment.name,
-                fileObject: attachment,
-                shouldSend: isCreating ? sendDocument : false
-            };
-            
-            if (isEditing) {
-                console.log("==> Proceso de EDICIÓN Completado <==");
-                alert(`Documento de tipo "${documentType.name}" editado con éxito.`);
-                onSaveDocument(documentToSave);
-                onClose();
-            
-            } else { // isCreating
-                console.log("==> Proceso de Creación Completado <==");
-                if (sendDocument) {
-                    onClose(); 
-                    onDocumentCreatedAndReadyToSend(documentToSave); 
-                } else {
-                    onSaveDocument(documentToSave); 
+            try {
+                // 1. Preparar Payload de Campos (Mapeo a IDs)
+                const fieldsPayload = documentType.fields.map(field => ({
+                    fieldId: field.id,
+                    value: formData[field.name] || ''
+                }));
+
+                const documentData = {
+                    docTypeId: documentType.id,
+                    docTypeName: documentType.name,
+                    companyId: company.id,
+                    companyName: company.name,
+                    fields: fieldsPayload,
+                    // Estos campos extra sirven para la UI local
+                    fieldsData: formData, 
+                    attachment: attachment ? attachment.name : attachmentName
+                };
+
+                if (isCreating) {
+                    // --- LÓGICA DE CREACIÓN (FETCH) ---
+                    const formDataToSend = new FormData();
+                    
+                    // A. Adjuntar archivo
+                    formDataToSend.append('file', attachment);
+                    
+                    // B. Adjuntar datos JSON como string
+                    // OJO: Enviamos 'fields' (con IDs) que es lo que espera el backend optimizado
+                    const jsonPayload = {
+                        docTypeId: documentData.docTypeId,
+                        companyId: documentData.companyId,
+                        fields: documentData.fields
+                    };
+                    formDataToSend.append('data', JSON.stringify(jsonPayload));
+
+                    // C. Petición al Backend
+                    console.log("Enviando datos...", jsonPayload);
+                    const response = await fetch(`${apiUrl}/documents/createDocument`, {
+                        method: 'POST',
+                        body: formDataToSend // Fetch pone el Content-Type multipart/form-data automáticamente
+                    });
+
+                    //const result = await response.json();
+                    const textResponse = await response.text();
+                    console.log("Respuesta del servidor:", textResponse);
+
+                    try {
+                        const result = JSON.parse(textResponse);
+                        if (!response.ok) throw new Error(result.error);
+                        
+                        console.log("Documento creado ID:", result.document_id);
+                        alert(`Documento creado exitosamente. ID: ${result.document_id}`);
+
+                        // Agregamos el ID real al objeto local para pasarlo al padre
+                        const createdDocument = {
+                            ...documentData,
+                            id: result.document_id,
+                            annexUrl: result.annex_url,
+                            fileObject: attachment,
+                            shouldSend: sendDocument
+                        };
+
+                        // D. Manejo Post-Creación
+                        if (sendDocument) {
+                            onClose();
+                            onDocumentCreatedAndReadyToSend(createdDocument);
+                        } else {
+                            onSaveDocument(createdDocument);
+                            onClose();
+                        }
+                        
+                    } catch (e) {
+                        console.error("No es un JSON válido. Error:", e);
+                        alert("Error del servidor (Ver consola para detalles)");
+                    }
+
+                    
+
+                } else if (isEditing) {
+                    // --- LÓGICA DE EDICIÓN (Pendiente de implementar en backend) ---
+                    // Por ahora mantenemos la lógica local que tenías
+                    // (Aquí iría un fetch similar pero con PUT y endpoint de edición)
+                    
+                    const documentToUpdate = {
+                        ...documentData,
+                        fileObject: attachment,
+                        shouldSend: false
+                    };
+                    
+                    alert(`Documento "${documentType.name}" editado con éxito (Local).`);
+                    onSaveDocument(documentToUpdate);
                     onClose();
                 }
-            }
 
-            onSaveDocument(documentToSave);
-            onClose();
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                alert(`Error al guardar el documento: ${error.message}`);
+            } finally {
+                setIsSaving(false); // Desactivar loader
+            }
         } 
     };
 
-    const buttonText = isEditing 
-        ? 'Guardar Cambios' 
-        : isCreating 
-            ? (sendDocument ? 'Crear y Enviar' : 'Crear Documento') 
-            : '';
+    // Texto dinámico del botón
+    let buttonText = '';
+    if (isSaving) {
+        buttonText = 'Guardando...';
+    } else if (isEditing) {
+        buttonText = 'Guardar Cambios';
+    } else if (isCreating) {
+        buttonText = sendDocument ? 'Crear y Enviar' : 'Crear Documento';
+    }
 
     return (
         <div className="modal-overlay-user" onClick={onClose}>
@@ -123,45 +212,49 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
             >
                 <div className="modal-header-user">
                     <h3>
-                        {isViewing ? 'Visualizar Documento' : isEditing ? 'Editar Documento' : 'Completar Documento'}
-                        : <span style={{color: '#8b56ed'}}>{documentType.name}</span>
+                        {isViewing ? 'Visualizar' : isEditing ? 'Editar' : 'Nuevo'}: <span style={{color: '#8b56ed'}}>{documentType.name}</span>
                     </h3>
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
 
                 <form className="modal-body-user" onSubmit={handleSubmit}>
+                    
+                    {/* Renderizado de Campos Dinámicos */}
                     {documentType.fields.map((field, index) => {
                         const inputType = getFieldInputType(field);
-                        const isSpecificValues = field.typeId === 'specific-values';
+                        const precision = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId)?.precision || 0;
+                        const stepValue = inputType === 'number' && precision > 0 ? "0.01" : "1";
 
-                        const valueToDisplay = formData[field.name] || ''; 
-                        
+                        let options = [];
+                        if (inputType === 'select' && Array.isArray(field.specificValues)) {
+                            options = field.specificValues.map(val => {
+                                return typeof val === 'object' && val !== null ? val.value : val;
+                            });
+                        }
+
                         if (isViewing) {
                             return (
                                 <div className="form-group-user" key={index}>
                                     <label>{field.name}:</label>
-                                    {/* Mostrar como texto estático sin input */}
-                                    <p className="static-field-value">{valueToDisplay}</p>
+                                    <p className="static-field-value">{formData[field.name] || '-'}</p>
                                 </div>
                             );
                         }
-                        
-                        const precision = MOCK_DATA_TYPES.find(dt => dt.id === field.typeId)?.precision || 0;
-                        const stepValue = inputType === 'number' && precision > 0 ? `0.${'0'.repeat(precision - 1)}1` : undefined;
 
                         return (
                             <div className="form-group-user" key={index}>
                                 <label><span className="required-asterisk">*</span> {field.name}:</label>
                                 
-                                {inputType === 'select' && isSpecificValues ? (
+                                {inputType === 'select' ? (
                                     <select 
                                         value={formData[field.name] || ''}
                                         onChange={(e) => handleFieldChange(field.name, e.target.value)}
                                         required
+                                        className="form-input-doc-create"
                                     >
-                                        <option value="" disabled>Seleccione un valor</option>
-                                        {field.specificValues.map((value, idx) => (
-                                            <option key={idx} value={value}>{value}</option>
+                                        <option value="" disabled>Seleccione una opción</option>
+                                        {options.map((optValue, idx) => (
+                                            <option key={idx} value={optValue}>{optValue}</option>
                                         ))}
                                     </select>
                                 
@@ -172,6 +265,7 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                                         rows="3"
                                         required
                                         placeholder={`Ingrese ${field.name}...`}
+                                        className="form-input-doc-create"
                                     />
                                 
                                 ) : (
@@ -179,65 +273,71 @@ const DocumentFieldsModal = ({ isOpen, onClose, company, documentType, onSaveDoc
                                         type={inputType}
                                         value={formData[field.name] || ''}
                                         onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                                        step={stepValue}
+                                        step={inputType === 'number' ? stepValue : undefined}
                                         required
                                         placeholder={`Ingrese ${field.name}...`}
+                                        className="form-input-doc-create"
                                     />
                                 )}
                             </div>
                         );
                     })}
                     
+                    {/* Campo de Archivo */}
                     <div className="form-group-user file-upload-group">
                         <label>
-                            <span className="required-asterisk">*</span> Anexo:
+                            <span className="required-asterisk">*</span> Anexo (.pdf):
                         </label>
-                        <small style={{ display: 'block', marginBottom: '12px', color: '#555' }}>
-                            {isCreating 
-                                ? 'Cargue un archivo .pdf como anexo del documento.'
-                                : isEditing
-                                ? `Archivo actual: ${attachmentName}. Seleccione uno nuevo para reemplazar.`
-                                : `Archivo adjunto: ${attachmentName}`
-                            }
-                        </small>
+                        
                         {!isViewing && (
-                            <input 
-                                type="file"
-                                accept=".pdf"
-                                className="form-input-doc-create file-input"
-                                onChange={handleFileChange}
-                                required={isCreating}
-                            />
+                            <>
+                                <input 
+                                    type="file"
+                                    accept=".pdf"
+                                    className="form-input-doc-create file-input"
+                                    onChange={handleFileChange}
+                                    required={isCreating} 
+                                />
+                                {isEditing && attachmentName && !attachment && (
+                                    <small style={{display:'block', marginTop:'5px', color:'#666'}}>
+                                        Actual: <strong>{attachmentName}</strong> (Suba uno nuevo para cambiarlo)
+                                    </small>
+                                )}
+                            </>
                         )}
-                        {/* OJO: Este nombre debe permitir la visualización del archivo en OneDrive */}
-                        {isViewing && attachmentName && (
-                            <p className="static-field-value file-name-display">{attachmentName}</p>
-                         )}
+
+                        {isViewing && (
+                            <p className="static-field-value file-name-display">{attachmentName || 'Sin archivo'}</p>
+                        )}
                     </div>
 
                     {isCreating && (
                         <div className="form-group-user send-checkbox-group">
                             <label htmlFor="send-doc-checkbox" className="send-checkbox-label">
-                                ¿Desea enviar el documento luego de crearlo?
                                 <input 
                                     type="checkbox" 
                                     id="send-doc-checkbox"
                                     checked={sendDocument} 
                                     onChange={(e) => setSendDocument(e.target.checked)}
-                                    className="custom-send-checkbox" 
+                                    style={{marginRight: '10px'}}
                                 />
-                                <span className="custom-checkmark"></span>
+                                ¿Desea enviar el documento luego de crearlo?
                             </label>
                         </div>
                     )}
 
-                    {isCreating || isEditing ? (
+                    {!isViewing && (
                         <div className="modal-footer-user">
-                            <button type="submit" className="modal-button-user save-button-user">
+                            <button 
+                                type="submit" 
+                                className="modal-button-user save-button-user"
+                                disabled={isSaving} // Deshabilitar mientras guarda
+                                style={{ opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'wait' : 'pointer' }}
+                            >
                                 {buttonText} 
                             </button>
                         </div>
-                    ) : null}
+                    )}
                     
                 </form>
             </div>

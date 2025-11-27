@@ -145,7 +145,7 @@ const Roles = () => {
                                                 <button 
                                                     className="view-button" 
                                                     onClick={() => handleEditRole(role.id)}
-                                                    title="Editar Empresa"
+                                                    title="Editar Rol"
                                                 >
                                                     <img src={editIcon} alt="Editar" />
                                                 </button>

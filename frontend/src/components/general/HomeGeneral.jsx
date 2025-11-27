@@ -75,18 +75,18 @@ const HomeAdmin = () => {
     }, [mockFolders, searchTerm]);
    
     // Navegación al hacer clic en carpeta
-    const handleFolderClick = (folderName) => {
+    const handleFolderClick = (folderId, folderName) => {
         console.log(`Navegando a la carpeta: ${folderName}`);
         const encodedFolderName = encodeURIComponent(folderName);
-        navigate(`/${encodedFolderName}`);
+        navigate(`/${encodedFolderName}`, { state: { folderId: folderId, folderName: folderName } });
     };
 
     // Función para manejar el clic en el ícono de edición
-    const handleEditClick = (e, folderName) => {
+    const handleEditClick = (e, folderId, folderName) => {
         e.stopPropagation(); 
         
         navigate('/document-type', {
-            state: { folderName: folderName, isEditing: true }
+            state: { folderId: folderId, folderName: folderName, isEditing: true }
         });
     };   
 
@@ -118,12 +118,12 @@ const HomeAdmin = () => {
                     {filteredFolders.length > 0 ? (
                         <div className="folders-grid">
                             {filteredFolders.map((folder) => (
-                                <div key={folder.id} className="folder-card" onClick={() => handleFolderClick(folder.name)}>
+                                <div key={folder.id} className="folder-card" onClick={() => handleFolderClick(folder.id, folder.name)}>
                                     <div className="folder-icon-container">
                                         <img src={folderIcon} alt="Carpeta" className="folder-icon" />
                                         <button 
                                             className="edit-documentType" 
-                                            onClick={(e) => handleEditClick(e, folder.name)} 
+                                            onClick={(e) => handleEditClick(e, folder.id, folder.name)} 
                                         >
                                             <img src={editIcon} alt="Editar" />
                                         </button>

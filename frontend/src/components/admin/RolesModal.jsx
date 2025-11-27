@@ -120,6 +120,10 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     });
   };
 
+  const handleDevEdit = () => {
+    alert('La edición de roles está en desarrollo.');
+  }
+
   const handleSave = async () => {
     if (!formData.name || !formData.permisos || formData.permisos.length === 0 || !formData.usuarios || formData.usuarios.length === 0) {
       alert('Por favor, complete Nombre, seleccione al menos un Permiso y al menos un Usuario.');
@@ -285,7 +289,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
         </div>
 
         <div className="modal-footer-user">
-          <button className="modal-button-user save-button-user" onClick={handleSave}>
+          <button className="modal-button-user save-button-user" onClick={mode === 'edit' ? handleDevEdit : handleSave}>
             {mode === 'edit' ? 'Guardar cambios' : 'Agregar Rol'}
           </button>
         </div>
