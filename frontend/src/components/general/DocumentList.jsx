@@ -11,10 +11,8 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const DocumentList = ({ folderId, folderName }) => {
     const location = useLocation();
+    // Prioridad a props, luego estado de navegación
     const { folderId: locFolderId, folderName: locFolderName } = location.state || {};
-    
-    // --- CORRECCIÓN 1: Unificar Props y State ---
-    // Damos prioridad a las props, si no existen, usamos el state de la navegación
     const activeFolderId = folderId || locFolderId;
     const activeFolderName = folderName || locFolderName;
 
@@ -30,34 +28,24 @@ const DocumentList = ({ folderId, folderName }) => {
     
     const navigate = useNavigate();
 
-    // 1. FETCH INICIAL: Obtener documentos por ID
+    // 1. FETCH INICIAL
     useEffect(() => {
         const fetchDocuments = async () => {
-            // Usamos las variables unificadas
-            if (!activeFolderId) {
-                console.warn("No hay ID de carpeta (folderId) para buscar documentos.");
-                return;
-            }
+            if (!activeFolderId) return;
             
             setIsLoading(true);
             try {
-                // --- CORRECCIÓN 2: Usar el ID activo ---
                 const params = new URLSearchParams({ id: activeFolderId });
-                
-                console.log("Fetching documents for ID:", activeFolderId); // Debug
-                
                 const response = await fetch(`${apiUrl}/documents/getDocumentsList?${params.toString()}`);
                 
                 if (!response.ok) throw new Error('Error al obtener la lista de documentos');
 
                 const data = await response.json();
                 
-                // Mapeamos la respuesta usando las claves correctas que verificamos antes
                 const formattedDocs = data.map(doc => ({
                     id: doc.id,
                     name: `Documento #${doc.id}`,
                     company: doc.companyName,
-                    // Prioridad a fecha anexo, sino creación
                     date: doc.annexDate || doc.creationDate, 
                     docTypeId: doc.typeId,
                     docTypeName: doc.docTypeName || activeFolderName
@@ -73,13 +61,12 @@ const DocumentList = ({ folderId, folderName }) => {
             }
         };
 
-        // --- CORRECCIÓN 3: Ejecutar siempre que tengamos el ID ---
         if (activeFolderId) { 
             fetchDocuments();
         }
-    }, [activeFolderId, activeFolderName]); // Dependencias actualizadas
+    }, [activeFolderId, activeFolderName]);
 
-    // 2. LÓGICA DE FILTRADO (Igual que antes)
+    // 2. LÓGICA DE FILTRADO (Sin cambios)
     useEffect(() => {
         let currentDocuments = [...allDocuments];
 
@@ -92,7 +79,6 @@ const DocumentList = ({ folderId, folderName }) => {
 
         let newSecondaryOptions = [];
         if (primaryFilter === 'year') {
-            // Validación para evitar error si date es nulo o inválido
             const years = [...new Set(currentDocuments
                 .filter(d => d.date)
                 .map(d => new Date(d.date).getFullYear())
@@ -134,29 +120,40 @@ const DocumentList = ({ folderId, folderName }) => {
             
             const fullDocData = await response.json();
 
+            // Extraer nombre del archivo si existe URL
+            let fileName = '';
+            if (fullDocData.AnnexURL) {
+                fileName = fullDocData.AnnexURL.split('/').pop();
+                try { fileName = decodeURIComponent(fileName); } catch (e) {} 
+            }
+
+            // Construir objeto de detalles robusto
+            const docDetailsForNav = {
+                docId: fullDocData.DocumentID, // ID del documento
+                docTypeId: fullDocData.TypeID, // ID del tipo
+                docTypeName: fullDocData.TypeName || activeFolderName, 
+                companyId: fullDocData.CompanyID,
+                companyName: fullDocData.CompanyName,
+                attachment: fileName,
+                fieldsData: fullDocData.fieldsData || {}, // Asegurar objeto
+                annexUrl: fullDocData.AnnexURL 
+            };
+
+            console.log("Navegando con detalles:", docDetailsForNav); // Debug
+
             navigate('/document-create', { 
                 state: { 
                     docId: docId, 
                     mode: mode, 
-                    // Pasamos también el folderId para poder volver atrás correctamente si fuera necesario
                     folderId: activeFolderId, 
                     folderName: activeFolderName,
-                    documentDetails: {
-                        docId: fullDocData.DocumentID, // ID importante para editar
-                        docTypeId: fullDocData.TypeID,
-                        docTypeName: activeFolderName, 
-                        companyId: fullDocData.CompanyID,
-                        companyName: fullDocData.CompanyName,
-                        attachment: fullDocData.AnnexURL ? fullDocData.AnnexURL.split('/').pop() : '',
-                        fieldsData: fullDocData.fieldsData, 
-                        annexUrl: fullDocData.AnnexURL 
-                    } 
+                    documentDetails: docDetailsForNav
                 } 
             });
 
         } catch (error) {
             console.error("Error obteniendo detalle:", error);
-            alert("Error al cargar los detalles del documento.");
+            alert("Error al cargar los detalles del documento para editar/ver.");
         } finally {
             setIsLoading(false);
         }
@@ -164,21 +161,16 @@ const DocumentList = ({ folderId, folderName }) => {
 
     const handleAddDocument = () => {
         navigate('/document-create', { 
-            state: { folderName: activeFolderName, mode: 'create' }
+            state: { folderName: activeFolderName, folderId: activeFolderId, mode: 'create' }
         });
     };
 
-/*
+    // Funciones wrapper
     const handleViewDocument = (docId) => fetchAndNavigate(docId, 'view');
     const handleEditDocument = (docId) => fetchAndNavigate(docId, 'edit');
-*/
 
-    const handleViewDocument = (docId) => { alert('Visualización de Documento en desarrollo') }
-    const handleEditDocument = (docId) => { alert('Edición de Documento en desarrollo') }
-    
     const formatDate = (dateString) => {
         if (!dateString) return '-';
-        // Manejo seguro de fechas
         const date = new Date(dateString);
         return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-ES');
     };
@@ -196,10 +188,8 @@ const DocumentList = ({ folderId, folderName }) => {
                     <span className="breadcrumb-item active">{activeFolderName || 'Lista'}</span>
                 </div>
 
-                {/* Barra de Búsqueda y Filtro */}
                 <div className="search-and-controls">
                     <div className="search-filter-group users-table-style">
-                        
                         <input
                             type="text"
                             placeholder="Buscar por Nombre o Empresa..."
@@ -207,7 +197,6 @@ const DocumentList = ({ folderId, folderName }) => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        
                         <select
                             className="filter-select-admin"
                             value={primaryFilter}
@@ -220,7 +209,6 @@ const DocumentList = ({ folderId, folderName }) => {
                             <option value="year">Año</option>
                             <option value="company">Empresa</option>
                         </select>
-                        
                         {primaryFilter && secondaryFilterOptions.length > 0 && (
                             <select
                                 className="filter-select-admin"
@@ -238,14 +226,12 @@ const DocumentList = ({ folderId, folderName }) => {
                     </div>
                 </div>
 
-                {/* Botón Agregar */}
                 <div className="add-doc-button-container">
                     <button className="add-doc-button" onClick={handleAddDocument}>
                         + Agregar documento
                     </button>
                 </div>
 
-                {/* Tabla */}
                 <div className="documents-table-wrapper">
                     {isLoading && allDocuments.length === 0 ? (
                         <p style={{textAlign: 'center', padding: '20px'}}>Cargando documentos...</p>
@@ -270,7 +256,7 @@ const DocumentList = ({ folderId, folderName }) => {
                                                 className="view-button" 
                                                 onClick={() => handleViewDocument(doc.id)}
                                                 title="Ver Documento"
-                                                disabled={isLoading}
+                                                disabled={isLoading} 
                                             >
                                                 <img src={eyeIcon} alt="Ver" />
                                             </button>
@@ -278,7 +264,7 @@ const DocumentList = ({ folderId, folderName }) => {
                                                 className="view-button" 
                                                 onClick={() => handleEditDocument(doc.id)}
                                                 title="Editar Documento"
-                                                disabled={isLoading}
+                                                disabled={isLoading} 
                                             >
                                                 <img src={editIcon} alt="Editar" />
                                             </button>
