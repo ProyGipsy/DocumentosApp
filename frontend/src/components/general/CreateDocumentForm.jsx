@@ -74,38 +74,64 @@ const CreateDocumentForm = () => {
     }, [selectedCompanyId, companies]); // Agregamos companies como dependencia
 
 
-    // 3. CORRECCIÓN DE PRE-SELECCIÓN (Lógica movida dentro del efecto de datos)
-    // El problema original era que intentabas buscar el ID antes de que el fetch terminara.
+    // 3. LÓGICA DE INICIALIZACIÓN (Reemplaza tu useEffect actual con este)
     useEffect(() => {
-        // Solo ejecutamos si ya hay datos cargados
-        if (documentTypes.length > 0 && companies.length > 0) {
-            
-            if (mode === 'create' && folderName) {
-                // Buscamos el ID basado en el nombre dentro de los datos cargados
-                const match = documentTypes.find(dt => 
-                    dt.name.toLowerCase().includes(folderName.toLowerCase()) || 
-                    folderName.toLowerCase().includes(dt.name.toLowerCase())
-                );
-                if (match) {
-                    setSelectedDocTypeId(match.id);
-                }
-                setOperationMode('create');
-
-            } else if (docId && (mode === 'view' || mode === 'edit') && documentDetails) {
-                setOperationMode(mode);
-                setSelectedDocTypeId(documentDetails.docTypeId);
+        const initializeForm = async () => {
+            // Esperamos a que las listas maestras (selects) estén cargadas
+            if (documentTypes.length > 0 && companies.length > 0) {
                 
-                // Búsqueda robusta de empresa
-                const companyMatch = companies.find(c => 
-                    String(c.id) === String(documentDetails.companyId) || 
-                    c.name === documentDetails.companyName
-                );
-                if (companyMatch) setSelectedCompanyId(companyMatch.id);
+                // CASO A: CREACIÓN DESDE CARPETA (Sin cambios)
+                if (mode === 'create' && folderName) {
+                    const match = documentTypes.find(dt => 
+                        dt.name.toLowerCase().includes(folderName.toLowerCase()) || 
+                        folderName.toLowerCase().includes(dt.name.toLowerCase())
+                    );
+                    if (match) setSelectedDocTypeId(match.id);
+                    setOperationMode('create');
+                } 
+                
+                // CASO B: VER O EDITAR (AQUÍ ESTÁ LA MAGIA QUE FALTA)
+                else if (docId && (mode === 'view' || mode === 'edit') && documentDetails) {
+                    setOperationMode(mode);
+                    setSelectedDocTypeId(documentDetails.docTypeId);
+                    
+                    const companyMatch = companies.find(c => 
+                        String(c.id) === String(documentDetails.companyId) || 
+                        c.name === documentDetails.companyName
+                    );
+                    if (companyMatch) setSelectedCompanyId(companyMatch.id);
 
-                setIsModalOpen(true);
+                    // --- PASO CRÍTICO: CARGAR LA ESTRUCTURA DE CAMPOS ---
+                    try {
+                        setIsLoading(true);
+                        // Usamos el ID del tipo de documento para pedir sus campos al backend
+                        const params = new URLSearchParams({ id: documentDetails.docTypeId });
+                        
+                        // IMPORTANTE: Asegúrate que tu endpoint getDocTypeFull acepte 'id'
+                        const response = await fetch(`${apiUrl}/documents/getDocTypeFull?${params.toString()}`);
+                        
+                        if (response.ok) {
+                            const fullData = await response.json();
+                            
+                            // Guardamos la estructura (fields) en el estado
+                            setFullDocTypeDetails(fullData); 
+                            
+                            // Y AHORA SÍ abrimos el modal
+                            setIsModalOpen(true); 
+                        } else {
+                            console.error("Error cargando configuración de campos para editar");
+                        }
+                    } catch (err) {
+                        console.error("Error en fetch de detalles:", err);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
             }
-        }
-    }, [folderName, docId, mode, documentDetails, documentTypes, companies]); // Dependemos de que lleguen los datos 
+        };
+
+        initializeForm();
+    }, [folderName, docId, mode, documentDetails, documentTypes, companies]);
 
     const handleContinue = async (e) => {
         e.preventDefault();
@@ -241,6 +267,7 @@ const CreateDocumentForm = () => {
                         documentType={fullDocTypeDetails}
                         onSaveDocument={handleSaveDocument}
                         mode={operationMode}
+                        documentId={documentDetails?.docId}
                         initialFormData={documentDetails?.fieldsData || {}}
                         initialAttachmentName={documentDetails?.attachment}
                         onDocumentCreatedAndReadyToSend={handleDocumentCreatedAndReadyToSend}
