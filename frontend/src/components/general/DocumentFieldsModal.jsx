@@ -296,6 +296,7 @@ const DocumentFieldsModal = ({
                                     onChange={(e) => setSendDocument(e.target.checked)}
                                     style={{marginRight: '10px'}}
                                 />
+                                <span className="custom-checkmark"></span>
                                 ¿Desea enviar el documento luego de crearlo?
                             </label>
                         </div>
