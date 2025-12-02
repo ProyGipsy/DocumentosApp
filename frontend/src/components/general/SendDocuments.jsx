@@ -9,10 +9,11 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const ITEMS_PER_PAGE = 10;
 
-const SendDocuments = () => {
+const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     const [allDocuments, setAllDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     
+    // Estados para filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -24,54 +25,64 @@ const SendDocuments = () => {
 
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
     
-    // --- 1. CARGA DE DATOS REALES ---
+    // --- 1. CARGA DE DATOS (FETCH) ---
     useEffect(() => {
         const fetchAllDocuments = async () => {
             setIsLoading(true);
             try {
-                // LLAMADA AL BACKEND:
-                // Necesitamos un endpoint que traiga TODO. 
-                // Si no tienes uno específico, usa getDocumentsList sin params si tu backend lo soporta,
-                // o crea uno nuevo: /documents/getAllDocuments
-                const response = await fetch(`${apiUrl}/documents/getAllDocumentsList`);
+                // LÓGICA DE ENDPOINT:
+                // Si recibimos un folderId (props), filtramos por esa carpeta.
+                // Si no (vista general), pedimos TODOS los documentos.
+                let url = `${apiUrl}/documents/getAllDocumentsList`; 
+                
+                if (folderId) {
+                    const params = new URLSearchParams({ id: folderId });
+                    url = `${apiUrl}/documents/getDocumentsList?${params.toString()}`;
+                }
+
+                const response = await fetch(url);
                 
                 if (!response.ok) throw new Error('Error al cargar documentos');
 
                 const data = await response.json();
 
-                // Mapeo de datos (Ajusta las claves según tu SQL)
+                // Mapeo seguro de datos (Backend -> Frontend)
                 const formattedDocs = data.map(doc => ({
-                    id: doc.DocumentID, 
-                    name: `Documento #${doc.DocumentID}`, // O doc.Name si existe columna
-                    type: doc.TypeName, // Necesitas hacer JOIN con DocumentType en SQL
-                    company: doc.CompanyName, // Necesitas hacer JOIN con Company en SQL
-                    date: doc.AnnexDate // O doc.AnnexDate
+                    id: doc.DocumentID || doc.id, 
+                    name: `Documento #${doc.DocumentID || doc.id}`, // O doc.Name si existe
+                    // Aseguramos que existan estos campos (si vienes de getAllDocuments deberían estar)
+                    type: doc.TypeName || doc.docTypeName || 'Sin Tipo', 
+                    company: doc.CompanyName || doc.companyName || 'Sin Empresa', 
+                    date: doc.AnnexDate 
                 }));
 
                 setAllDocuments(formattedDocs);
                 setFilteredDocuments(formattedDocs);
 
             } catch (error) {
-                console.error("Error:", error);
-                // Fallback a datos vacíos o mensaje de error
+                console.error("Error cargando documentos:", error);
+                // Opcional: Mostrar alerta al usuario
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchAllDocuments();
-    }, []);
+    }, [folderId]); // Dependencia: si cambia la carpeta, recargamos
 
-    // --- 2. Lógica de Filtrado (Igual que antes, solo ajustada a datos reales) ---
+    // --- 2. LÓGICA DE FILTRADO ---
     useEffect(() => {
         let currentDocuments = [...allDocuments];
     
+        // A. Búsqueda por texto
         if (searchTerm) {
             currentDocuments = currentDocuments.filter(doc =>
-                doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+                doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                doc.company.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
     
+        // B. Opciones del filtro secundario
         let newSecondaryOptions = [];
         if (primaryFilter === 'year') {
             const years = [...new Set(currentDocuments
@@ -79,19 +90,23 @@ const SendDocuments = () => {
                 .map(d => new Date(d.date).getFullYear())
             )].sort((a, b) => b - a);
             newSecondaryOptions = years.map(year => ({ value: String(year), label: String(year) }));
+        
         } else if (primaryFilter === 'company') {
             const companies = [...new Set(currentDocuments.map(d => d.company))].sort();
             newSecondaryOptions = companies.map(company => ({ value: company, label: company }));
+        
         } else if (primaryFilter === 'type') {
             const types = [...new Set(currentDocuments.map(d => d.type))].sort();
             newSecondaryOptions = types.map(type => ({ value: type, label: type }));
         }
         setSecondaryFilterOptions(newSecondaryOptions);
     
+        // C. Limpieza de filtro secundario
         if (primaryFilter && secondaryFilter && !newSecondaryOptions.some(opt => opt.value === secondaryFilter)) {
             setSecondaryFilter('');
         }
     
+        // D. Aplicación de filtros
         if (primaryFilter && secondaryFilter) {
             if (primaryFilter === 'year') {
                 currentDocuments = currentDocuments.filter(doc =>
@@ -112,6 +127,7 @@ const SendDocuments = () => {
     }, [searchTerm, primaryFilter, secondaryFilter, allDocuments]);
     
 
+    // --- Paginación ---
     const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
 
     const paginatedDocuments = useMemo(() => {
@@ -124,7 +140,8 @@ const SendDocuments = () => {
         setCurrentPage(1);
     }, [searchTerm, filteredDocuments.length]);
 
-    // --- Lógica de Selección --- (Sin cambios mayores)
+
+    // --- Lógica de Selección ---
     const isAllSelected = paginatedDocuments.length > 0 && 
                           paginatedDocuments.every(doc => selectedDocuments.includes(doc.id));
 
@@ -157,15 +174,17 @@ const SendDocuments = () => {
         setIsSendModalOpen(true);
     };
 
-    // --- 3. Lógica de Envío al Backend ---
-    const onConfirmSend = async (ids, companyId, message) => { // companyId acá se refiere al destinatario (Empresa externa)
-        console.log(`Enviando ${ids.length} documentos...`);
+    // --- 3. LÓGICA DE ENVÍO AL BACKEND (IMPLEMENTADA) ---
+    const onConfirmSend = async (ids, emailData) => { 
+        // Nota: emailData viene del modal con { senderName, recipientName, recipients, subject, body }
+        
+        console.log(`Enviando ${ids.length} documentos...`, emailData);
+        setIsLoading(true);
         
         try {
             const payload = {
                 documentIds: ids,
-                recipientCompanyId: companyId, // ID de la empresa a la que envías
-                emailMessage: message
+                emailData: emailData
             };
 
             const response = await fetch(`${apiUrl}/documents/sendDocuments`, {
@@ -178,17 +197,28 @@ const SendDocuments = () => {
 
             if (!response.ok) throw new Error(result.error || 'Error en el envío');
 
-            alert('Documentos enviados exitosamente.');
-            setSelectedDocuments([]); // Limpiar selección
+            alert('¡Documentos enviados exitosamente por correo!');
+            
+            // Limpieza
+            setSelectedDocuments([]); 
+            setIsSendModalOpen(false);
 
         } catch (error) {
             console.error("Error al enviar:", error);
             alert(`Hubo un problema al enviar: ${error.message}`);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const goToPage = (page) => {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-ES');
     };
 
     return (
@@ -197,9 +227,9 @@ const SendDocuments = () => {
                 <h2 className="folder-title-sendDocuments">Envío de Documentos</h2>
                 <br></br>
                 
-                {isLoading && <p>Cargando documentos...</p>}
+                {isLoading && <p style={{textAlign:'center'}}>Procesando...</p>}
 
-                {/* Barra de Búsqueda y Filtro (Igual que antes) */}
+                {/* Filtros */}
                 <div className="search-and-controls">
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
@@ -241,12 +271,13 @@ const SendDocuments = () => {
                     </div>
                 </div>
                 
-                {/* Acciones y Tabla */}
+                {/* Botón de Acción y Tabla */}
                 <div className="send-action-and-table-container">
                     <button 
                         className="send-selection-button" 
                         onClick={handleSendSelection}
-                        disabled={selectedDocuments.length === 0}
+                        disabled={selectedDocuments.length === 0 || isLoading}
+                        style={{opacity: selectedDocuments.length === 0 ? 0.6 : 1}}
                     >
                         Enviar selección ({selectedDocuments.length})
                     </button>
@@ -282,23 +313,22 @@ const SendDocuments = () => {
                                             <td>{doc.name}</td>
                                             <td>{doc.type}</td>
                                             <td>{doc.company}</td>
-                                            {/* Formato de fecha simple */}
-                                            <td>{doc.date ? new Date(doc.date).toLocaleDateString('es-ES') : '-'}</td>
+                                            <td>{formatDate(doc.date)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         ) : (
-                            <p className="no-documents">No se encontraron documentos.</p>
+                            <p className="no-documents">
+                                {isLoading ? "Cargando..." : "No se encontraron documentos."}
+                            </p>
                         )}
                     </div>
                 </div>
 
-                {/* Paginación (Igual que antes) */}
+                {/* Paginación */}
                 {filteredDocuments.length > ITEMS_PER_PAGE && (
                     <div className="pagination-controls">
-                        {/* ... botones de paginación ... */}
-                        {/* Puedes copiar el bloque de paginación de tu código original aquí, es idéntico */}
                          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="pagination-button">Anterior</button>
                          <span>Página {currentPage} de {totalPages}</span>
                          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-button">Siguiente</button>
@@ -306,6 +336,7 @@ const SendDocuments = () => {
                 )}
             </div>
 
+            {/* MODAL DE ENVÍO */}
             <SendDocumentModal
                 isOpen={isSendModalOpen}
                 onClose={() => setIsSendModalOpen(false)}
@@ -314,6 +345,7 @@ const SendDocuments = () => {
                     .filter(d => selectedDocuments.includes(d.id))
                     .map(d => d.name)}
                 onSend={onConfirmSend}
+                isLoading={isLoading}
             />
         </LayoutBase>
     );

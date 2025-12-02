@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/general/sendDocModal.css';
 
-const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumentNames, onSend }) => {
+const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumentNames, onSend, isLoading=true }) => {
   
-  // 1. CORRECCIÓN: Estado inicial coincidente con los inputs
   const initialFormState = {
-    senderName: '',      // Campo 'From' (De)
-    recipientName: '',   // Campo 'To' (Para)
-    recipients: '',      // Campo 'Destinatarios' (Emails)
-    subject: 'Envío de Documentos', // Valor por defecto
-    body: ''             // Cuerpo del correo
+    senderName: '',      
+    recipientName: '',   
+    recipients: '',      
+    subject: 'Envío de Documentos', 
+    body: ''             
   };
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // 2. Resetear formulario al abrir
   useEffect(() => {
     if (isOpen) {
       setFormData(initialFormState);
@@ -29,7 +27,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   };
 
   const handleSend = () => {
-    // 3. Validaciones
+    // --- 1. Validaciones de Campos Vacíos ---
     if (!formData.senderName.trim()) {
       alert('Por favor, indique a nombre de quién se envían los documentos.');
       return;
@@ -47,13 +45,30 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
        return;
     }
 
-    // 4. Preparar datos para el Padre
-    // Convertimos la cadena de correos en un array limpio
+    // --- 2. Procesamiento de la lista de correos ---
     const emailList = formData.recipients
       .split(',')
       .map(email => email.trim())
       .filter(email => email !== '');
 
+    // --- 3. VALIDACIÓN DE FORMATO (REGEX) ---
+    // Esta expresión regular verifica:
+    // ^[^\s@]+   : Texto antes del @ (sin espacios)
+    // @          : Arroba obligatoria
+    // [^\s@]+    : Dominio (ej: gmail, hotmail)
+    // \.         : Un punto obligatorio
+    // [^\s@]+$   : Extensión (ej: com, net, ve)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Filtramos los que NO cumplen con el formato
+    const invalidEmails = emailList.filter(email => !emailRegex.test(email));
+
+    if (invalidEmails.length > 0) {
+        alert(`Error de validación:\nLos siguientes correos no tienen un formato válido:\n\n${invalidEmails.join('\n')}\n\nPor favor, verifique que contengan "@" y un dominio (ej: .com).`);
+        return; // Detenemos el envío
+    }
+
+    // --- 4. Preparar datos y Enviar ---
     const emailData = {
         senderName: formData.senderName,
         recipientName: formData.recipientName,
@@ -64,9 +79,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
 
     console.log("Enviando datos al padre:", emailData);
 
-    // Pasamos los IDs de documentos y el objeto de datos del email
     onSend(selectedDocuments, emailData);
-    // Nota: No cerramos el modal aquí, dejamos que el padre lo cierre tras el éxito o error
   };
 
   return (
@@ -81,7 +94,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
 
         <div className="modal-body-user">
           
-          {/* Campo 1: De */}
           <div className="form-group-user">
             <label htmlFor="senderName">
               De <span className="required-asterisk">*</span>
@@ -90,7 +102,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               type="text"
               id="senderName"
               name="senderName"
-              className="form-input-doc-create" // Estilo consistente
+              className="form-input-doc-create"
               required
               value={formData.senderName}
               onChange={handleChange}
@@ -98,7 +110,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* Campo 2: Para (Nombre) */}
            <div className="form-group-user">
             <label htmlFor="recipientName">
               Para (Nombre) <span className="required-asterisk">*</span>
@@ -115,13 +126,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* Campo 3: Destinatarios (Emails) */}
           <div className="form-group-user">
             <label htmlFor="recipients">
               Correos Destinatarios <span className="required-asterisk">*</span>
             </label>
             <small style={{ display: 'block', marginBottom: '5px', color: '#666', fontSize: '0.85em' }}>
-              Separe los correos con comas (ej: correo1@mail.com, correo2@mail.com)
+              Separe los correos con comas (ej: usuario1@gmail.com, usuario2@empresa.net)
             </small>
             <input
               type="text"
@@ -131,11 +141,10 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               required
               value={formData.recipients}
               onChange={handleChange}
-              placeholder="email@ejemplo.com"
+              placeholder="ejemplo@correo.com"
             />
           </div>
 
-          {/* Campo 4: Asunto */}
           <div className="form-group-user">
             <label htmlFor="subject">
               Asunto <span className="required-asterisk">*</span>
@@ -151,7 +160,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* Campo 5: Cuerpo */}
           <div className="form-group-user">
             <label htmlFor="body">Mensaje</label>
             <textarea
@@ -165,7 +173,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* Resumen de Archivos */}
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '5px' }}>
             <strong style={{fontSize: '0.9em', color: '#333'}}>Archivos adjuntos:</strong>
             <ul style={{ margin: '5px 0 0 20px', padding: 0, fontSize: '0.85em', color: '#555' }}>
@@ -178,8 +185,8 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
         </div>
 
         <div className="modal-footer-user">
-          <button className="modal-button-user save-button-user" onClick={handleSend}>
-            Confirmar Envío
+          <button className="modal-button-user save-button-user" onClick={handleSend} disabled={isLoading}>
+            {isLoading ? 'Enviando...' : 'Confirmar Envío'}
           </button>
         </div>
       </div>

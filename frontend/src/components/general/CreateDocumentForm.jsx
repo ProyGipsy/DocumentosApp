@@ -12,7 +12,6 @@ const CreateDocumentForm = () => {
     const location = useLocation(); 
     const { folderName, docId, mode, documentDetails } = location.state || {};
 
-    // Cambié el nombre para evitar confusión con constantes. Ahora son variables de estado.
     const [documentTypes, setDocumentTypes] = useState([]);
     const [companies, setCompanies] = useState([]);
 
@@ -39,7 +38,6 @@ const CreateDocumentForm = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Usamos Promise.all para cargar ambos en paralelo (más rápido)
                 const [docsRes, companiesRes] = await Promise.all([
                     fetch(`${apiUrl}/documents/getDocType`),
                     fetch(`${apiUrl}/documents/getDocCompanies`)
@@ -61,26 +59,23 @@ const CreateDocumentForm = () => {
         fetchData();
     }, []);
 
-    // 2. CORRECCIÓN useMemo: Conversión de tipos y dependencias
+    // 2. MEMOS
     const currentDocType = useMemo(() => {
         if (!selectedDocTypeId) return null;
-        // Convertimos ambos a String para asegurar que coincidan sin importar si la API manda Int
         return documentTypes.find(dt => String(dt.id) === String(selectedDocTypeId));
-    }, [selectedDocTypeId, documentTypes]); // Agregamos documentTypes como dependencia
+    }, [selectedDocTypeId, documentTypes]); 
 
     const currentCompany = useMemo(() => {
         if (!selectedCompanyId) return null;
         return companies.find(c => String(c.id) === String(selectedCompanyId));
-    }, [selectedCompanyId, companies]); // Agregamos companies como dependencia
+    }, [selectedCompanyId, companies]); 
 
 
-    // 3. LÓGICA DE INICIALIZACIÓN (Reemplaza tu useEffect actual con este)
+    // 3. INICIALIZACIÓN
     useEffect(() => {
         const initializeForm = async () => {
-            // Esperamos a que las listas maestras (selects) estén cargadas
             if (documentTypes.length > 0 && companies.length > 0) {
                 
-                // CASO A: CREACIÓN DESDE CARPETA (Sin cambios)
                 if (mode === 'create' && folderName) {
                     const match = documentTypes.find(dt => 
                         dt.name.toLowerCase().includes(folderName.toLowerCase()) || 
@@ -90,7 +85,6 @@ const CreateDocumentForm = () => {
                     setOperationMode('create');
                 } 
                 
-                // CASO B: VER O EDITAR (AQUÍ ESTÁ LA MAGIA QUE FALTA)
                 else if (docId && (mode === 'view' || mode === 'edit') && documentDetails) {
                     setOperationMode(mode);
                     setSelectedDocTypeId(documentDetails.docTypeId);
@@ -101,22 +95,14 @@ const CreateDocumentForm = () => {
                     );
                     if (companyMatch) setSelectedCompanyId(companyMatch.id);
 
-                    // --- PASO CRÍTICO: CARGAR LA ESTRUCTURA DE CAMPOS ---
                     try {
                         setIsLoading(true);
-                        // Usamos el ID del tipo de documento para pedir sus campos al backend
                         const params = new URLSearchParams({ id: documentDetails.docTypeId });
-                        
-                        // IMPORTANTE: Asegúrate que tu endpoint getDocTypeFull acepte 'id'
                         const response = await fetch(`${apiUrl}/documents/getDocTypeFull?${params.toString()}`);
                         
                         if (response.ok) {
                             const fullData = await response.json();
-                            
-                            // Guardamos la estructura (fields) en el estado
                             setFullDocTypeDetails(fullData); 
-                            
-                            // Y AHORA SÍ abrimos el modal
                             setIsModalOpen(true); 
                         } else {
                             console.error("Error cargando configuración de campos para editar");
@@ -131,42 +117,27 @@ const CreateDocumentForm = () => {
         };
 
         initializeForm();
-    }, [folderName, docId, mode, documentDetails, documentTypes, companies]);
-
+    }, [folderName, docId, mode, documentDetails, documentTypes, companies]); 
+    
+    // 4. PREPARAR MODAL DE CAMPOS
     const handleContinue = async (e) => {
         e.preventDefault();
         
         if (operationMode === 'create' && currentDocType && currentCompany) {
             setIsLoading(true);
-            
             try {
                 const params = new URLSearchParams({ id: selectedDocTypeId });
-                //console.log("1. Solicitando URL:", `${apiUrl}/documents/getDocTypeFull?${params.toString()}`);
-                
                 const response = await fetch(`${apiUrl}/documents/getDocTypeFull?${params.toString()}`);
-                //console.log("2. Status HTTP:", response.status); // Debería ser 200
-
-                // Leemos el texto crudo primero para ver si es JSON válido
                 const textData = await response.text(); 
-                //console.log("3. Respuesta Cruda del Servidor:", textData);
 
-                if (!textData) throw new Error("La respuesta está vacía (Body vacío)");
-
-                // Intentamos convertirlo a JSON
+                if (!textData) throw new Error("La respuesta está vacía");
                 const data = JSON.parse(textData);
-                //console.log("4. JSON Parseado:", data);
-
-                // Verificamos si tiene la estructura correcta
-                if (!data.fields) {
-                    console.error("⚠️ ALERTA: El objeto recibido no tiene la propiedad 'fields'");
-                }
 
                 setFullDocTypeDetails(data);
-                console.log(data);
                 setIsModalOpen(true);
 
             } catch (error) {
-                console.error("❌ ERROR CAPTURADO:", error);
+                console.error("Error:", error);
                 alert(`Error técnico: ${error.message}`);
             } finally {
                 setIsLoading(false);
@@ -177,14 +148,58 @@ const CreateDocumentForm = () => {
         }
     };
 
-    // ... (El resto de funciones handleSaveDocument, etc. permanecen igual) ...
-    const handleSaveDocument = (documentData) => { /* ... */ };
+    const handleSaveDocument = (documentData) => { 
+        console.log("Documento guardado localmente (UI):", documentData);
+    };
+
     const handleDocumentCreatedAndReadyToSend = (documentData) => { 
         handleSaveDocument(documentData); 
+        // Guardamos el documento recién creado (con su ID) para enviarlo
         setDocumentToSend(documentData);
         setIsSendModalOpen(true);
     };
-    const handleSendDocument = (sendData) => { /* ... */ setIsSendModalOpen(false); };
+
+    // --- 5. LÓGICA DE ENVÍO DE CORREO (IMPLEMENTADA) ---
+    const handleSendDocument = async (selectedDocsIgnored, emailData) => { 
+        // Nota: El primer argumento viene del modal como lista de documentos seleccionados.
+        // En este flujo de "Crear y Enviar", enviamos específicamente 'documentToSend'.
+        
+        if (!documentToSend || !documentToSend.id) {
+            alert("Error: No se ha identificado el documento a enviar.");
+            return;
+        }
+
+        console.log("Enviando correo...", emailData);
+        setIsLoading(true);
+
+        try {
+            const payload = {
+                documentIds: [documentToSend.id], // Enviamos el ID del documento recién creado
+                emailData: emailData
+            };
+
+            const response = await fetch(`${apiUrl}/documents/sendDocuments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) throw new Error(result.error || 'Error al enviar el correo');
+
+            alert('Documento enviado exitosamente por correo.');
+            
+            setIsSendModalOpen(false); 
+            setDocumentToSend(null);
+
+        } catch (error) {
+            console.error("Error enviando correo:", error);
+            alert(`Hubo un problema al enviar el correo: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <LayoutBase>
@@ -193,14 +208,12 @@ const CreateDocumentForm = () => {
                     
                     <h2 className="main-title">{formTitle}</h2>
                     
-                    {/* Loader simple para evitar que el usuario interactúe antes de cargar datos */}
                     {isLoading && <p>Cargando datos...</p>}
 
                     {!(isModalOpen && (operationMode === 'view' || operationMode === 'edit')) && !isLoading && (
                         <form className="document-create-form" onSubmit={handleContinue}>
                             
                             <div className="form-section">
-                                {/* Select Tipo Documento */}
                                 <div className="form-group-doc-type">
                                     <label htmlFor="docType" className="form-label">Tipo de Documento <span className="required-asterisk">*</span></label>
                                     <select 
@@ -220,7 +233,6 @@ const CreateDocumentForm = () => {
                                     </select>
                                 </div>
 
-                                {/* Select Empresa */}
                                 <div className="form-group-doc-type">
                                     <label htmlFor="company" className="form-label">Empresa Asociada <span className="required-asterisk">*</span></label>
                                     <select 
@@ -252,10 +264,7 @@ const CreateDocumentForm = () => {
                     )}
                 </div>
                 
-                {/* CORRECCIÓN FINAL: 
-                    Aseguramos que currentDocType y currentCompany existan. 
-                    Gracias al String() en useMemo, ahora deberían coincidir.
-                */}
+                {/* MODAL DE CAMPOS */}
                 {fullDocTypeDetails && currentCompany && (
                     <DocumentFieldsModal
                         isOpen={isModalOpen}
@@ -274,6 +283,7 @@ const CreateDocumentForm = () => {
                     />
                 )}
 
+                {/* MODAL DE ENVÍO */}
                 {documentToSend && (
                     <SendDocumentModal
                         isOpen={isSendModalOpen}
@@ -281,9 +291,12 @@ const CreateDocumentForm = () => {
                             setIsSendModalOpen(false);
                             setDocumentToSend(null);
                         }}
-                        selectedDocuments={[documentToSend]} 
+                        // Pasamos el documento en un array porque el modal espera una lista
+                        selectedDocuments={[documentToSend.id]} 
                         selectedDocumentNames={[`${documentToSend.docTypeName} - ${documentToSend.companyName}`]} 
+                        // Conectamos la función real de envío
                         onSend={handleSendDocument}
+                        isLoading={isLoading}
                     />
                 )}
             </div>
