@@ -7,6 +7,7 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 const RIFtypeOptions = ['J', 'G', 'V', 'E', 'P'];
 
 const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -47,8 +48,11 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
   };
 
   const handleSave = async () => {
+    setIsLoading(true);
+
     if (!formData.name || !formData.RIFtype || !formData.RIF) {
       alert('Por favor, complete Nombre y RIF (tipo y número).');
+      setIsLoading(false);
       return;
     }
 
@@ -80,6 +84,8 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
         onSave(data, mode);
       } catch (error) {
         alert('Error al crear la compañía: ' + error.message);
+      } finally {
+        setIsLoading(false);
       }
     } else {
       try{
@@ -97,6 +103,8 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
         onSave(data, mode);
       } catch (error) {
         alert('Error al actualizar la compañía: ' + error.message);
+      } finally {
+        setIsLoading(false);
       }
     }
     onClose();
@@ -174,8 +182,8 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
         </div>
 
         <div className="modal-footer-user">
-          <button className="modal-button-user save-button-user" onClick={handleSave}>
-            {mode === 'edit' ? 'Guardar cambios' : 'Agregar Empresa'}
+          <button className="modal-button-user save-button-user" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Empresa...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Empresa')}
           </button>
         </div>
       </div>

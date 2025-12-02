@@ -9,56 +9,52 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const [permissionOptions, setPermissionOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     id: '',
     name: '',
-    permisos: [], // Array de objetos {id, name}
-    usuarios: []  // Array de objetos {id, fullName}
+    permisos: [], 
+    usuarios: [] 
   });
 
+  // Carga inicial de opciones (Permisos y Usuarios)
   useEffect(() => {
-    const fetchPermissionOptions = async () => {
+    const fetchOptions = async () => {
       setIsLoading(true);
       try {
-        const reponse = await fetch(`${apiUrl}/documents/getPermissions`);
-        if (!reponse.ok) throw new Error(`Error HTTP: ${reponse.status}`);
-        const data = await reponse.json();
-        console.log(data)
-        setPermissionOptions(data);
+        const [permRes, userRes] = await Promise.all([
+            fetch(`${apiUrl}/documents/getPermissions`),
+            fetch(`${apiUrl}/documents/getUsers`)
+        ]);
+
+        if (permRes.ok) {
+            const data = await permRes.json();
+            setPermissionOptions(data);
+        }
+        if (userRes.ok) {
+            const data = await userRes.json();
+            setUserOptions(data);
+        }
       } catch (error) {
-        console.error('Error fetching permission options:', error);
+        console.error('Error fetching options:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchPermissionOptions();
+    fetchOptions();
   }, []);
 
-  useEffect(() => {
-    const fetchUserOptions = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/documents/getUsers`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        const data = await response.json();
-        console.log(data)
-        setUserOptions(data);
-      } catch (error) {
-        console.error('Error fetching user options:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchUserOptions();
-  }, []);
-
+  // Sincronización del formulario al abrir (Edit vs Create)
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && role) {
+        console.log("Rol a editar:", role);
         setFormData({
           id: role.id,
           name: role.name || '',
-          permisos: Array.isArray(role.permisos) ? role.permisos : (role.permisos ? [role.permisos] : []),
-          usuarios: Array.isArray(role.usuarios) ? role.usuarios : (role.usuarios ? [role.usuarios] : [])
+          // Aseguramos que sean arrays
+          permisos: Array.isArray(role.permisos) ? role.permisos : [],
+          usuarios: Array.isArray(role.usuarios) ? role.usuarios : []
         });
       } else {
         setFormData({ id: '', name: '', permisos: [], usuarios: [] });
@@ -71,6 +67,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const permisoRef = useRef(null);
   const usuarioRef = useRef(null);
 
+  // Click Outside para cerrar dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false);
@@ -87,54 +84,82 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Lógica Permisos (Objetos) ---
+  // --- Lógica Permisos (CORREGIDA) ---
   const handleTogglePermiso = (permisoOption) => {
     setFormData(prev => {
-      const exists = prev.permisos.some(p => p.id === permisoOption.id);
+      // Normalizamos la búsqueda del ID
+      const exists = prev.permisos.some(p => {
+          const pID = p.id || p.permissionId; // Soporta ambas claves
+          return String(pID) === String(permisoOption.id);
+      });
+
       let newPermisos;
       if (exists) {
-        newPermisos = prev.permisos.filter(p => p.id !== permisoOption.id);
+        // Filtrar (Eliminar)
+        newPermisos = prev.permisos.filter(p => {
+            const pID = p.id || p.permissionId;
+            return String(pID) !== String(permisoOption.id);
+        });
       } else {
-        newPermisos = [...prev.permisos, permisoOption];
+        // Agregar (Usamos el formato del option para estandarizar)
+        newPermisos = [...prev.permisos, { id: permisoOption.id, name: permisoOption.name }];
       }
       return { ...prev, permisos: newPermisos };
     });
   };
 
-  // --- Lógica Usuarios (Objetos) ---
+  // --- Lógica Usuarios (CORREGIDA) ---
   const handleToggleUsuario = (usuarioOption) => {
     setFormData(prev => {
-      // Usamos .some() para verificar por ID en lugar de includes()
-      const exists = prev.usuarios.some(u => u.id === usuarioOption.id);
+      const exists = prev.usuarios.some(u => {
+          const uID = u.id || u.userId;
+          return String(uID) === String(usuarioOption.id);
+      });
       
       let newUsuarios;
       if (exists) {
-        // Filtramos por ID para eliminar
-        newUsuarios = prev.usuarios.filter(u => u.id !== usuarioOption.id);
+        newUsuarios = prev.usuarios.filter(u => {
+            const uID = u.id || u.userId;
+            return String(uID) !== String(usuarioOption.id);
+        });
       } else {
-        // Agregamos el objeto completo
-        newUsuarios = [...prev.usuarios, usuarioOption];
+        newUsuarios = [...prev.usuarios, { id: usuarioOption.id, fullName: usuarioOption.fullName }];
       }
       
       return { ...prev, usuarios: newUsuarios };
     });
   };
 
-  const handleDevEdit = () => {
-    alert('La edición de roles está en desarrollo.');
-  }
-
   const handleSave = async () => {
-    if (!formData.name || !formData.permisos || formData.permisos.length === 0 || !formData.usuarios || formData.usuarios.length === 0) {
-      alert('Por favor, complete Nombre, seleccione al menos un Permiso y al menos un Usuario.');
+    setIsLoading(true);
+
+    if (!formData.name) {
+      alert('Por favor, ingrese un nombre para el rol.');
+      setIsLoading(false);
       return;
     }
+    // Validación opcional: permisos/usuarios vacíos (si quieres permitir roles vacíos, quita esto)
+    if (formData.permisos.length === 0 || formData.usuarios.length === 0) {
+        if(!confirm("El rol no tiene permisos o usuarios asignados. ¿Desea guardarlo así?"));
+        setIsLoading(false);
+        return;
+    }
+
+    // Normalizar IDs antes de enviar (backend espera 'id' en los objetos)
+    const normalizedPermisos = formData.permisos.map(p => ({
+        id: p.id || p.permissionId,
+        name: p.name
+    }));
+    const normalizedUsuarios = formData.usuarios.map(u => ({
+        id: u.id || u.userId,
+        fullName: u.fullName || u.username 
+    }));
 
     const roleToSave = {
       id: mode === 'edit' ? formData.id : 0,
       name: formData.name,
-      permisos: formData.permisos, // Array de objetos
-      usuarios: formData.usuarios  // Array de objetos
+      permisos: normalizedPermisos, 
+      usuarios: normalizedUsuarios 
     };
 
     console.log('Guardando rol:', roleToSave);
@@ -150,16 +175,21 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
       });
 
       if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+      
       const data = await response.json();
-      if (data) {
-        const newRoleForState = { ...roleToSave, id: data.role_id}
-        onSave && onSave(newRoleForState, mode);
+      
+      // Callback al padre para actualizar la tabla
+      if (onSave) {
+          onSave(roleToSave, mode);
       }
+      onClose();
+
     } catch (error) {
       console.error(`Error al ${mode === 'add' ? 'agregar' : 'editar'} el rol:`, error);
+      alert("Error al guardar el rol. Revise la consola.");
+    } finally {
+      setIsLoading(false);
     }
-
-    onClose();
   };
 
   return (
@@ -174,13 +204,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
           {mode === 'edit' && (
             <div className="form-group-user">
               <label>ID</label>
-              <input
-                type="text"
-                value={formData.id}
-                readOnly
-                disabled
-                className="text-input disabled-input"
-              />
+              <input type="text" value={formData.id} readOnly disabled className="text-input disabled-input" />
             </div>
           )}
 
@@ -202,86 +226,78 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
               <div
                 className="permiso-dropdown-toggle"
                 onClick={(e) => { e.stopPropagation(); setIsPermisosOpen(prev => !prev); }}
-                role="button"
-                aria-expanded={isPermisosOpen}
                 style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
               >
-                <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
+                <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formData.permisos && formData.permisos.length > 0 
-                    ? formData.permisos.map(p => p.name).join(', ') 
+                    ? `${formData.permisos.length} Permisos seleccionados` // Resumen limpio
                     : 'Seleccione los permisos ...'}
                 </div>
                 <div className="caret">▾</div>
               </div>
 
               {isPermisosOpen && (
-                <div className="dropdown-panel" style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
-                  <div className="permiso-type checkbox-list">
-                    {permissionOptions.map(opt => {
-                        const isSelected = formData.permisos.some(p => p.id === opt.id);
-                        return (
-                          <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
-                            <input
-                              type="checkbox"
-                              name="permisos"
-                              value={opt.id}
-                              checked={isSelected}
-                              onChange={() => handleTogglePermiso(opt)}
-                            />
-                            <span>{opt.name}</span>
-                          </label>
-                        );
-                    })}
-                  </div>
+                <div className="dropdown-panel" style={{ position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
+                  {permissionOptions.map(opt => {
+                      // CORRECCIÓN VISUAL: Comparación robusta de IDs
+                      const isSelected = formData.permisos.some(p => {
+                          const pID = p.id || p.permissionId;
+                          return String(pID) === String(opt.id);
+                      });
+                      
+                      return (
+                        <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected} // Ahora esto será TRUE si el ID coincide
+                            onChange={() => handleTogglePermiso(opt)}
+                          />
+                          <span>{opt.name}</span>
+                        </label>
+                      );
+                  })}
                 </div>
               )}
             </div>
             
             <br />
             
-            {/* --- SECCIÓN USUARIOS (ACTUALIZADA) --- */}
+            {/* --- SECCIÓN USUARIOS --- */}
             <label>Usuarios <span className="required-asterisk">*</span></label>
             <div className="users-container-modal" ref={usuarioRef} style={{ position: 'relative' }}>
               <div
                 className="usuario-dropdown-toggle"
                 onClick={(e) => { e.stopPropagation(); setIsUsuariosOpen(prev => !prev); }}
-                role="button"
-                aria-expanded={isUsuariosOpen}
                 style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
               >
-                {/* Visualizar solo nombres (fullName) */}
-                <div className="selected-summary" style={{ flex: 1, marginRight: 8 }}>
+                <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formData.usuarios && formData.usuarios.length > 0 
-                    ? formData.usuarios.map(u => u.fullName).join(', ') 
+                    ? `${formData.usuarios.length} Usuarios seleccionados`
                     : 'Seleccione los usuarios ...'}
                 </div>
                 <div className="caret">▾</div>
               </div>
 
               {isUsuariosOpen && (
-                <div className="dropdown-panel" style={{ position: 'absolute', left: 0, right: 0, marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
-                  <div className="usuario-type checkbox-list">
-                    {userOptions.map(opt => {
-                      // Verificar si existe el ID en el estado
+                <div className="dropdown-panel" style={{ position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
+                  {userOptions.map(opt => {
+                      // CORRECCIÓN VISUAL: Comparación robusta de IDs
                       const isSelected = formData.usuarios.some(u => {
-                        const storedID = u.userId || u.id;
-                        return storedID === opt.id;
+                        const uID = u.id || u.userId;
+                        return String(uID) === String(opt.id);
                       });
+
                       return (
-                        <label key={opt.id} className="checkbox-item" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px' }}>
+                        <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
                           <input
                             type="checkbox"
-                            name="usuarios"
-                            value={opt.id}
                             checked={isSelected}
-                            // Pasamos el objeto completo 'opt'
                             onChange={() => handleToggleUsuario(opt)}
                           />
                           <span>{opt.fullName}</span>
                         </label>
                       );
-                    })}
-                  </div>
+                  })}
                 </div>
               )}
             </div>
@@ -289,8 +305,8 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
         </div>
 
         <div className="modal-footer-user">
-          <button className="modal-button-user save-button-user" onClick={mode === 'edit' ? handleDevEdit : handleSave}>
-            {mode === 'edit' ? 'Guardar cambios' : 'Agregar Rol'}
+          <button className="modal-button-user save-button-user" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Rol...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Rol')}
           </button>
         </div>
       </div>
