@@ -18,10 +18,11 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
     if (isOpen) {
       if (mode === 'edit' && company) {
         
+        const cleanRifType = String(company.rifType).trim().toUpperCase();
         setFormData({
           id: company.id || '',
           name: company.name || '',
-          RIFtype: company.rifType || '',
+          RIFtype: cleanRifType || '',
           RIF: company.rifNumber || ''
         });
       } else {

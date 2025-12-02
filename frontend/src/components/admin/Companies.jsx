@@ -13,47 +13,61 @@ const Companies = () => {
     const [allCompanies, setAllCompanies] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [filteredCompanies, setFilteredCompanies] = useState(allCompanies);
+    const [filteredCompanies, setFilteredCompanies] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Estados del Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
     const [companyToEdit, setCompanyToEdit] = useState(null);
 
-    useEffect(() => {
-        const fetchAllCompanies = async () => {
-            setIsLoading(true);
+    // --- 1. FUNCIÓN REUTILIZABLE PARA CARGAR DATOS ---
+    const loadCompanies = async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/documents/getDocCompanies`);
 
-            try {
-                const response = await fetch(`${apiUrl}/documents/getDocCompanies`);
-
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log(data);
-                setAllCompanies(data);
-            } catch (err) {
-                console.error('Error al obtener las empresas:', err);
-            } finally {
-                setIsLoading(false);
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
             }
-        };
 
-        fetchAllCompanies();
+            const data = await response.json();
+            console.log("Empresas cargadas:", data);
+            
+            setAllCompanies(data);
+            
+            // Si no hay búsqueda activa, actualizamos la vista inmediatamente
+            // (Si hay búsqueda, el useEffect de abajo se encargará de filtrar la nueva lista)
+            if (!searchTerm) {
+                setFilteredCompanies(data);
+            }
+            
+        } catch (err) {
+            console.error('Error al obtener las empresas:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // --- 2. EFECTO DE CARGA INICIAL ---
+    useEffect(() => {
+        loadCompanies();
     }, []);
 
+    // --- 3. LÓGICA DE FILTRADO ---
     useEffect(() => {
         let results = [...allCompanies];
         if (searchTerm && searchTerm.trim() !== '') {
             const q = searchTerm.toLowerCase();
             results = results.filter(c =>
-                c.name.toLowerCase().includes(q) /*|| c.rifNumber.toLowerCase().includes(q)*/
+                c.name.toLowerCase().includes(q) || 
+                (c.rifNumber && c.rifNumber.toString().includes(q))
             );
         }
         setFilteredCompanies(results);
     }, [searchTerm, allCompanies]);
 
+    // --- 4. PAGINACIÓN ---
     const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE) || 1;
 
     const paginated = useMemo(() => {
@@ -69,6 +83,8 @@ const Companies = () => {
         if (page >= 1 && page <= totalPages) setCurrentPage(page);
     };
 
+    // --- 5. MANEJADORES DE ACCIÓN ---
+
     const handleAddCompany = () => {
         setModalMode('add');
         setCompanyToEdit(null);
@@ -83,18 +99,17 @@ const Companies = () => {
         setIsModalOpen(true);
     };
 
-    const handleSaveCompany = (companyObj, mode) => {
-        if (mode === 'add') {
-            setAllCompanies(prev => [companyObj, ...prev]);
-        } else if (mode === 'edit') {
-            setAllCompanies(prev => prev.map(c => c.id === companyObj.id ? companyObj : c));
-        }
-        // actualizar también filteredCompanies inmediatamente
-        setFilteredCompanies(prev => {
-            const exists = prev.some(c => c.id === companyObj.id);
-            if (mode === 'add') return [companyObj, ...prev];
-            return prev.map(c => c.id === companyObj.id ? companyObj : c);
-        });
+    // --- 6. MANEJADOR DE GUARDADO (POST-MODAL) ---
+    const handleSaveCompany = async () => {
+        // Cerramos el modal
+        setIsModalOpen(false);
+        setCompanyToEdit(null);
+        
+        // Recargamos los datos del servidor para ver los cambios
+        await loadCompanies();
+        
+        // Opcional: Mostrar alerta de éxito
+        // alert("Lista de empresas actualizada.");
     };
 
     return (
@@ -107,7 +122,7 @@ const Companies = () => {
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
                             type="text"
-                            placeholder="Buscar por nombre..."
+                            placeholder="Buscar por nombre o RIF..."
                             className="search-input-doc-list-sendDocuments"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,7 +139,9 @@ const Companies = () => {
 
                 <div className="send-action-and-table-container">
                     <div className="documents-table-wrapper">
-                        {paginated.length > 0 ? (
+                        {isLoading && paginated.length === 0 ? (
+                            <p style={{textAlign:'center', padding:'20px'}}>Cargando empresas...</p>
+                        ) : paginated.length > 0 ? (
                             <table className="documents-table">
                                 <thead>
                                     <tr>
@@ -134,21 +151,26 @@ const Companies = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                            {paginated.map(company => (
-                                                <tr key={company.id}>
-                                                    <td>{company.name}</td>
-                                                    <td>{`${company.rifType} - ${company.rifNumber}`}</td>
-                                                    <td className="actions-cell">
-                                                        <button 
-                                                            className="view-button" 
-                                                            onClick={() => handleEditCompany(company.id)}
-                                                            title="Editar Empresa"
-                                                        >
-                                                            <img src={editIcon} alt="Editar" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                    {paginated.map(company => (
+                                        <tr key={company.id}>
+                                            <td>{company.name}</td>
+                                            {/* Manejo seguro si rifType o rifNumber vienen nulos */}
+                                            <td>
+                                                {company.rifType && company.rifNumber 
+                                                    ? `${company.rifType}-${company.rifNumber}` 
+                                                    : 'N/A'}
+                                            </td>
+                                            <td className="actions-cell">
+                                                <button 
+                                                    className="view-button" 
+                                                    onClick={() => handleEditCompany(company.id)}
+                                                    title="Editar Empresa"
+                                                >
+                                                    <img src={editIcon} alt="Editar" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         ) : (
@@ -157,8 +179,8 @@ const Companies = () => {
                     </div>
                 </div>
 
-                {/* Paginación */}
-                {filteredCompanies.length > ITEMS_PER_PAGE && (
+                {/* Controles de Paginación (Solo si hay más de 1 página) */}
+                {totalPages > 1 && (
                     <div className="pagination-controls">
                         <button 
                             onClick={() => goToPage(currentPage - 1)} 
@@ -167,17 +189,7 @@ const Companies = () => {
                         >
                             Anterior
                         </button>
-                        <div className="page-numbers">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => goToPage(page)}
-                                    className={`page-number-button ${currentPage === page ? 'active' : ''}`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-                        </div>
+                        <span style={{margin: '0 10px'}}>Página {currentPage} de {totalPages}</span>
                         <button 
                             onClick={() => goToPage(currentPage + 1)} 
                             disabled={currentPage === totalPages}
@@ -188,6 +200,8 @@ const Companies = () => {
                     </div>
                 )}
             </div>
+
+            {/* MODAL */}
             <CompaniesModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
