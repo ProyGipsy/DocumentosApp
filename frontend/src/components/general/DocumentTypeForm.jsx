@@ -126,11 +126,26 @@ const CreateDocumentType = () => {
             setIsModalOpen(true);
         }
 
-        setFields(prevFields => 
-            prevFields.map(field => 
-                field.id === id ? { ...field, [name]: value } : field
-            )
-        );
+        setFields(prev => prev.map(f => {
+            if (f.id === id) {
+                // Creamos la copia del campo actualizado
+                const updatedField = { ...f, [name]: value };
+                
+                // Resetea los valores de longitud y precisión según el campo seleccionado para evitar envíos erroneos al backend
+                if (name === 'fieldType' && value !== 'float') {
+                    if (value === 'char') {
+                        updatedField.fieldLength = 1;
+                    }
+                    else {
+                        updatedField.fieldLength = 0;
+                        updatedField.fieldPrecision = 0;
+                    }
+                }
+                
+                return updatedField;
+            }
+            return f;
+        }));
     };
 
     // --- MANEJADORES DEL MODAL ---
@@ -183,12 +198,15 @@ const CreateDocumentType = () => {
 
                 const isTempId = typeof f.id === 'string' && f.id.startsWith('temp-');
 
+                const finalPrecision = f.fieldType === 'float' ? (parseInt(f.fieldPrecision) || 0) : 0;
+                const finalLength = f.fieldType === 'char' ? 1 : ((f.fieldType === 'date' || f.fieldType === 'bool' || f.fieldType === 'specificValues') ? 0 : parseInt(f.fieldLength) || 0)
+
                 return {
                     id: isTempId ? null : f.id, 
                     name: f.fieldName, 
                     type: f.fieldType,
-                    precision: parseInt(f.fieldPrecision) || 0,
-                    length: parseInt(f.fieldLength) || 0,
+                    precision: finalPrecision || 0,
+                    length: finalLength || 0,
                     specificValues: f.specificValues
                 };
             })
@@ -225,19 +243,6 @@ const CreateDocumentType = () => {
     };
 
     // --- RENDERIZADO ---
-
-    /*
-    if (isLoading) {
-        return (
-            <LayoutBase activePage="documentType">
-                <div className="loading-container" style={{ padding: '50px', textAlign: 'center' }}>
-                    <h3>Cargando información del documento...</h3>
-                </div>
-            </LayoutBase>
-        );
-    }
-    */
-
     return (
         <LayoutBase activePage="documentType">
             <div className="document-type-wrapper-page"> 
@@ -314,11 +319,15 @@ const CreateDocumentType = () => {
                                             <th>Tipo de Dato</th>
                                             <th>Longitud</th>
                                             <th>Precisión</th>
-                                            <th></th> {/* Acciones */}
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {fields.map((field) => (
+                                        {fields.map((field) => {
+                                            const isPrecisionDisabled = field.fieldType !== 'float';
+                                            const isLengthDisabled = field.fieldType === 'char' || field.fieldType === 'date' || field.fieldType === 'bool' || field.fieldType === 'specificValues'
+
+                                            return (
                                             <tr key={field.id}>
                                                 
                                                 {/* Nombre */}
@@ -376,6 +385,12 @@ const CreateDocumentType = () => {
                                                         onChange={(e) => handleFieldChange(field.id, e)}
                                                         className="table-input"
                                                         min="0"
+                                                        disabled={isLengthDisabled}
+                                                        style={{
+                                                            backgroundColor: isLengthDisabled ? '#f5f5f5' : 'white', 
+                                                            cursor: isLengthDisabled ? 'not-allowed' : 'text',
+                                                            color: isLengthDisabled ? '#aaa' : 'inherit'
+                                                        }}
                                                     />
                                                 </td>
 
@@ -388,6 +403,12 @@ const CreateDocumentType = () => {
                                                         onChange={(e) => handleFieldChange(field.id, e)}
                                                         className="table-input"
                                                         min="0"
+                                                        disabled={isPrecisionDisabled}
+                                                        style={{
+                                                            backgroundColor: isPrecisionDisabled ? '#f5f5f5' : 'white', 
+                                                            cursor: isPrecisionDisabled ? 'not-allowed' : 'text',
+                                                            color: isPrecisionDisabled ? '#aaa' : 'inherit'
+                                                        }}
                                                     />
                                                 </td>
 
@@ -404,7 +425,7 @@ const CreateDocumentType = () => {
                                                     </button>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        )})}
                                     </tbody>
                                 </table>
                             </div>
