@@ -23,7 +23,7 @@ const DocumentFieldsModal = ({
     isOpen, onClose, company, documentType, onSaveDocument, 
     onDocumentCreatedAndReadyToSend, mode = 'create', 
     initialFormData = {}, initialAttachmentName,
-    documentId 
+    documentId, currentAnnexUrl
 }) => {
     
     const [formData, setFormData] = useState({}); 
@@ -317,12 +317,12 @@ const DocumentFieldsModal = ({
                                     required={isCreating} 
                                 />
                                 {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento */}
-                                {isEditing && attachmentName && !attachment && initialFormData.annexUrl && (
+                                {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
                                         Actual:
                                         <strong>
                                             <a 
-                                                href={initialFormData.annexUrl} 
+                                                href={currentAnnexUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 className="file-link-display"
@@ -342,16 +342,16 @@ const DocumentFieldsModal = ({
                         {isViewing && (
                             <div className="form-group-user file-upload-group"> 
                                 <label>Anexo:</label>
-                                {initialFormData.annexUrl ? (
+                                {currentAnnexUrl ? (
                                     <p className="static-field-value file-name-display">
                                         <strong>
                                             <a 
-                                                href={initialFormData.annexUrl} 
+                                                href={currentAnnexUrl} 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
                                                 className="file-link-display"
                                             >
-                                                {attachmentName || 'Ver Anexo'}
+                                                {'Ver Anexo'}
                                             </a>
                                         </strong>
                                     </p>

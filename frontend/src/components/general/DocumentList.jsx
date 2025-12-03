@@ -318,6 +318,7 @@ const DocumentList = ({ folderId, folderName }) => {
                     
                     // Callback de éxito
                     onSaveDocument={handleSaveSuccess}
+                    currentAnnexUrl={selectedDocDetails.AnnexURL}
                 />
             )}
 

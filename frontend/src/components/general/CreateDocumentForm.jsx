@@ -281,6 +281,7 @@ const CreateDocumentForm = () => {
                         initialFormData={documentDetails?.fieldsData || {}}
                         initialAttachmentName={documentDetails?.attachment}
                         onDocumentCreatedAndReadyToSend={handleDocumentCreatedAndReadyToSend}
+                        currentAnnexUrl={documentDetails?.annexUrl}
                     />
                 )}
 
