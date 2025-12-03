@@ -5,6 +5,7 @@ import searchIcon from '../../assets/img/Lupa.png';
 import folderIcon from '../../assets/img/folder.png'
 import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/homeGeneral.css';
+import { useAuth } from '../../utils/AuthContext';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
@@ -27,6 +28,8 @@ const mockFolders = [
 */
 
 const HomeAdmin = () => {
+    const { user } = useAuth();
+    console.log(user);
     const [mockFolders, setMockFolders] = useState([])
     const [searchTerm, setSearchTerm] = useState('');
     const [message, setMessage] = useState('');
@@ -96,7 +99,7 @@ const HomeAdmin = () => {
                 {/* Título y Bienvenida */}
                 <div className="title-section-home">
                     <h2>Gestión de Documentos Gipsy</h2>
-                    <h3>Bienvenido(a), Usuario</h3>
+                    <h3>Bienvenido(a), {user.firstName}</h3>
                 </div>
 
                 {/* Barra de Búsqueda */}

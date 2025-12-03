@@ -132,6 +132,7 @@ const CreateDocumentForm = () => {
 
                 if (!textData) throw new Error("La respuesta está vacía");
                 const data = JSON.parse(textData);
+                console.log(data.fields[0].id);
 
                 setFullDocTypeDetails(data);
                 setIsModalOpen(true);
@@ -280,6 +281,7 @@ const CreateDocumentForm = () => {
                         initialFormData={documentDetails?.fieldsData || {}}
                         initialAttachmentName={documentDetails?.attachment}
                         onDocumentCreatedAndReadyToSend={handleDocumentCreatedAndReadyToSend}
+                        currentAnnexUrl={documentDetails?.annexUrl}
                     />
                 )}
 
