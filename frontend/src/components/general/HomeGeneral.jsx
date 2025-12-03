@@ -99,7 +99,11 @@ const HomeAdmin = () => {
                 {/* Título y Bienvenida */}
                 <div className="title-section-home">
                     <h2>Gestión de Documentos Gipsy</h2>
-                    <h3>Bienvenido(a), {user.firstName}</h3>
+                    {user ? (
+                        <h3>Bienvenido(a), {user.firstName}</h3>
+                    ) : (
+                        <h3>Bienvenido(a)</h3>
+                    )}
                 </div>
 
                 {/* Barra de Búsqueda */}
