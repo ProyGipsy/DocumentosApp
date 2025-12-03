@@ -301,7 +301,12 @@ const DocumentFieldsModal = ({
                     
                     {/* ... resto del formulario (Archivo y Botones) igual que antes ... */}
                     <div className="form-group-user file-upload-group">
-                        <label><span className="required-asterisk">*</span> Anexo (.pdf):</label>
+                        <label><span className="required-asterisk">*</span> Anexo:</label>
+                        {(isCreating || isEditing) && (
+                            <small style={{ display: 'block', marginBottom: '12px', color: '#555' }}>
+                                Solo se aceptan archivos PDF
+                            </small>
+                        )}
                         {!isViewing && (
                             <>
                                 <input 
@@ -311,15 +316,49 @@ const DocumentFieldsModal = ({
                                     onChange={handleFileChange}
                                     required={isCreating} 
                                 />
-                                {isEditing && attachmentName && !attachment && (
+                                {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento */}
+                                {isEditing && attachmentName && !attachment && initialFormData.annexUrl (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
-                                        Actual: <strong>{attachmentName}</strong>
+                                        Actual:
+                                        <strong>
+                                            <a 
+                                                href={initialFormData.annexUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="file-link-display"
+                                            >
+                                                {attachmentName}
+                                            </a>
+                                        </strong>
                                     </small>
                                 )}
                             </>
                         )}
-                        {isViewing && (
+                        {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento.
+                            Comento el fragmento original. Para agregar el enlace en visualización debería ser algo tipo lo que está abajo. */}
+                        {/* {isViewing && (
                             <p className="static-field-value file-name-display">{attachmentName || 'Sin archivo'}</p>
+                        )} */}
+                        {isViewing && (
+                            <div className="form-group-user file-upload-group"> 
+                                <label>Anexo:</label>
+                                {initialFormData.annexUrl ? (
+                                    <p className="static-field-value file-name-display">
+                                        <strong>
+                                            <a 
+                                                href={initialFormData.annexUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="file-link-display"
+                                            >
+                                                {attachmentName || 'Ver Anexo'}
+                                            </a>
+                                        </strong>
+                                    </p>
+                                ) : (
+                                    <p className="static-field-value file-name-display">Sin archivo</p>
+                                )}
+                            </div>
                         )}
                     </div>
 
@@ -333,6 +372,7 @@ const DocumentFieldsModal = ({
                                     onChange={(e) => setSendDocument(e.target.checked)}
                                     style={{marginRight: '10px'}}
                                 />
+                                <span className="custom-checkmark"></span>
                                 ¿Desea enviar el documento luego de crearlo?
                             </label>
                         </div>
