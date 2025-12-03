@@ -254,8 +254,8 @@ const DocumentList = ({ folderId, folderName }) => {
                         <table className="documents-table">
                             <thead>
                                 <tr>
-                                    <th>NOMBRE</th>
-                                    <th>EMPRESA</th>
+                                    <th>ID</th>
+                                    <th>NOMBRE - EMPRESA</th>
                                     <th>FECHA</th>
                                     <th>ACCIONES</th>
                                 </tr>
@@ -263,8 +263,8 @@ const DocumentList = ({ folderId, folderName }) => {
                             <tbody>
                                 {filteredDocuments.map(doc => (
                                     <tr key={doc.id}>
-                                        <td>{doc.name}</td>
-                                        <td>{doc.company}</td>
+                                        <td>{doc.id}</td>
+                                        <td>{activeFolderName} - {doc.company}</td>
                                         <td>{formatDate(doc.date)}</td>
                                         <td className="actions-cell">
                                             <button 

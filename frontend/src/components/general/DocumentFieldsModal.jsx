@@ -217,7 +217,7 @@ const DocumentFieldsModal = ({
             <div className="modal-content-user" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header-user">
                     <h3>
-                        {isViewing ? 'Visualizar' : isEditing ? 'Editar' : 'Nuevo'}: <span style={{color: '#8b56ed'}}>{documentType.name}</span>
+                        {isViewing ? 'Visualizar' : isEditing ? 'Editar' : 'Nuevo'}: <span style={{color: '#8b56ed'}}>{documentType.name}-{company.name}</span>
                     </h3>
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
@@ -301,7 +301,9 @@ const DocumentFieldsModal = ({
                     
                     {/* ... resto del formulario (Archivo y Botones) igual que antes ... */}
                     <div className="form-group-user file-upload-group">
-                        <label><span className="required-asterisk">*</span> Anexo:</label>
+                        {(isCreating || isEditing) && (
+                            <label><span className="required-asterisk">*</span> Anexo:</label>
+                        )}
                         {(isCreating || isEditing) && (
                             <small style={{ display: 'block', marginBottom: '12px', color: '#555' }}>
                                 Solo se aceptan archivos PDF
@@ -316,7 +318,6 @@ const DocumentFieldsModal = ({
                                     onChange={handleFileChange}
                                     required={isCreating} 
                                 />
-                                {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento */}
                                 {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
                                         Actual:
@@ -327,20 +328,15 @@ const DocumentFieldsModal = ({
                                                 rel="noopener noreferrer"
                                                 className="file-link-display"
                                             >
-                                                {attachmentName}
+                                                {documentType.name}-{company.name} Anexo.pdf
                                             </a>
                                         </strong>
                                     </small>
                                 )}
                             </>
                         )}
-                        {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento.
-                            Comento el fragmento original. Para agregar el enlace en visualización debería ser algo tipo lo que está abajo. */}
-                        {/* {isViewing && (
-                            <p className="static-field-value file-name-display">{attachmentName || 'Sin archivo'}</p>
-                        )} */}
                         {isViewing && (
-                            <div className="form-group-user file-upload-group"> 
+                            <div className="form-group-user"> 
                                 <label>Anexo:</label>
                                 {currentAnnexUrl ? (
                                     <p className="static-field-value file-name-display">
@@ -351,7 +347,7 @@ const DocumentFieldsModal = ({
                                                 rel="noopener noreferrer"
                                                 className="file-link-display"
                                             >
-                                                {'Ver Anexo'}
+                                                Ver Anexo {documentType.name}-{company.name}.pdf
                                             </a>
                                         </strong>
                                     </p>
