@@ -317,7 +317,7 @@ const DocumentFieldsModal = ({
                                     required={isCreating} 
                                 />
                                 {/* HOLA. Aquí se quiere agregar el enlace del archivo anexo del documento */}
-                                {isEditing && attachmentName && !attachment && initialFormData.annexUrl (
+                                {isEditing && attachmentName && !attachment && initialFormData.annexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
                                         Actual:
                                         <strong>
