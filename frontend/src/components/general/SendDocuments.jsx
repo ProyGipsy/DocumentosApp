@@ -294,9 +294,8 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                                                 onChange={handleSelectAll}
                                             />
                                         </th>
-                                        <th>NOMBRE</th>
-                                        <th>TIPO</th>
-                                        <th>EMPRESA</th>
+                                        <th>ID</th>
+                                        <th>NOMBRE - EMPRESA</th>
                                         <th>FECHA</th>
                                     </tr>
                                 </thead>
@@ -310,9 +309,8 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                                                     onChange={() => handleSelectDocument(doc.id)}
                                                 />
                                             </td>
-                                            <td>{doc.name}</td>
-                                            <td>{doc.type}</td>
-                                            <td>{doc.company}</td>
+                                            <td>{doc.id}</td>
+                                            <td>{doc.type} - {doc.company}</td>
                                             <td>{formatDate(doc.date)}</td>
                                         </tr>
                                     ))}
@@ -343,7 +341,8 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 selectedDocuments={selectedDocuments}
                 selectedDocumentNames={allDocuments
                     .filter(d => selectedDocuments.includes(d.id))
-                    .map(d => d.name)}
+                    // CAMBIO A: d.type - d.company
+                    .map(d => `${d.type} - ${d.company}`)} 
                 onSend={onConfirmSend}
                 isLoading={isLoading}
             />
