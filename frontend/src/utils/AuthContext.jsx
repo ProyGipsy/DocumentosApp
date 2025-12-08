@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
-// Asegúrate de importar tu apiUrl
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
@@ -12,34 +11,41 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/documents/me`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include' // <--- ¡ESTA LÍNEA ES OBLIGATORIA!
-        });
+      const params = new URLSearchParams(window.location.search);
+      let token = params.get('token'); 
 
-        if (response.ok) {
-          const data = await response.json();
-          // Asumiendo que tu backend devuelve { logged_in: true, user: {...} }
-          // Ajusta esto según la respuesta real de tu endpoint /me
-          if (data.logged_in || data.authenticated) {
-             setUser(data.user || data); 
-          } else {
-             setUser(null);
-          }
-        } else {
-          // Si responde 401 u otro error, no hay usuario
-          setUser(null);
-        }
-      } catch (error) {
-        console.error("Error verificando sesión:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+      if (token) {
+        localStorage.setItem('docs_auth_token', token);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        token = localStorage.getItem('docs_auth_token');
       }
+
+      if (token) {
+        try {
+          const response = await fetch(`${apiUrl}/documents/getUser`, { 
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user || data); 
+          } else {
+            console.error('Token inválido o expirado');
+            localStorage.removeItem('docs_auth_token'); // Limpiamos token malo
+          }
+        } catch (error) {
+          console.error('Error en el fetch:', error);
+        }
+      } else {
+        console.log('No hay sesión activa');
+      }
+
+      setLoading(false);
     };
 
     checkSession();
