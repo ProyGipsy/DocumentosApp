@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
           if (response.ok) {
             const data = await response.json();
-            setUser(data.user || data); 
+            setUser(data.user); 
           } else {
             console.error('Token inválido o expirado');
             localStorage.removeItem('docs_auth_token'); // Limpiamos token malo

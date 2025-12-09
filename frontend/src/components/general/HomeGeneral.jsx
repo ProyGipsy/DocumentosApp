@@ -29,7 +29,6 @@ const mockFolders = [
 
 const HomeAdmin = () => {
     const { user } = useAuth();
-    console.log(user);
     const [mockFolders, setMockFolders] = useState([])
     const [searchTerm, setSearchTerm] = useState('');
     const [message, setMessage] = useState('');
