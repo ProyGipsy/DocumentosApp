@@ -23,6 +23,7 @@ const DocumentList = ({ folderId, folderName }) => {
     const [filteredDocuments, setFilteredDocuments] = useState([]);
     const [dateHeaderLabel, setDateHeaderLabel] = useState('FECHA');
     const [isLoading, setIsLoading] = useState(false);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'none' });
     
     // Filtros
     const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +144,7 @@ const DocumentList = ({ folderId, folderName }) => {
 
             // Si al menos uno tiene vencimiento, cambiamos el header a VENCIMIENTO
             const anyHasExpiration = formattedDocs.some(fd => !!fd.date);
-            setDateHeaderLabel(anyHasExpiration ? 'VENCIMIENTO' : ' ');
+            setDateHeaderLabel(anyHasExpiration ? 'VENCIMIENTO' : '');
 
             setAllDocuments(formattedDocs);
             setFilteredDocuments(formattedDocs);
@@ -211,9 +212,61 @@ const DocumentList = ({ folderId, folderName }) => {
                 );
             }
         }
-        
+
+        // --- Aplicar ordenamiento si corresponde ---
+        if (sortConfig.key === 'date' && sortConfig.direction !== 'none') {
+            currentDocuments.sort((a, b) => {
+                const parse = (s) => {
+                    if (!s) return null;
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+                        const [y, m, d] = s.split('-').map(Number);
+                        return new Date(y, m - 1, d).getTime();
+                    }
+                    const dt = new Date(s);
+                    return isNaN(dt.getTime()) ? null : dt.getTime();
+                };
+
+                const dateA = parse(a.date);
+                const dateB = parse(b.date);
+
+                const isANull = dateA === null;
+                const isBNull = dateB === null;
+
+                if (isANull && isBNull) return 0;
+                if (isANull) return sortConfig.direction === 'asc' ? 1 : -1;
+                if (isBNull) return sortConfig.direction === 'asc' ? -1 : 1;
+
+                if (dateA < dateB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (dateA > dateB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
         setFilteredDocuments(currentDocuments);
-    }, [searchTerm, primaryFilter, secondaryFilter, allDocuments]);
+    }, [searchTerm, primaryFilter, secondaryFilter, allDocuments, sortConfig]);
+
+    // --- Manejador de ordenamiento para la columna de fecha ---
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') {
+                direction = 'desc';
+            } else if (sortConfig.direction === 'desc') {
+                direction = 'none';
+                key = null;
+            } else {
+                direction = 'asc';
+            }
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIndicator = (key) => {
+        if (sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'asc') return ' ▲';
+        if (sortConfig.direction === 'desc') return ' ▼';
+        return null;
+    };
 
 
     // ----------------------------------------------------
@@ -356,7 +409,15 @@ const DocumentList = ({ folderId, folderName }) => {
                                 <tr>
                                     <th>ID</th>
                                     <th>NOMBRE - EMPRESA</th>
-                                    <th>{dateHeaderLabel}</th>
+                                    <th>
+                                        <span
+                                            onClick={() => handleSort('date')}
+                                            style={{ cursor: 'pointer', userSelect: 'none' }}
+                                        >
+                                            {dateHeaderLabel}
+                                            {getSortIndicator('date')}
+                                        </span>
+                                    </th>
                                     <th>ACCIONES</th>
                                 </tr>
                             </thead>

@@ -25,6 +25,8 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     const [secondaryFilterOptions, setSecondaryFilterOptions] = useState([]);
 
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'none' });
     
     // --- 1. CARGA DE DATOS (FETCH) ---
     useEffect(() => {
@@ -202,9 +204,38 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 );
             }
         }
+
+        // --- E. APLICACIÓN DEL ORDENAMIENTO ---
+        if (sortConfig.key === 'date' && sortConfig.direction !== 'none') {
+            const parse = (s) => {
+                if (!s) return null;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+                    const [y, m, d] = s.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                }
+                const dt = new Date(s);
+                return isNaN(dt.getTime()) ? null : dt.getTime();
+            };
+
+            currentDocuments.sort((a, b) => {
+                const dateA = parse(a.date);
+                const dateB = parse(b.date);
+
+                const isANull = dateA === null;
+                const isBNull = dateB === null;
+
+                if (isANull && isBNull) return 0;
+                if (isANull) return sortConfig.direction === 'asc' ? 1 : -1;
+                if (isBNull) return sortConfig.direction === 'asc' ? -1 : 1;
+
+                if (dateA < dateB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (dateA > dateB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
         
         setFilteredDocuments(currentDocuments);
-    }, [searchTerm, primaryFilter, secondaryFilter, allDocuments]);
+    }, [searchTerm, primaryFilter, secondaryFilter, allDocuments, sortConfig]);
     
 
     // --- Paginación ---
@@ -219,6 +250,29 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filteredDocuments.length]);
+
+
+    // --- 3. MANEJADOR DE CLIC DEL ENCABEZADO ---
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key) {
+            if (sortConfig.direction === 'asc') {
+                direction = 'desc';
+            } else if (sortConfig.direction === 'desc') {
+                direction = 'none'; // Volver al estado inicial (sin ordenar)
+                key = null;
+            } else {
+                direction = 'asc';
+            }
+        }
+        setSortConfig({ key, direction });
+    };
+    const getSortIndicator = (key) => {
+        if (sortConfig.key !== key) return null;
+        if (sortConfig.direction === 'asc') return ' ▲';
+        if (sortConfig.direction === 'desc') return ' ▼';
+        return null;
+    };
 
 
     // --- Lógica de Selección ---
@@ -383,7 +437,16 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                                         </th>
                                         <th>ID</th>
                                         <th>NOMBRE - EMPRESA</th>
-                                        <th>{dateHeaderLabel}</th>
+                                        <th>
+                                            {/* --- 4. APLICAR EL MANEJADOR DE CLIC --- */}
+                                            <span 
+                                                onClick={() => handleSort('date')} 
+                                                style={{cursor: 'pointer', userSelect: 'none'}} // Estilos para indicar que es clickeable
+                                            >
+                                                {dateHeaderLabel}
+                                                {getSortIndicator('date')} {/* Mostrar flecha */}
+                                            </span>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
