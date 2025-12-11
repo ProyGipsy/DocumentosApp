@@ -11,6 +11,7 @@ const ITEMS_PER_PAGE = 20;
 
 const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     const [allDocuments, setAllDocuments] = useState([]);
+    const [dateHeaderLabel, setDateHeaderLabel] = useState('FECHA');
     const [isLoading, setIsLoading] = useState(false);
     
     // Estados para filtros
@@ -47,14 +48,84 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 const data = await response.json();
 
                 // Mapeo seguro de datos (Backend -> Frontend)
-                const formattedDocs = data.map(doc => ({
-                    id: doc.DocumentID || doc.id, 
-                    name: `Documento #${doc.DocumentID || doc.id}`, // O doc.Name si existe
-                    // Aseguramos que existan estos campos (si vienes de getAllDocuments deberían estar)
-                    type: doc.TypeName || doc.docTypeName || 'Sin Tipo', 
-                    company: doc.CompanyName || doc.companyName || 'Sin Empresa', 
-                    date: doc.AnnexDate 
+                // Extraer posible fecha de vencimiento llamando a getDocument por cada documento
+                const extractExpiration = (docData) => {
+                    if (!docData) return null;
+                    const fields = docData.fieldsData || docData.fields || null;
+
+                    const normalize = (s) => (s || '').toString().trim().toLowerCase();
+
+                    const checkAndReturn = (name, value) => {
+                        if (!value && value !== 0) return null;
+                        const v = value;
+                        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())) {
+                            return v.trim();
+                        }
+                        const date = new Date(v);
+                        if (!isNaN(date.getTime())) {
+                            const y = date.getFullYear();
+                            const m = String(date.getMonth() + 1).padStart(2, '0');
+                            const d = String(date.getDate()).padStart(2, '0');
+                            return `${y}-${m}-${d}`;
+                        }
+                        return null;
+                    };
+
+                    if (fields && typeof fields === 'object' && !Array.isArray(fields)) {
+                        for (const [k, v] of Object.entries(fields)) {
+                            const key = normalize(k);
+                            if (key.includes('vencim') || key.includes('fecha de venc')) {
+                                if (typeof v === 'object' && v !== null) {
+                                    const candidate = v.Value || v.value || v.valor || v.text || v.textValue || null;
+                                    const res = checkAndReturn(k, candidate ?? v);
+                                    if (res) return res;
+                                } else {
+                                    const res = checkAndReturn(k, v);
+                                    if (res) return res;
+                                }
+                            }
+                        }
+                    }
+
+                    if (Array.isArray(fields)) {
+                        for (const f of fields) {
+                            const name = normalize(f.name || f.fieldName || f.label || f.FieldName);
+                            if (name && (name.includes('vencim') || name.includes('fecha de venc'))) {
+                                const candidate = f.value ?? f.Value ?? f.default ?? f.text ?? null;
+                                const res = checkAndReturn(f.name || f.fieldName, candidate ?? f);
+                                if (res) return res;
+                            }
+                        }
+                    }
+
+                    return null;
+                };
+
+                const detailsPromises = data.map(async (doc) => {
+                    try {
+                        const id = doc.DocumentID || doc.id;
+                        const docRes = await fetch(`${apiUrl}/documents/getDocument?id=${id}`);
+                        if (!docRes.ok) return { raw: doc, expiration: null };
+                        const docData = await docRes.json();
+                        const expiration = extractExpiration(docData);
+                        return { raw: doc, expiration };
+                    } catch (err) {
+                        return { raw: doc, expiration: null };
+                    }
+                });
+
+                const details = await Promise.all(detailsPromises);
+
+                const formattedDocs = details.map(d => ({
+                    id: d.raw.DocumentID || d.raw.id,
+                    name: `Documento #${d.raw.DocumentID || d.raw.id}`,
+                    type: d.raw.TypeName || d.raw.docTypeName || 'Sin Tipo',
+                    company: d.raw.CompanyName || d.raw.companyName || 'Sin Empresa',
+                    date: d.expiration || null
                 }));
+
+                const anyHasExpiration = formattedDocs.some(fd => !!fd.date);
+                setDateHeaderLabel(anyHasExpiration ? 'VENCIMIENTO' : 'FECHA');
 
                 setAllDocuments(formattedDocs);
                 setFilteredDocuments(formattedDocs);
@@ -73,7 +144,7 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     // --- 2. LÓGICA DE FILTRADO ---
     useEffect(() => {
         let currentDocuments = [...allDocuments];
-    
+
         // A. Búsqueda por texto
         if (searchTerm) {
             currentDocuments = currentDocuments.filter(doc =>
@@ -81,37 +152,46 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 doc.company.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-    
+
+        const getYear = (dateStr) => {
+            if (!dateStr) return null;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return Number(dateStr.split('-')[0]);
+            const dt = new Date(dateStr);
+            return isNaN(dt.getTime()) ? null : dt.getFullYear();
+        };
+
         // B. Opciones del filtro secundario
         let newSecondaryOptions = [];
         if (primaryFilter === 'year') {
             const years = [...new Set(currentDocuments
                 .filter(d => d.date)
-                .map(d => new Date(d.date).getFullYear())
+                .map(d => getYear(d.date))
+                .filter(y => y !== null)
             )].sort((a, b) => b - a);
             newSecondaryOptions = years.map(year => ({ value: String(year), label: String(year) }));
-        
+
         } else if (primaryFilter === 'company') {
             const companies = [...new Set(currentDocuments.map(d => d.company))].sort();
             newSecondaryOptions = companies.map(company => ({ value: company, label: company }));
-        
+
         } else if (primaryFilter === 'type') {
             const types = [...new Set(currentDocuments.map(d => d.type))].sort();
             newSecondaryOptions = types.map(type => ({ value: type, label: type }));
         }
         setSecondaryFilterOptions(newSecondaryOptions);
-    
+
         // C. Limpieza de filtro secundario
         if (primaryFilter && secondaryFilter && !newSecondaryOptions.some(opt => opt.value === secondaryFilter)) {
             setSecondaryFilter('');
         }
-    
+
         // D. Aplicación de filtros
         if (primaryFilter && secondaryFilter) {
             if (primaryFilter === 'year') {
-                currentDocuments = currentDocuments.filter(doc =>
-                    doc.date && String(new Date(doc.date).getFullYear()) === secondaryFilter
-                );
+                currentDocuments = currentDocuments.filter(doc => {
+                    const y = getYear(doc.date);
+                    return y !== null && String(y) === secondaryFilter;
+                });
             } else if (primaryFilter === 'company') {
                 currentDocuments = currentDocuments.filter(doc =>
                     doc.company === secondaryFilter
@@ -217,7 +297,14 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
-        const date = new Date(dateString);
+        const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.test(dateString);
+        let date;
+        if (dateOnlyMatch) {
+            const [y, m, d] = dateString.split('-').map(Number);
+            date = new Date(y, m - 1, d);
+        } else {
+            date = new Date(dateString);
+        }
         return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('es-ES');
     };
 
@@ -296,7 +383,7 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                                         </th>
                                         <th>ID</th>
                                         <th>NOMBRE - EMPRESA</th>
-                                        <th>FECHA</th>
+                                        <th>{dateHeaderLabel}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
