@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../utils/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
 import eyeIcon from '../../assets/img/eye.png';
@@ -32,6 +33,14 @@ const DocumentList = ({ folderId, folderName }) => {
     const [secondaryFilterOptions, setSecondaryFilterOptions] = useState([]);
     
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const hasRole = (roleId) => {
+        if (!user) return false;
+        return Array.isArray(user.roles) && user.roles.some(r => (typeof r === 'number' ? r === roleId : (r.id === roleId || r.roleId === roleId)));
+    };
+    const isEditor = hasRole(11);
+    const isLector = hasRole(12);
+    const isOnlyLector = isLector && !isEditor;
 
     // --- ESTADOS PARA EL MODAL LOCAL (VER/EDITAR) ---
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -392,11 +401,13 @@ const DocumentList = ({ folderId, folderName }) => {
                 </div>
 
                 {/* Botón Agregar */}
-                <div className="add-doc-button-container">
-                    <button className="add-doc-button" onClick={handleAddDocument}>
-                        + Agregar documento
-                    </button>
-                </div>
+                {!isOnlyLector && (
+                    <div className="add-doc-button-container">
+                        <button className="add-doc-button" onClick={handleAddDocument}>
+                            + Agregar documento
+                        </button>
+                    </div>
+                )}
 
                 {/* Tabla */}
                 <div className="documents-table-wrapper">
@@ -436,13 +447,15 @@ const DocumentList = ({ folderId, folderName }) => {
                                             >
                                                 <img src={eyeIcon} alt="Ver" />
                                             </button>
-                                            <button 
-                                                className="view-button" 
-                                                onClick={() => handleEditDocument(doc.id)}
-                                                title="Editar Documento"
-                                            >
-                                                <img src={editIcon} alt="Editar" />
-                                            </button>
+                                            {!isOnlyLector && (
+                                                <button 
+                                                    className="view-button" 
+                                                    onClick={() => handleEditDocument(doc.id)}
+                                                    title="Editar Documento"
+                                                >
+                                                    <img src={editIcon} alt="Editar" />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
