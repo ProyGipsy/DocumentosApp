@@ -344,7 +344,7 @@ const DocumentFieldsModal = ({
                                             <a 
                                                 href={currentAnnexUrl} 
                                                 target="_blank" 
-                                                rel="noopener noreferrer"
+                                                rel="noreferrer"
                                                 className="file-link-display"
                                             >
                                                 Ver Anexo {documentType.name}-{company.name}.pdf
