@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../utils/AuthContext';
 import { Link } from 'react-router-dom';
 import '../../styles/base/menu.css';
 import logo from '../../assets/img/Gipsy_imagotipo_color.png'
@@ -8,6 +9,15 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
   const isActive = (page) => activePage === page;
+  const { user } = useAuth();
+  const hasRole = (roleId) => {
+    if (!user) return false;
+    // roles may be array of ids or objects
+    return Array.isArray(user.roles) && user.roles.some(r => (typeof r === 'number' ? r === roleId : (r.id === roleId || r.roleId === roleId)));
+  };
+  const isEditor = hasRole(11);
+  const isLector = hasRole(12); // rol Lector de Documentos
+  const isOnlyLector = isLector && !isEditor;
 
   return (
     <>
@@ -25,32 +35,40 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
                 <Link to="/" className="optionLink" onClick={closeSidebar}>Inicio</Link>
               </div>
             </li>
-            <li>
-              <div className={`optionContainer ${isActive('documentType') ? 'active' : ''}`}>
-                <Link to="/document-type" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
-              </div>
-            </li>
-            <li>
-              <div className={`optionContainer ${isActive('documents') ? 'active' : ''}`}>
-                <Link to="/document-create" className="optionLink" onClick={closeSidebar}>Crear Documento</Link>
-              </div>
-            </li>
+            {!isOnlyLector && (
+              <>
+                <li>
+                  <div className={`optionContainer ${isActive('documentType') ? 'active' : ''}`}>
+                    <Link to="/document-type" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
+                  </div>
+                </li>
+                <li>
+                  <div className={`optionContainer ${isActive('documents') ? 'active' : ''}`}>
+                    <Link to="/document-create" className="optionLink" onClick={closeSidebar}>Crear Documento</Link>
+                  </div>
+                </li>
+              </>
+            )}
             <li>
               <div className={`optionContainer ${isActive('sendDocuments') ? 'active' : ''}`}>
                 <Link to="/send-documents" className="optionLink" onClick={closeSidebar}>Enviar Documentos</Link>
               </div>
             </li>
             {/* Funciones para usuarios de Rol Administrador */}
-            <li className="AdminMenu">
-              <div className={`optionContainer ${isActive('roles') ? '' : ''}`}>
-                <Link to="/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
-              </div>
-            </li>
-            <li>
-              <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
-                <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Empresas</Link>
-              </div>
-            </li>
+            {!isOnlyLector && (
+              <>
+                <li className="AdminMenu">
+                  <div className={`optionContainer ${isActive('roles') ? '' : ''}`}>
+                    <Link to="/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
+                  </div>
+                </li>
+                <li>
+                  <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
+                    <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Empresas</Link>
+                  </div>
+                </li>
+              </>
+            )}
           </ul>
 
           <ul className="bottomMenu">
