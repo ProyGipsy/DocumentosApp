@@ -118,11 +118,11 @@ const DocumentFieldsModal = ({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+/*
         if (isCreating && !attachment) {
             alert("El anexo es obligatorio para nuevos documentos.");
             return;
-        }
+        }*/
         if (isEditing && !documentId) {
             alert("Error crítico: No se identificó el ID del documento para editar.");
             return;
@@ -263,7 +263,7 @@ const DocumentFieldsModal = ({
                                         value={formData[field.name] || ''}
                                         // Nota: Pasamos el objeto 'field' completo
                                         onChange={(e) => handleFieldChange(field, e.target.value)}
-                                        required
+                                        //required
                                         className="form-input-doc-create"
                                     >
                                         <option value="" disabled>Seleccione una opción</option>
@@ -277,7 +277,7 @@ const DocumentFieldsModal = ({
                                         value={formData[field.name] || ''}
                                         onChange={(e) => handleFieldChange(field, e.target.value)}
                                         rows="3"
-                                        required
+                                        //required
                                         maxLength={maxLen} // Atributo nativo HTML
                                         placeholder={`Ingrese ${field.name}...`}
                                         className="form-input-doc-create"
@@ -290,7 +290,7 @@ const DocumentFieldsModal = ({
                                         onChange={(e) => handleFieldChange(field, e.target.value)}
                                         step={inputType === 'number' ? stepValue : undefined}
                                         maxLength={maxLen} // Atributo nativo HTML (Nota: en type="number" algunos navegadores ignoran esto, por eso la validación JS en handleFieldChange es vital)
-                                        required
+                                        //required
                                         placeholder={`Ingrese ${field.name}...`}
                                         className="form-input-doc-create"
                                     />
@@ -316,7 +316,7 @@ const DocumentFieldsModal = ({
                                     accept=".pdf"
                                     className="form-input-doc-create file-input"
                                     onChange={handleFileChange}
-                                    required={isCreating} 
+                                    //required={isCreating} 
                                 />
                                 {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
