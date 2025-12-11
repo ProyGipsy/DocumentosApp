@@ -7,7 +7,7 @@ import SendDocumentModal from './SendDocumentModal';
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
     const [allDocuments, setAllDocuments] = useState([]);
