@@ -264,7 +264,7 @@ const CreateDocumentType = () => {
                                 id="docTypeName"
                                 value={documentTypeName}
                                 onChange={(e) => setDocumentTypeName(e.target.value)}
-                                placeholder="Ej: Factura de Venta"
+                                placeholder="Ingrese el nombre completo del tipo de documento"
                                 className="text-input"
                                 required
                             />
@@ -279,7 +279,7 @@ const CreateDocumentType = () => {
                                 id="docTypeAlias"
                                 value={documentTypeAlias}
                                 onChange={(e) => setDocumentTypeAlias(e.target.value)}
-                                placeholder="Ej: FACV"
+                                placeholder="Ingrese el alias o siglas del tipo de documento"
                                 className="text-input"
                                 required
                             />

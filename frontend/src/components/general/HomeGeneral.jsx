@@ -12,6 +12,13 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const HomeAdmin = () => {
     const { user } = useAuth();
+    const hasRole = (roleId) => {
+        if (!user) return false;
+        return Array.isArray(user.roles) && user.roles.some(r => (typeof r === 'number' ? r === roleId : (r.id === roleId || r.roleId === roleId)));
+    };
+    const isEditor = hasRole(11);
+    const isLector = hasRole(12);
+    const isOnlyLector = isLector && !isEditor;
     const [mockFolders, setMockFolders] = useState([])
     const [searchTerm, setSearchTerm] = useState('');
     const [message, setMessage] = useState('');
@@ -109,12 +116,14 @@ const HomeAdmin = () => {
                                 <div key={folder.id} className="folder-card" onClick={() => handleFolderClick(folder.id, folder.name)}>
                                     <div className="folder-icon-container">
                                         <img src={folderIcon} alt="Carpeta" className="folder-icon" />
-                                        <button 
-                                            className="edit-documentType" 
-                                            onClick={(e) => handleEditClick(e, folder.id, folder.name)} 
-                                        >
-                                            <img src={editIcon} alt="Editar" />
-                                        </button>
+                                        {!isOnlyLector && (
+                                            <button 
+                                                className="edit-documentType" 
+                                                onClick={(e) => handleEditClick(e, folder.id, folder.name)} 
+                                            >
+                                                <img src={editIcon} alt="Editar" />
+                                            </button>
+                                        )}
                                     </div>
                                     <p className="folder-name">{folder.name}</p>
                                 </div>
