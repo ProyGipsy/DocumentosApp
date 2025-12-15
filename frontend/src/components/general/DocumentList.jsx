@@ -5,8 +5,6 @@ import LayoutBaseAdmin from '../base/LayoutBase';
 import eyeIcon from '../../assets/img/eye.png';
 import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/documentList.css';
-
-// --- IMPORTANTE: Importar el Modal ---
 import DocumentFieldsModal from './DocumentFieldsModal';
 
 // Configuración de API
