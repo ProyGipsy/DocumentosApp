@@ -114,7 +114,7 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
     <div className="modal-overlay-user">
       <div className="modal-content-user" style={{ maxWidth: '500px' }}>
         <div className="modal-header-user">
-          <h3>{mode === 'edit' ? 'Editar Empresa' : 'Agregar Nueva Empresa'}</h3>
+          <h3>{mode === 'edit' ? 'Editar Entidad' : 'Agregar Nueva Entidad'}</h3>
           <button className="close-button-user" onClick={onClose}>&times;</button>
         </div>
 
@@ -133,9 +133,9 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
             </div>
           )}
 
-          {/* Campo Nombre de la Empresa */}
+          {/* Campo Nombre de la Entidad */}
           <div className="form-group-user">
-            <label>Nombre de la Empresa <span className="required-asterisk">*</span></label>
+            <label>Nombre de la Entidad <span className="required-asterisk">*</span></label>
             <input
               type="text"
               name="name"
@@ -183,7 +183,7 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
 
         <div className="modal-footer-user">
           <button className="modal-button-user save-button-user" onClick={handleSave} disabled={isLoading}>
-            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Empresa...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Empresa')}
+            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Empresa...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Entidad')}
           </button>
         </div>
       </div>

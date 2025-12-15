@@ -145,7 +145,7 @@ const CreateDocumentForm = () => {
             }
 
         } else if (operationMode === 'create') {
-            alert('Por favor, seleccione el Tipo de Documento y la Empresa Asociada.');
+            alert('Por favor, seleccione el Tipo de Documento y la Entidad Asociada.');
         }
     };
 
@@ -235,7 +235,7 @@ const CreateDocumentForm = () => {
                                 </div>
 
                                 <div className="form-group-doc-type">
-                                    <label htmlFor="company" className="form-label">Empresa Asociada <span className="required-asterisk">*</span></label>
+                                    <label htmlFor="company" className="form-label">Entidad Asociada <span className="required-asterisk">*</span></label>
                                     <select 
                                         id="company"
                                         className="table-select"
@@ -244,7 +244,7 @@ const CreateDocumentForm = () => {
                                         disabled={operationMode !== 'create'}
                                         required
                                     >
-                                        <option value="" disabled>Seleccione una Empresa</option>
+                                        <option value="" disabled>Seleccione una Entidad</option>
                                         {companies.map(company => (
                                             <option key={company.id} value={company.id}>
                                                 {company.name}

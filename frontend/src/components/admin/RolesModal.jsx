@@ -6,31 +6,34 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
 
-  const [permissionOptions, setPermissionOptions] = useState([]);
+  /*const [permissionOptions, setPermissionOptions] = useState([]);*/
   const [userOptions, setUserOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     id: '',
     name: '',
-    permisos: [], 
+    // permisos: [], // Comentado
     usuarios: [] 
   });
 
-  // Carga inicial de opciones (Permisos y Usuarios)
+  // Carga inicial de opciones (Solo Usuarios ahora)
   useEffect(() => {
     const fetchOptions = async () => {
       setIsLoading(true);
       try {
-        const [permRes, userRes] = await Promise.all([
-            fetch(`${apiUrl}/documents/getPermissions`),
+        // Solo hacemos fetch de usuarios
+        const [/*permRes,*/userRes] = await Promise.all([
+          // fetch(`${apiUrl}/documents/getPermissions`), // Comentado
             fetch(`${apiUrl}/documents/getUsers`)
         ]);
 
-        if (permRes.ok) {
+        /* if (permRes.ok) {
             const data = await permRes.json();
             setPermissionOptions(data);
         }
+        */
+
         if (userRes.ok) {
             const data = await userRes.json();
             setUserOptions(data);
@@ -52,25 +55,24 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
         setFormData({
           id: role.id,
           name: role.name || '',
-          // Aseguramos que sean arrays
-          permisos: Array.isArray(role.permisos) ? role.permisos : [],
+          // permisos: Array.isArray(role.permisos) ? role.permisos : [], // Comentado
           usuarios: Array.isArray(role.usuarios) ? role.usuarios : []
         });
       } else {
-        setFormData({ id: '', name: '', permisos: [], usuarios: [] });
+        setFormData({ id: '', name: '', /*permisos: [],*/ usuarios: [] });
       }
     }
   }, [isOpen, mode, role]);
 
-  const [isPermisosOpen, setIsPermisosOpen] = useState(false);
+  // const [isPermisosOpen, setIsPermisosOpen] = useState(false); // Comentado
   const [isUsuariosOpen, setIsUsuariosOpen] = useState(false);
-  const permisoRef = useRef(null);
+  // const permisoRef = useRef(null); // Comentado
   const usuarioRef = useRef(null);
 
   // Click Outside para cerrar dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false);
+      // if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false); // Comentado
       if (usuarioRef.current && !usuarioRef.current.contains(e.target)) setIsUsuariosOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -84,7 +86,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Lógica Permisos (CORREGIDA) ---
+  /* --- Lógica Permisos (COMENTADA TOTALMENTE) ---
   const handleTogglePermiso = (permisoOption) => {
     setFormData(prev => {
       // Normalizamos la búsqueda del ID
@@ -107,8 +109,9 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
       return { ...prev, permisos: newPermisos };
     });
   };
+  */
 
-  // --- Lógica Usuarios (CORREGIDA) ---
+  // --- Lógica Usuarios ---
   const handleToggleUsuario = (usuarioOption) => {
     setFormData(prev => {
       const exists = prev.usuarios.some(u => {
@@ -138,7 +141,8 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
       setIsLoading(false);
       return;
     }
-    // Validación opcional: permisos/usuarios vacíos (si quieres permitir roles vacíos, quita esto)
+
+    /* // Validación opcional comentada
     if (formData.permisos.length === 0 || formData.usuarios.length === 0) {
         if(!confirm("El rol no tiene permisos o usuarios asignados. ¿Desea guardarlo así?"));
         setIsLoading(false);
@@ -150,6 +154,8 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
         id: p.id || p.permissionId,
         name: p.name
     }));
+    */
+
     const normalizedUsuarios = formData.usuarios.map(u => ({
         id: u.id || u.userId,
         fullName: u.fullName || u.username 
@@ -158,7 +164,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     const roleToSave = {
       id: mode === 'edit' ? formData.id : 0,
       name: formData.name,
-      permisos: normalizedPermisos, 
+      // permisos: normalizedPermisos, // Comentado: No enviamos permisos
       usuarios: normalizedUsuarios 
     };
 
@@ -219,7 +225,8 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
             />
           </div>
 
-          {/* --- SECCIÓN PERMISOS --- */}
+          {/* --- SECCIÓN PERMISOS (COMENTADA EN EL JSX) --- */}
+          {/*
           <div className="form-group-user">
             <label>Permisos <span className="required-asterisk">*</span></label>
             <div className="permisos-container-modal" ref={permisoRef} style={{ position: 'relative' }}>
@@ -230,7 +237,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
               >
                 <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formData.permisos && formData.permisos.length > 0 
-                    ? `${formData.permisos.length} Permisos seleccionados` // Resumen limpio
+                    ? `${formData.permisos.length} Permisos seleccionados`
                     : 'Seleccione los permisos ...'}
                 </div>
                 <div className="caret">▾</div>
@@ -239,7 +246,6 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
               {isPermisosOpen && (
                 <div className="dropdown-panel" style={{ position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
                   {permissionOptions.map(opt => {
-                      // CORRECCIÓN VISUAL: Comparación robusta de IDs
                       const isSelected = formData.permisos.some(p => {
                           const pID = p.id || p.permissionId;
                           return String(pID) === String(opt.id);
@@ -249,7 +255,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                         <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
                           <input
                             type="checkbox"
-                            checked={isSelected} // Ahora esto será TRUE si el ID coincide
+                            checked={isSelected}
                             onChange={() => handleTogglePermiso(opt)}
                           />
                           <span>{opt.name}</span>
@@ -259,48 +265,47 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
                 </div>
               )}
             </div>
-            
-            <br />
-            
-            {/* --- SECCIÓN USUARIOS --- */}
-            <label>Usuarios <span className="required-asterisk">*</span></label>
-            <div className="users-container-modal" ref={usuarioRef} style={{ position: 'relative' }}>
-              <div
-                className="usuario-dropdown-toggle"
-                onClick={(e) => { e.stopPropagation(); setIsUsuariosOpen(prev => !prev); }}
-                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
-              >
-                <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formData.usuarios && formData.usuarios.length > 0 
-                    ? `${formData.usuarios.length} Usuarios seleccionados`
-                    : 'Seleccione los usuarios ...'}
-                </div>
-                <div className="caret">▾</div>
+          </div>
+          <br />
+          */}
+          
+          {/* --- SECCIÓN USUARIOS --- */}
+          <label>Usuarios <span className="required-asterisk">*</span></label>
+          <div className="users-container-modal" ref={usuarioRef} style={{ position: 'relative' }}>
+            <div
+              className="usuario-dropdown-toggle"
+              onClick={(e) => { e.stopPropagation(); setIsUsuariosOpen(prev => !prev); }}
+              style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' }}
+            >
+              <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {formData.usuarios && formData.usuarios.length > 0 
+                  ? `${formData.usuarios.length} Usuarios seleccionados`
+                  : 'Seleccione los usuarios ...'}
               </div>
-
-              {isUsuariosOpen && (
-                <div className="dropdown-panel" style={{ position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
-                  {userOptions.map(opt => {
-                      // CORRECCIÓN VISUAL: Comparación robusta de IDs
-                      const isSelected = formData.usuarios.some(u => {
-                        const uID = u.id || u.userId;
-                        return String(uID) === String(opt.id);
-                      });
-
-                      return (
-                        <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleUsuario(opt)}
-                          />
-                          <span>{opt.fullName}</span>
-                        </label>
-                      );
-                  })}
-                </div>
-              )}
+              <div className="caret">▾</div>
             </div>
+
+            {isUsuariosOpen && (
+              <div className="dropdown-panel" style={{ position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4 }}>
+                {userOptions.map(opt => {
+                    const isSelected = formData.usuarios.some(u => {
+                      const uID = u.id || u.userId;
+                      return String(uID) === String(opt.id);
+                    });
+
+                    return (
+                      <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleUsuario(opt)}
+                        />
+                        <span>{opt.fullName}</span>
+                      </label>
+                    );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

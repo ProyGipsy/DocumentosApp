@@ -64,7 +64,7 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
-                    <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Empresas</Link>
+                    <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Entidades</Link>
                   </div>
                 </li>
               </>

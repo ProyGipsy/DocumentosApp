@@ -40,7 +40,7 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 
                 if (folderId) {
                     const params = new URLSearchParams({ id: folderId });
-                    url = `${apiUrl}/documents/getDocumentsList?${params.toString()}`;
+                    url = `${apiUrl}/documents/getDocumentByTypeId?${params.toString()}`;
                 }
 
                 const response = await fetch(url);
@@ -368,7 +368,7 @@ const SendDocuments = ({ folderId, folderName }) => { // Recibe props opcionales
                 <h2 className="folder-title-sendDocuments">Envío de Documentos</h2>
                 <br></br>
                 
-                {isLoading && <p style={{textAlign:'center'}}>Procesando...</p>}
+                {/*isLoading && <p style={{textAlign:'center'}}>Procesando...</p>*/}
 
                 {/* Filtros */}
                 <div className="search-and-controls">
