@@ -129,7 +129,7 @@ const Roles = () => {
                                 <thead>
                                     <tr>
                                         <th>ROL</th>
-                                        <th>PERMISOS</th>
+                                        {/*<th>PERMISOS</th>*/}
                                         <th>USUARIOS</th>
                                         <th>ACCIONES</th>
                                     </tr>
@@ -138,7 +138,7 @@ const Roles = () => {
                                     {paginated.map(role => (
                                         <tr key={role.id}>
                                             <td>{role.name}</td>
-                                            <td>{role.permisos && role.permisos.length > 0 ? role.permisos.map(p => p.name).join(', ') : 'Ninguno'}</td>
+                                            {/*<td>{role.permisos && role.permisos.length > 0 ? role.permisos.map(p => p.name).join(', ') : 'Ninguno'}</td>*/}
                                             {<td>{role.usuarios ? role.usuarios.length : 0}</td>}
                                             {/*<td>{role.usuarios ? role.usuarios.join(', ') : 'Ninguno'}</td>*/}
                                             <td className="actions-cell">

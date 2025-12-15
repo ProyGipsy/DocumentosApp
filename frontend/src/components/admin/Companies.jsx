@@ -32,7 +32,7 @@ const Companies = () => {
             }
 
             const data = await response.json();
-            console.log("Empresas cargadas:", data);
+            console.log("Entidades cargadas:", data);
             
             setAllCompanies(data);
             
@@ -43,7 +43,7 @@ const Companies = () => {
             }
             
         } catch (err) {
-            console.error('Error al obtener las empresas:', err);
+            console.error('Error al obtener las Entidades:', err);
         } finally {
             setIsLoading(false);
         }
@@ -109,13 +109,13 @@ const Companies = () => {
         await loadCompanies();
         
         // Opcional: Mostrar alerta de éxito
-        // alert("Lista de empresas actualizada.");
+        // alert("Lista de Entidades actualizada.");
     };
 
     return (
         <LayoutBase activePage="companies">
             <div className="sendDocument-list-container">
-                <h2 className="folder-title-sendDocuments">Empresas</h2>
+                <h2 className="folder-title-sendDocuments">Entidades</h2>
 
                 {/* Barra de búsqueda */}
                 <div className="search-and-controls">
@@ -130,22 +130,22 @@ const Companies = () => {
                     </div>
                 </div>
 
-                {/* Botón de Agregar Empresa */}
+                {/* Botón de Agregar Entidad */}
                 <div className="add-doc-button-container">
                     <button className="add-doc-button" onClick={handleAddCompany}>
-                        + Agregar Empresa
+                        + Agregar Entidad
                     </button>
                 </div>
 
                 <div className="send-action-and-table-container">
                     <div className="documents-table-wrapper">
                         {isLoading && paginated.length === 0 ? (
-                            <p style={{textAlign:'center', padding:'20px'}}>Cargando empresas...</p>
+                            <p style={{textAlign:'center', padding:'20px'}}>Cargando Entidades...</p>
                         ) : paginated.length > 0 ? (
                             <table className="documents-table">
                                 <thead>
                                     <tr>
-                                        <th>NOMBRE EMPRESA</th>
+                                        <th>Nombre Entidad</th>
                                         <th>RIF</th>
                                         <th>ACCIONES</th>
                                     </tr>
@@ -164,7 +164,7 @@ const Companies = () => {
                                                 <button 
                                                     className="view-button" 
                                                     onClick={() => handleEditCompany(company.id)}
-                                                    title="Editar Empresa"
+                                                    title="Editar Entidad"
                                                 >
                                                     <img src={editIcon} alt="Editar" />
                                                 </button>
@@ -174,7 +174,7 @@ const Companies = () => {
                                 </tbody>
                             </table>
                         ) : (
-                            <p className="no-documents">No se encontraron empresas.</p>
+                            <p className="no-documents">No se encontraron Entidades.</p>
                         )}
                     </div>
                 </div>

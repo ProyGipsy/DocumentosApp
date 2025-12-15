@@ -5,8 +5,6 @@ import LayoutBaseAdmin from '../base/LayoutBase';
 import eyeIcon from '../../assets/img/eye.png';
 import editIcon from '../../assets/img/edit.png';
 import '../../styles/general/documentList.css';
-
-// --- IMPORTANTE: Importar el Modal ---
 import DocumentFieldsModal from './DocumentFieldsModal';
 
 // Configuración de API
@@ -51,23 +49,18 @@ const DocumentList = ({ folderId, folderName }) => {
     const [selectedDocTypeStruct, setSelectedDocTypeStruct] = useState(null); // Estructura de campos
     const [selectedCompany, setSelectedCompany] = useState(null);           // Info de la empresa
 
-    // ----------------------------------------------------
     // 1. FETCH INICIAL: Obtener lista de documentos
-    // ----------------------------------------------------
     const fetchDocumentsList = async () => {
         if (!activeFolderId) return;
         
         setIsLoading(true);
         try {
             const params = new URLSearchParams({ id: activeFolderId });
-            const response = await fetch(`${apiUrl}/documents/getDocumentsList?${params.toString()}`);
+            const response = await fetch(`${apiUrl}/documents/getDocumentByTypeId?${params.toString()}`);
             
             if (!response.ok) throw new Error('Error al obtener la lista de documentos');
 
             const data = await response.json();
-            // Para cumplir el requerimiento: sin tocar backend, pedimos cada documento
-            // y buscamos si tiene un campo llamado "Fecha de vencimiento" o "Vencimiento".
-            // Si existe, usamos ese valor como `date`. Si no, dejamos `date` null (no mostrar).
 
             const extractExpiration = (docData) => {
                 if (!docData) return null;
@@ -171,9 +164,7 @@ const DocumentList = ({ folderId, folderName }) => {
         }
     }, [activeFolderId, activeFolderName]);
 
-    // ----------------------------------------------------
     // 2. LÓGICA DE FILTRADO (Sin cambios)
-    // ----------------------------------------------------
     useEffect(() => {
         let currentDocuments = [...allDocuments];
 
@@ -366,7 +357,7 @@ const DocumentList = ({ folderId, folderName }) => {
                     <div className="search-filter-group users-table-style">
                         <input
                             type="text"
-                            placeholder="Buscar por Nombre o Empresa..."
+                            placeholder="Buscar por Nombre o Entidad..."
                             className="search-input-doc-list search-input-admin"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}

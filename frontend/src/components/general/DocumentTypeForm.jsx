@@ -324,7 +324,7 @@ const CreateDocumentType = () => {
                                     </thead>
                                     <tbody>
                                         {fields.map((field) => {
-                                            const isPrecisionDisabled = field.fieldType !== 'float';
+                                            const isPrecisionDisabled = field.fieldType !== 'float' && field.fieldType !== 'money';
                                             const isLengthDisabled = field.fieldType === 'char' || field.fieldType === 'date' || field.fieldType === 'bool' || field.fieldType === 'specificValues'
 
                                             return (
@@ -355,6 +355,7 @@ const CreateDocumentType = () => {
                                                             <option value="char">Caracter (1 Letra)</option>
                                                             <option value="date">Fecha (DD/MM/AAAA)</option>
                                                             <option value="bool">Marcar Sí o No</option>
+                                                            <option value="money">Moneda</option>
                                                             <option value="int">Número Entero</option>
                                                             <option value="float">Número Decimal</option>
                                                             <option value="text">Texto Corto</option>
