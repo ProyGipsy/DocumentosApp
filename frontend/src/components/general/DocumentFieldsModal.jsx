@@ -11,10 +11,10 @@ const DATA_TYPE_CONFIG = [
     { id: 'textarea', label: 'Texto Largo', inputType: 'textarea' },
     { id: 'int', label: 'Número Entero', inputType: 'number', precision: 0 },
     { id: 'float', label: 'Número Decimal', inputType: 'number', precision: 2 },
+    { id: 'money', label: 'Moneda', inputType: 'number', precision: 2 },
     { id: 'date', label: 'Fecha', inputType: 'date' },
-    { id: 'char', label: 'Caracter', inputType: 'text' }, // Agregado explícitamente
+    { id: 'char', label: 'Caracter', inputType: 'text' },
     { id: 'specificValues', label: 'Valores Específicos', inputType: 'select' },
-    // Compatibilidad
     { id: 'text-short', label: 'Texto Corto', inputType: 'text' },
     { id: 'text-long', label: 'Texto Largo', inputType: 'textarea' },
 ];
@@ -73,33 +73,28 @@ const DocumentFieldsModal = ({
         const inputType = getFieldInputType(field);
         
         // 1. Validación de Longitud (Length)
-        // Si el campo tiene longitud definida (mayor a 0)
         if (field.length && field.length > 0) {
             if (value.length > field.length) {
-                return; // No actualizamos si excede el límite
+                return;
             }
         }
         
-        // 2. Validación específica para 'char' (Solo 1 caracter si no tiene longitud definida)
+        // 2. Validación específica para 'char'
         if (field.typeId === 'char') {
             const maxLen = (field.length && field.length > 0) ? field.length : 1;
             if (value.length > maxLen) return;
         }
 
-        // 3. Validación para 'int' (Solo números enteros)
-        // Aunque el input type="number" ayuda, esto evita pegar texto no numérico o decimales si el navegador lo permite
+        // 3. Validación para 'int'
         if (inputType === 'number') {
-             // Obtenemos la configuración del tipo para saber la precisión
              const typeConfig = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId || dt.id === field.type);
              const isInteger = typeConfig && typeConfig.precision === 0;
 
              if (isInteger) {
-                 // Si contiene algo que no sea dígito (y no está vacío), lo bloqueamos
                  if (value !== '' && !/^-?\d*$/.test(value)) {
                      return;
                  }
              }
-             // Nota: Para 'float' dejamos pasar el punto decimal
         }
 
         setFormData(prevData => ({
@@ -118,11 +113,7 @@ const DocumentFieldsModal = ({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-/*
-        if (isCreating && !attachment) {
-            alert("El anexo es obligatorio para nuevos documentos.");
-            return;
-        }*/
+        
         if (isEditing && !documentId) {
             alert("Error crítico: No se identificó el ID del documento para editar.");
             return;
@@ -131,6 +122,16 @@ const DocumentFieldsModal = ({
         setIsSaving(true); 
         
         try {
+            // 1. Encontrar el campo "Nombre del Documento" para enviarlo como propiedad separada
+            const docNameField = (documentType.fields || []).find(
+                f => f.name.trim().toLowerCase() === 'nombre del documento'
+            );
+            
+            // Valor por defecto si no se encuentra
+            const documentNameValue = docNameField ? (formData[docNameField.name] || '') : 'Documento Sin Nombre';
+
+            // 2. Preparar el array de campos dinámicos
+            // IMPORTANTE: Aquí NO filtramos el nombre. Se incluye en 'fields' para guardarlo duplicado (como pediste).
             const fieldsPayload = (documentType.fields || []).map(field => ({
                 fieldId: field.id,
                 value: formData[field.name] || ''
@@ -151,14 +152,16 @@ const DocumentFieldsModal = ({
                 jsonPayload = {
                     docTypeId: documentType.id,
                     companyId: company.id,
-                    fields: fieldsPayload
+                    documentName: documentNameValue, // <--- Enviado aparte
+                    fields: fieldsPayload // <--- Incluye también el nombre
                 };
             } else {
                 url = `${apiUrl}/documents/editDocument`;
                 method = 'PUT';
                 jsonPayload = {
                     id: documentId, 
-                    fields: fieldsPayload
+                    documentName: documentNameValue, // <--- Enviado aparte
+                    fields: fieldsPayload // <--- Incluye también el nombre
                 };
             }
 
@@ -183,6 +186,7 @@ const DocumentFieldsModal = ({
                 companyName: company.name,
                 fieldsData: formData,
                 id: result.document_id || documentId,
+                docName: result.document_name || documentNameValue,
                 annexUrl: result.annex_url || result.new_annex_url || initialFormData.annexUrl, 
                 attachment: attachment ? attachment.name : attachmentName,
                 fileObject: attachment,
@@ -210,14 +214,18 @@ const DocumentFieldsModal = ({
     else if (isEditing) buttonText = 'Guardar Cambios';
     else if (isCreating) buttonText = sendDocument ? 'Crear y Enviar' : 'Crear Documento';
 
-    const fieldsToRender = documentType.fields || [];
+    // Lógica de Ordenamiento VISUAL (Nombre primero)
+    const rawFields = documentType.fields || [];
+    const nameField = rawFields.find(f => f.name.trim().toLowerCase() === 'nombre del documento');
+    const otherFields = rawFields.filter(f => f.name.trim().toLowerCase() !== 'nombre del documento');
+    const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
 
     return (
         <div className="modal-overlay-user" onClick={onClose}>
             <div className="modal-content-user" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header-user">
                     <h3>
-                        {isViewing ? 'Visualizar' : isEditing ? 'Editar' : 'Nuevo'}: <span style={{color: '#8b56ed'}}>{documentType.name}-{company.name}</span>
+                        {isViewing ? 'Visualizar' : isEditing ? 'Editar' : 'Nuevo'}: <span style={{color: '#8b56ed'}}>{documentType.name}</span>
                     </h3>
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
@@ -227,10 +235,8 @@ const DocumentFieldsModal = ({
                     {fieldsToRender.map((field, index) => {
                         const inputType = getFieldInputType(field);
                         const precision = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId)?.precision || 0;
-                        // Configurar step para decimales o enteros
                         const stepValue = inputType === 'number' && precision > 0 ? `0.${'0'.repeat(precision - 1)}1` : "1";
                         
-                        // Configurar maxLength dinámico
                         let maxLen = undefined;
                         if (field.length && field.length > 0) {
                             maxLen = field.length;
@@ -256,50 +262,48 @@ const DocumentFieldsModal = ({
 
                         return (
                             <div className="form-group-user" key={index}>
-                                <label><span className="required-asterisk">*</span> {field.name}:</label>
+                                <label>{field.isRequired && <span className="required-asterisk">*</span>} {field.name}:</label>
                                 
                                 {inputType === 'select' ? (
                                     <select 
-                                        value={formData[field.name] || ''}
-                                        // Nota: Pasamos el objeto 'field' completo
-                                        onChange={(e) => handleFieldChange(field, e.target.value)}
-                                        //required
-                                        className="form-input-doc-create"
+                                            value={formData[field.name] || ''}
+                                            onChange={(e) => handleFieldChange(field, e.target.value)}
+                                            className="form-input-doc-create"
+                                            required={field.isRequired}
                                     >
-                                        <option value="" disabled>Seleccione una opción</option>
-                                        {options.map((optValue, idx) => (
-                                            <option key={idx} value={optValue}>{optValue}</option>
-                                        ))}
+                                            <option value="" disabled>Seleccione una opción</option>
+                                            {options.map((optValue, idx) => (
+                                                <option key={idx} value={optValue}>{optValue}</option>
+                                            ))}
                                     </select>
                                 
                                 ) : inputType === 'textarea' ? (
                                     <textarea
-                                        value={formData[field.name] || ''}
-                                        onChange={(e) => handleFieldChange(field, e.target.value)}
-                                        rows="3"
-                                        //required
-                                        maxLength={maxLen} // Atributo nativo HTML
-                                        placeholder={`Ingrese ${field.name}...`}
-                                        className="form-input-doc-create"
+                                            value={formData[field.name] || ''}
+                                            onChange={(e) => handleFieldChange(field, e.target.value)}
+                                            rows="3"
+                                            maxLength={maxLen}
+                                            placeholder={`Ingrese ${field.name}...`}
+                                            className="form-input-doc-create"
+                                            required={field.isRequired}
                                     />
                                 
                                 ) : (
                                     <input 
-                                        type={inputType}
-                                        value={formData[field.name] || ''}
-                                        onChange={(e) => handleFieldChange(field, e.target.value)}
-                                        step={inputType === 'number' ? stepValue : undefined}
-                                        maxLength={maxLen} // Atributo nativo HTML (Nota: en type="number" algunos navegadores ignoran esto, por eso la validación JS en handleFieldChange es vital)
-                                        //required
-                                        placeholder={`Ingrese ${field.name}...`}
-                                        className="form-input-doc-create"
+                                            type={inputType}
+                                            value={formData[field.name] || ''}
+                                            onChange={(e) => handleFieldChange(field, e.target.value)}
+                                            step={inputType === 'number' ? stepValue : undefined}
+                                            maxLength={maxLen}
+                                            placeholder={`Ingrese ${field.name}...`}
+                                            className="form-input-doc-create"
+                                            required={field.isRequired}
                                     />
                                 )}
                             </div>
                         );
                     })}
                     
-                    {/* ... resto del formulario (Archivo y Botones) igual que antes ... */}
                     <div className="form-group-user file-upload-group">
                         {(isCreating || isEditing) && (
                             <label><span className="required-asterisk">*</span> Anexo:</label>
@@ -316,7 +320,7 @@ const DocumentFieldsModal = ({
                                     accept=".pdf"
                                     className="form-input-doc-create file-input"
                                     onChange={handleFileChange}
-                                    //required={isCreating} 
+                                    required={isCreating} 
                                 />
                                 {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
@@ -328,7 +332,7 @@ const DocumentFieldsModal = ({
                                                 rel="noopener noreferrer"
                                                 className="file-link-display"
                                             >
-                                                {documentType.name}-{company.name} Anexo.pdf
+                                                {documentType.name} Anexo.pdf
                                             </a>
                                         </strong>
                                     </small>
