@@ -20,7 +20,7 @@ const initialField = {
     specificValues: [], 
     fieldLength: 0,
     fieldPrecision: 0,
-    isRequired: false, // Nuevo campo
+    isRequired: false, // Inicializado en falso (0)
     isNew: false,
 };
 
@@ -72,8 +72,8 @@ const CreateDocumentType = () => {
                             fieldLength: f.length || 0,
                             fieldPrecision: f.precision || 0,
                             specificValues: f.specificValues || [],
-                            // 2. MODIFICACIÓN: Mapeamos el valor que viene de BD
-                            isRequired: f.isRequired || false 
+                            // 2. MODIFICACIÓN: Convertimos el 1/0 de la BD a true/false para React
+                            isRequired: f.isRequired === 1 || f.isRequired === true 
                         }));
                         setFields(mappedFields);
                     }
@@ -114,10 +114,10 @@ const CreateDocumentType = () => {
     };
 
     const handleFieldChange = (id, event) => {
-        // 3. MODIFICACIÓN: Desestructuramos type y checked para manejar el checkbox
+        // 3. MODIFICACIÓN: Extraemos 'checked' y 'type'
         const { name, value, type, checked } = event.target;
         
-        // Si es checkbox, usamos 'checked', si no, usamos 'value'
+        // Si es checkbox usamos el booleano 'checked', si no el 'value'
         const valToUse = type === 'checkbox' ? checked : value;
 
         if (name === 'fieldType' && value === 'specificValues') {
@@ -131,7 +131,6 @@ const CreateDocumentType = () => {
             if (f.id === id) {
                 const updatedField = { ...f, [name]: valToUse };
                 
-                // Lógica de resetear longitud/precisión si cambia el tipo
                 if (name === 'fieldType' && value !== 'float') {
                     if (value === 'char') {
                         updatedField.fieldLength = 1;
@@ -197,8 +196,8 @@ const CreateDocumentType = () => {
                 precision: finalPrecision,
                 length: finalLength,
                 specificValues: f.specificValues,
-                // 4. MODIFICACIÓN: Enviamos el estado del checkbox
-                isRequired: f.isRequired 
+                // 4. MODIFICACIÓN: Convertimos true/false a 1/0 para la BD
+                isRequired: f.isRequired ? 1 : 0 
             };
         });
 
@@ -215,8 +214,8 @@ const CreateDocumentType = () => {
                 length: 150,      
                 precision: 0,
                 specificValues: [],
-                // 5. MODIFICACIÓN: El nombre siempre es obligatorio
-                isRequired: true 
+                // 5. MODIFICACIÓN: El nombre siempre es obligatorio (1)
+                isRequired: 1 
             };
 
             finalFieldsPayload = [mandatoryField, ...processedDynamicFields];
@@ -275,40 +274,17 @@ const CreateDocumentType = () => {
                         {/* --- DATOS GENERALES --- */}
                         <div className="form-group-doc-type">
                             <label htmlFor="docTypeName">Nombre del Tipo de Documento <span className="required-asterisk">*</span></label>
-                            <input
-                                type="text"
-                                id="docTypeName"
-                                value={documentTypeName}
-                                onChange={(e) => setDocumentTypeName(e.target.value)}
-                                placeholder="Ingrese el nombre completo"
-                                className="text-input"
-                                required
-                            />
+                            <input type="text" id="docTypeName" value={documentTypeName} onChange={(e) => setDocumentTypeName(e.target.value)} placeholder="Ingrese el nombre completo" className="text-input" required />
                         </div>
 
                         <div className="form-group-doc-type">
                             <label htmlFor="docTypeAlias">Alias (Siglas) <span className="required-asterisk">*</span></label>
-                            <input
-                                type="text"
-                                id="docTypeAlias"
-                                value={documentTypeAlias}
-                                onChange={(e) => setDocumentTypeAlias(e.target.value)}
-                                placeholder="Ingrese el alias"
-                                className="text-input"
-                                required
-                            />
+                            <input type="text" id="docTypeAlias" value={documentTypeAlias} onChange={(e) => setDocumentTypeAlias(e.target.value)} placeholder="Ingrese el alias" className="text-input" required />
                         </div>
 
                         <div className="form-group-doc-type">
                             <label htmlFor="docTypeDescription">Descripción</label>
-                            <textarea
-                                id="docTypeDescription"
-                                value={documentTypeDescription}
-                                onChange={(e) => setDocumentTypeDescription(e.target.value)}
-                                placeholder="Breve descripción..."
-                                className="text-input textarea-input"
-                                rows="3"
-                            />
+                            <textarea id="docTypeDescription" value={documentTypeDescription} onChange={(e) => setDocumentTypeDescription(e.target.value)} placeholder="Breve descripción..." className="text-input textarea-input" rows="3" />
                         </div>
 
                         {/* --- TABLA DE CAMPOS --- */}
@@ -329,32 +305,38 @@ const CreateDocumentType = () => {
                                             <th>Tipo de Dato</th>
                                             <th>Longitud</th>
                                             <th>Precisión</th>
-                                            <th>Obligatorio</th>
+                                            {/* 6. MODIFICACIÓN: Nueva columna header */}
+                                            <th style={{ textAlign: 'center' }}>Obligatorio</th>
                                             <th>Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* --- CAMPO OBLIGATORIO FIJO (Nombre del Documento) --- */}
-                                        <tr style={{ backgroundColor: '#f3f3f3ff', borderBottom: '2px solid #ddd' }}>
+                                        {/* --- CAMPO OBLIGATORIO FIJO --- */}
+                                        <tr style={{ backgroundColor: '#f0f4f8', borderBottom: '2px solid #ddd' }}>
                                             <td>
-                                                <input type="text" value="Nombre del Documento" disabled required className="table-input" style={{ cursor: 'not-allowed', color: '#555', backgroundColor: '#e9ecef' }} title="Este campo es obligatorio y del sistema" />
+                                                <input type="text" value="Nombre del Documento" disabled className="table-input" style={{ fontWeight: 'bold', color: '#555', cursor: 'not-allowed' }} />
                                             </td>
                                             <td>
                                                 <div className="select-with-edit">
                                                     <select disabled className="table-select" value="text" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}>
-                                                        <option value="textarea">Texto Largo</option>
+                                                        <option value="text">Texto Corto</option>
                                                     </select>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <input type="number" value="200" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} />
-                                            </td>
-                                            <td>
-                                                <input type="number" value="0" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} />
-                                            </td>
+                                            <td><input type="number" value="150" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
+                                            <td><input type="number" value="0" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
+                                            
+                                            {/* 7. MODIFICACIÓN: Checkbox fijo siempre marcado y deshabilitado */}
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <input type="checkbox" checked disabled title="Este campo siempre es obligatorio" />
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={true} 
+                                                    disabled 
+                                                    title="Este campo siempre es obligatorio" 
+                                                    style={{ transform: 'scale(1.2)', cursor: 'not-allowed' }}
+                                                />
                                             </td>
+
                                             <td className="actions-cell-doc-type">
                                                 <button type="button" disabled className="remove-field-button icon-button" style={{ opacity: 0.3, cursor: 'not-allowed' }}>
                                                     <img src={trash} alt="Bloqueado" />
@@ -370,24 +352,11 @@ const CreateDocumentType = () => {
                                             return (
                                             <tr key={field.id}>
                                                 <td>
-                                                    <input
-                                                        type="text"
-                                                        name="fieldName"
-                                                        value={field.fieldName}
-                                                        onChange={(e) => handleFieldChange(field.id, e)}
-                                                        placeholder="Nombre"
-                                                        className="table-input"
-                                                        required
-                                                    />
+                                                    <input type="text" name="fieldName" value={field.fieldName} onChange={(e) => handleFieldChange(field.id, e)} placeholder="Nombre" className="table-input" required />
                                                 </td>
                                                 <td>
                                                     <div className="select-with-edit">
-                                                        <select
-                                                            name="fieldType"
-                                                            value={field.fieldType}
-                                                            onChange={(e) => handleFieldChange(field.id, e)}
-                                                            className="table-select"
-                                                        >
+                                                        <select name="fieldType" value={field.fieldType} onChange={(e) => handleFieldChange(field.id, e)} className="table-select">
                                                             <option value="char">Caracter (1 Letra)</option>
                                                             <option value="date">Fecha (DD/MM/AAAA)</option>
                                                             <option value="bool">Marcar Sí o No</option>
@@ -399,49 +368,20 @@ const CreateDocumentType = () => {
                                                             <option value="specificValues">Valores Específicos</option>
                                                         </select>
                                                         {field.fieldType === 'specificValues' && (
-                                                            <button
-                                                                type="button"
-                                                                className="edit-values-button"
-                                                                onClick={() => handleOpenModalForEdit(field)}
-                                                                title="Editar valores"
-                                                            >
+                                                            <button type="button" className="edit-values-button" onClick={() => handleOpenModalForEdit(field)} title="Editar valores">
                                                                 <img src={edit} alt="Editar" />
                                                             </button>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <input
-                                                        type="number"
-                                                        name="fieldLength"
-                                                        value={field.fieldLength}
-                                                        onChange={(e) => handleFieldChange(field.id, e)}
-                                                        className="table-input"
-                                                        min="0"
-                                                        disabled={isLengthDisabled}
-                                                        style={{
-                                                            backgroundColor: isLengthDisabled ? '#f5f5f5' : 'white', 
-                                                            cursor: isLengthDisabled ? 'not-allowed' : 'text',
-                                                            color: isLengthDisabled ? '#aaa' : 'inherit'
-                                                        }}
-                                                    />
+                                                    <input type="number" name="fieldLength" value={field.fieldLength} onChange={(e) => handleFieldChange(field.id, e)} className="table-input" min="0" disabled={isLengthDisabled} style={{ backgroundColor: isLengthDisabled ? '#f5f5f5' : 'white', cursor: isLengthDisabled ? 'not-allowed' : 'text', color: isLengthDisabled ? '#aaa' : 'inherit' }} />
                                                 </td>
                                                 <td>
-                                                    <input
-                                                        type="number"
-                                                        name="fieldPrecision"
-                                                        value={field.fieldPrecision}
-                                                        onChange={(e) => handleFieldChange(field.id, e)}
-                                                        className="table-input"
-                                                        min="0"
-                                                        disabled={isPrecisionDisabled}
-                                                        style={{
-                                                            backgroundColor: isPrecisionDisabled ? '#f5f5f5' : 'white', 
-                                                            cursor: isPrecisionDisabled ? 'not-allowed' : 'text',
-                                                            color: isPrecisionDisabled ? '#aaa' : 'inherit'
-                                                        }}
-                                                    />
+                                                    <input type="number" name="fieldPrecision" value={field.fieldPrecision} onChange={(e) => handleFieldChange(field.id, e)} className="table-input" min="0" disabled={isPrecisionDisabled} style={{ backgroundColor: isPrecisionDisabled ? '#f5f5f5' : 'white', cursor: isPrecisionDisabled ? 'not-allowed' : 'text', color: isPrecisionDisabled ? '#aaa' : 'inherit' }} />
                                                 </td>
+                                                
+                                                {/* 8. MODIFICACIÓN: Checkbox dinámico interactivo */}
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <input
                                                         type="checkbox"
@@ -452,14 +392,9 @@ const CreateDocumentType = () => {
                                                         style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
                                                     />
                                                 </td>
+
                                                 <td className="actions-cell-doc-type">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveField(field.id)}
-                                                        className="remove-field-button icon-button"
-                                                        disabled={(fields.length < 2) || !field.isNew && isEditing}
-                                                        title="Eliminar campo"
-                                                    >
+                                                    <button type="button" onClick={() => handleRemoveField(field.id)} className="remove-field-button icon-button" disabled={(fields.length < 2) || !field.isNew && isEditing} title="Eliminar campo">
                                                         <img src={trash} alt="Eliminar" />
                                                     </button>
                                                 </td>
