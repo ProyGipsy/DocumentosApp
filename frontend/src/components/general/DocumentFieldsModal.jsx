@@ -219,7 +219,6 @@ const DocumentFieldsModal = ({
     const nameField = rawFields.find(f => f.name.trim().toLowerCase() === 'nombre del documento');
     const otherFields = rawFields.filter(f => f.name.trim().toLowerCase() !== 'nombre del documento');
     const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
-    // -----------------------------------------------------------------------
 
     return (
         <div className="modal-overlay-user" onClick={onClose}>
