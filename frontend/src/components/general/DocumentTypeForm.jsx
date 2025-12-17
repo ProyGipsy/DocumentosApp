@@ -305,28 +305,26 @@ const CreateDocumentType = () => {
                                             <th>Tipo de Dato</th>
                                             <th>Longitud</th>
                                             <th>Precisión</th>
-                                            {/* 6. MODIFICACIÓN: Nueva columna header */}
                                             <th style={{ textAlign: 'center' }}>Obligatorio</th>
                                             <th>Acción</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* --- CAMPO OBLIGATORIO FIJO --- */}
+                                        {/* --- CAMPO OBLIGATORIO FIJO (Visualmente Fijo) --- */}
                                         <tr style={{ backgroundColor: '#f0f4f8', borderBottom: '2px solid #ddd' }}>
                                             <td>
-                                                <input type="text" value="Nombre del Documento" disabled className="table-input" style={{ color: '#555', cursor: 'not-allowed' }} />
+                                                <input type="text" value="Nombre del Documento" disabled className="table-input" style={{ fontWeight: 'bold', color: '#555', cursor: 'not-allowed' }} />
                                             </td>
                                             <td>
                                                 <div className="select-with-edit">
-                                                    <select disabled className="table-select" value="textarea" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}>
-                                                        <option value="textarea">Texto Largo</option>
+                                                    <select disabled className="table-select" value="text" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}>
+                                                        <option value="text">Texto Corto</option>
                                                     </select>
                                                 </div>
                                             </td>
-                                            <td><input type="number" value="200" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
+                                            <td><input type="number" value="150" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
                                             <td><input type="number" value="0" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
                                             
-                                            {/* 7. MODIFICACIÓN: Checkbox fijo siempre marcado y deshabilitado */}
                                             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                 <input 
                                                     type="checkbox" 
@@ -345,7 +343,11 @@ const CreateDocumentType = () => {
                                         </tr>
 
                                         {/* --- CAMPOS DINÁMICOS --- */}
-                                        {fields.map((field) => {
+                                        {/* AQUI ESTÁ EL CAMBIO: Filtramos para que NO se renderice si ya viene del backend */}
+                                        {fields
+                                            .filter(field => field.fieldName.trim().toLowerCase() !== 'nombre del documento')
+                                            .map((field) => {
+                                            
                                             const isPrecisionDisabled = field.fieldType !== 'float' && field.fieldType !== 'money';
                                             const isLengthDisabled = field.fieldType === 'char' || field.fieldType === 'date' || field.fieldType === 'bool' || field.fieldType === 'specificValues'
 
@@ -381,7 +383,6 @@ const CreateDocumentType = () => {
                                                     <input type="number" name="fieldPrecision" value={field.fieldPrecision} onChange={(e) => handleFieldChange(field.id, e)} className="table-input" min="0" disabled={isPrecisionDisabled} style={{ backgroundColor: isPrecisionDisabled ? '#f5f5f5' : 'white', cursor: isPrecisionDisabled ? 'not-allowed' : 'text', color: isPrecisionDisabled ? '#aaa' : 'inherit' }} />
                                                 </td>
                                                 
-                                                {/* 8. MODIFICACIÓN: Checkbox dinámico interactivo */}
                                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                                     <input
                                                         type="checkbox"
