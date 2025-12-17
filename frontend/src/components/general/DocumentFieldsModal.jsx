@@ -14,6 +14,8 @@ const DATA_TYPE_CONFIG = [
     { id: 'money', label: 'Moneda', inputType: 'number', precision: 2 },
     { id: 'date', label: 'Fecha', inputType: 'date' },
     { id: 'char', label: 'Caracter', inputType: 'text' },
+    // 1. MODIFICACIÓN: Agregamos el tipo 'bool' explícitamente
+    { id: 'bool', label: 'Sí/No', inputType: 'checkbox' }, 
     { id: 'specificValues', label: 'Valores Específicos', inputType: 'select' },
     { id: 'text-short', label: 'Texto Corto', inputType: 'text' },
     { id: 'text-long', label: 'Texto Largo', inputType: 'textarea' },
@@ -43,7 +45,8 @@ const DocumentFieldsModal = ({
 
             if (isCreating) {
                 const initialData = fieldsDef.reduce((acc, field) => {
-                    acc[field.name] = '';
+                    // Inicializamos bools como false, otros como string vacío
+                    acc[field.name] = field.type === 'bool' || field.typeId === 'bool' ? false : '';
                     return acc;
                 }, {});
                 setFormData(initialData);
@@ -73,7 +76,7 @@ const DocumentFieldsModal = ({
         const inputType = getFieldInputType(field);
         
         // 1. Validación de Longitud (Length)
-        if (field.length && field.length > 0) {
+        if (field.length && field.length > 0 && typeof value === 'string') {
             if (value.length > field.length) {
                 return;
             }
@@ -122,19 +125,18 @@ const DocumentFieldsModal = ({
         setIsSaving(true); 
         
         try {
-            // 1. Encontrar el campo "Nombre del Documento" para enviarlo como propiedad separada
+            // 1. Encontrar el campo "Nombre del Documento"
             const docNameField = (documentType.fields || []).find(
                 f => f.name.trim().toLowerCase() === 'nombre del documento'
             );
             
-            // Valor por defecto si no se encuentra
             const documentNameValue = docNameField ? (formData[docNameField.name] || '') : 'Documento Sin Nombre';
 
-            // 2. Preparar el array de campos dinámicos
-            // IMPORTANTE: Aquí NO filtramos el nombre. Se incluye en 'fields' para guardarlo duplicado (como pediste).
+            // 2. Preparar campos
             const fieldsPayload = (documentType.fields || []).map(field => ({
                 fieldId: field.id,
-                value: formData[field.name] || ''
+                // Para booleanos aseguramos que se envíe el valor correcto
+                value: formData[field.name] 
             }));
 
             const formDataToSend = new FormData();
@@ -152,16 +154,16 @@ const DocumentFieldsModal = ({
                 jsonPayload = {
                     docTypeId: documentType.id,
                     companyId: company.id,
-                    documentName: documentNameValue, // <--- Enviado aparte
-                    fields: fieldsPayload // <--- Incluye también el nombre
+                    documentName: documentNameValue, 
+                    fields: fieldsPayload 
                 };
             } else {
                 url = `${apiUrl}/documents/editDocument`;
                 method = 'PUT';
                 jsonPayload = {
                     id: documentId, 
-                    documentName: documentNameValue, // <--- Enviado aparte
-                    fields: fieldsPayload // <--- Incluye también el nombre
+                    documentName: documentNameValue, 
+                    fields: fieldsPayload 
                 };
             }
 
@@ -214,7 +216,6 @@ const DocumentFieldsModal = ({
     else if (isEditing) buttonText = 'Guardar Cambios';
     else if (isCreating) buttonText = sendDocument ? 'Crear y Enviar' : 'Crear Documento';
 
-    // Lógica de Ordenamiento VISUAL (Nombre primero)
     const rawFields = documentType.fields || [];
     const nameField = rawFields.find(f => f.name.trim().toLowerCase() === 'nombre del documento');
     const otherFields = rawFields.filter(f => f.name.trim().toLowerCase() !== 'nombre del documento');
@@ -251,15 +252,25 @@ const DocumentFieldsModal = ({
                             });
                         }
 
+                        // --- MODO VISUALIZACIÓN ---
                         if (isViewing) {
+                            // Manejo especial para visualizar Booleano
+                            let displayValue = formData[field.name];
+                            if (inputType === 'checkbox') {
+                                displayValue = formData[field.name] ? 'Sí' : 'No';
+                            } else if (!displayValue) {
+                                displayValue = '-';
+                            }
+
                             return (
                                 <div className="form-group-user" key={index}>
                                     <label>{field.name}:</label>
-                                    <p className="static-field-value">{formData[field.name] || '-'}</p>
+                                    <p className="static-field-value">{displayValue}</p>
                                 </div>
                             );
                         }
 
+                        // --- MODO EDICIÓN / CREACIÓN ---
                         return (
                             <div className="form-group-user" key={index}>
                                 <label>{field.isRequired && <span className="required-asterisk">*</span>} {field.name}:</label>
@@ -288,6 +299,23 @@ const DocumentFieldsModal = ({
                                             required={field.isRequired}
                                     />
                                 
+                                // 2. MODIFICACIÓN: Lógica específica para Checkbox (Bool)
+                                ) : inputType === 'checkbox' ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                                        <input 
+                                            type="checkbox"
+                                            // Convertimos a booleano real por seguridad (!!value)
+                                            checked={!!formData[field.name]}
+                                            // IMPORTANTE: Para checkbox usamos e.target.checked
+                                            onChange={(e) => handleFieldChange(field, e.target.checked)}
+                                            className="form-input-doc-create"
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer', margin: 0 }}
+                                        />
+                                        <span style={{ marginLeft: '10px', color: '#666' }}>
+                                            {formData[field.name] ? 'Sí' : 'No'}
+                                        </span>
+                                    </div>
+
                                 ) : (
                                     <input 
                                             type={inputType}
