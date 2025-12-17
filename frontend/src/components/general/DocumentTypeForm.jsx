@@ -323,7 +323,7 @@ const CreateDocumentType = () => {
                                                     </select>
                                                 </div>
                                             </td>
-                                            <td><input type="number" value="150" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
+                                            <td><input type="number" value="200" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
                                             <td><input type="number" value="0" disabled className="table-input" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }} /></td>
                                             
                                             {/* 7. MODIFICACIÓN: Checkbox fijo siempre marcado y deshabilitado */}
