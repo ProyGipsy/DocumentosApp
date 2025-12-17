@@ -314,7 +314,7 @@ const CreateDocumentType = () => {
                                         {/* --- CAMPO OBLIGATORIO FIJO --- */}
                                         <tr style={{ backgroundColor: '#f0f4f8', borderBottom: '2px solid #ddd' }}>
                                             <td>
-                                                <input type="text" value="Nombre del Documento" disabled className="table-input" style={{ fontWeight: 'bold', color: '#555', cursor: 'not-allowed' }} />
+                                                <input type="text" value="Nombre del Documento" disabled className="table-input" style={{ color: '#555', cursor: 'not-allowed' }} />
                                             </td>
                                             <td>
                                                 <div className="select-with-edit">
