@@ -54,7 +54,16 @@ const DocumentFieldsModal = ({
                 setAttachmentName('');
                 setSendDocument(false);
             } else {
-                setFormData(initialFormData);
+                const processedData = {...initialFormData};
+
+                fieldsDef.forEach(field => {
+                    if (field.type === 'bool' || field.typeId === 'bool'){
+                        const val = initialFormData[field.name];
+                        processedData[field.name] = (val === 1 || val === '1' || val === true || val === 'true');
+                    }
+                })
+
+                setFormData(processedData);
                 setAttachment(null); 
                 setAttachmentName(initialAttachmentName || '');
                 setSendDocument(false);
