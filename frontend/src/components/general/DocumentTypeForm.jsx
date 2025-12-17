@@ -318,8 +318,8 @@ const CreateDocumentType = () => {
                                             </td>
                                             <td>
                                                 <div className="select-with-edit">
-                                                    <select disabled className="table-select" value="text" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}>
-                                                        <option value="text">Texto Corto</option>
+                                                    <select disabled className="table-select" value="textarea" style={{ cursor: 'not-allowed', backgroundColor: '#e9ecef' }}>
+                                                        <option value="textarea">Texto Largo</option>
                                                     </select>
                                                 </div>
                                             </td>
