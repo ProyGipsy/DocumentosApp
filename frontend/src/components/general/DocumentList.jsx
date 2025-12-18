@@ -47,102 +47,55 @@ const DocumentList = ({ folderId, folderName }) => {
     // Datos que necesita el modal para renderizarse
     const [selectedDocDetails, setSelectedDocDetails] = useState(null);     // Valores del documento
     const [selectedDocTypeStruct, setSelectedDocTypeStruct] = useState(null); // Estructura de campos
-    const [selectedCompany, setSelectedCompany] = useState(null);           // Info de la empresa
+    const [selectedCompany, setSelectedCompany] = useState(null);           // Info de la Entidad
 
-    // 1. FETCH INICIAL: Obtener lista de documentos
+    // 1. FETCH INICIAL: Obtener lista de documentos (OPTIMIZADO)
     const fetchDocumentsList = async () => {
         if (!activeFolderId) return;
         
         setIsLoading(true);
         try {
             const params = new URLSearchParams({ id: activeFolderId });
+            // Este endpoint ahora devuelve la lista YA hidratada con fieldsData
             const response = await fetch(`${apiUrl}/documents/getDocumentByTypeId?${params.toString()}`);
             
             if (!response.ok) throw new Error('Error al obtener la lista de documentos');
 
             const data = await response.json();
 
-            const extractExpiration = (docData) => {
-                if (!docData) return null;
-                const fields = docData.fieldsData || docData.fields || null;
+            // Función auxiliar simple para encontrar fecha de vencimiento en fieldsData
+            const extractExpirationFromFields = (fieldsData) => {
+                if (!fieldsData) return null;
+                
+                // Buscamos una clave que parezca "Vencimiento"
+                const keys = Object.keys(fieldsData);
+                const expirationKey = keys.find(k => {
+                    const norm = k.toLowerCase();
+                    return norm.includes('vencim') || norm.includes('fecha de venc');
+                });
 
-                const normalize = (s) => (s || '').toString().trim().toLowerCase();
-
-                const checkAndReturn = (name, value) => {
-                    if (!value && value !== 0) return null;
-                    const v = value;
-                    // Si es un string YYYY-MM-DD, devolvemos tal cual (fecha sin timezone)
-                    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())) {
-                        return v.trim();
-                    }
-
-                    // Si se puede parsear, devolvemos en formato YYYY-MM-DD usando componentes locales
-                    const date = new Date(v);
-                    if (!isNaN(date.getTime())) {
-                        const y = date.getFullYear();
-                        const m = String(date.getMonth() + 1).padStart(2, '0');
-                        const d = String(date.getDate()).padStart(2, '0');
-                        return `${y}-${m}-${d}`;
-                    }
-                    return null;
-                };
-
-                // Si fields es un objeto con claves = nombres de campo
-                if (fields && typeof fields === 'object' && !Array.isArray(fields)) {
-                    for (const [k, v] of Object.entries(fields)) {
-                        const key = normalize(k);
-                        if (key.includes('vencim') || key.includes('fecha de venc')) {
-                            // v podría ser un string o un objeto con Value
-                            if (typeof v === 'object' && v !== null) {
-                                const candidate = v.Value || v.value || v.valor || v.text || v.textValue || v.ValueText || v.valor_texto || null;
-                                const res = checkAndReturn(k, candidate ?? v);
-                                if (res) return res;
-                            } else {
-                                const res = checkAndReturn(k, v);
-                                if (res) return res;
-                            }
-                        }
-                    }
+                if (expirationKey) {
+                    return fieldsData[expirationKey];
                 }
-
-                // Si fields es un array de objetos [{ name, value }, ...] o similar
-                if (Array.isArray(fields)) {
-                    for (const f of fields) {
-                        const name = normalize(f.name || f.fieldName || f.label || f.labelName || f.FieldName);
-                        if (name && (name.includes('vencim') || name.includes('fecha de venc'))) {
-                            const candidate = f.value ?? f.Value ?? f.default ?? f.text ?? f.valueText ?? null;
-                            const res = checkAndReturn(f.name || f.fieldName, candidate ?? f);
-                            if (res) return res;
-                        }
-                    }
-                }
-
                 return null;
             };
 
-            // Hacemos peticiones en paralelo (pero controladas) para obtener detalles y extraer vencimiento
-            const detailsPromises = data.map(async (doc) => {
-                try {
-                    const docRes = await fetch(`${apiUrl}/documents/getDocument?id=${doc.id}`);
-                    if (!docRes.ok) return { raw: doc, expiration: null };
-                    const docData = await docRes.json();
-                    const expiration = extractExpiration(docData);
-                    return { raw: doc, expiration };
-                } catch (err) {
-                    return { raw: doc, expiration: null };
-                }
+            // Mapeamos directamente la respuesta del backend
+            const formattedDocs = data.map(doc => {
+                const expirationValue = extractExpirationFromFields(doc.fieldsData);
+                
+                return {
+                    id: doc.id,
+                    // Si el backend trae DocumentName úsalo, sino fallback
+                    name: doc.DocumentName || `Documento #${doc.id}`, 
+                    company: doc.companyName || 'Sin Entidad', // Viene concatenado desde SQL
+                    date: expirationValue || null, // Fecha de vencimiento si existe
+                    docTypeId: doc.typeId,
+                    docTypeName: doc.docTypeName || activeFolderName,
+                    // Guardamos fieldsData por si se necesita para filtros locales
+                    fieldsData: doc.fieldsData 
+                };
             });
-
-            const details = await Promise.all(detailsPromises);
-
-            const formattedDocs = details.map(d => ({
-                id: d.raw.id,
-                name: `Documento #${d.raw.id}`,
-                company: d.raw.companyName || d.raw.CompanyName || '',
-                date: d.expiration || null,
-                docTypeId: d.raw.typeId || d.raw.TypeID,
-                docTypeName: d.raw.docTypeName || activeFolderName,
-            }));
 
             // Si al menos uno tiene vencimiento, cambiamos el header a VENCIMIENTO
             const anyHasExpiration = formattedDocs.some(fd => !!fd.date);
@@ -191,6 +144,9 @@ const DocumentList = ({ folderId, folderName }) => {
             )].sort((a, b) => b - a);
             newSecondaryOptions = years.map(year => ({ value: String(year), label: String(year) }));
         } else if (primaryFilter === 'company') {
+            // Split por si hay Entidades concatenadas "Entidad A, Entidad B"
+            // Opcional: si quieres filtrar por cada una individualmente, requiere lógica split.
+            // Por ahora mantenemos el string completo para simplificar el filtro exacto.
             const companies = [...new Set(currentDocuments.map(d => d.company))].sort();
             newSecondaryOptions = companies.map(company => ({ value: company, label: company }));
         }
@@ -269,28 +225,22 @@ const DocumentList = ({ folderId, folderName }) => {
     };
 
 
-    // ----------------------------------------------------
-    // 3. LÓGICA DE MODAL (NUEVO: Fetch Local y Apertura)
-    // ----------------------------------------------------
+    // 3. LÓGICA DE MODAL (VER/EDITAR)
     const handleOpenModal = async (docId, mode) => {
         setIsLoading(true);
         try {
-            // PASO A: Obtener los datos del documento (Valores y Anexo)
             const docRes = await fetch(`${apiUrl}/documents/getDocument?id=${docId}`);
             if (!docRes.ok) throw new Error('Error al cargar documento');
             const docData = await docRes.json();
 
-            // PASO B: Obtener la estructura del Tipo de Documento (Campos)
-            // Usamos el TypeID que nos devolvió el documento para pedir su estructura
             const typeRes = await fetch(`${apiUrl}/documents/getDocTypeFull?id=${docData.TypeID}`);
             if (!typeRes.ok) throw new Error('Error al cargar definición de campos');
             const typeData = await typeRes.json();
 
-            // PASO C: Guardar en estado y abrir
             setSelectedDocDetails(docData);      
             setSelectedDocTypeStruct(typeData);  
             setSelectedCompany({                 
-                id: docData.CompanyID,
+                id: docData.CompanyIDs || docData.CompanyID, 
                 name: docData.CompanyName
             });
             
@@ -312,11 +262,11 @@ const DocumentList = ({ folderId, folderName }) => {
     const handleSaveSuccess = () => {
         setIsModalOpen(false);
         setSelectedDocDetails(null);
-        // Recargamos la lista por si cambió algo visible (ej: nombre de empresa, fecha)
+        // Recargamos la lista optimizada
         fetchDocumentsList(); 
     };
 
-    // Para "Agregar", seguimos navegando a la pantalla de creación porque es un flujo de pasos
+    // Para "Agregar", seguimos navegando a la pantalla de creación
     const handleAddDocument = () => {
         navigate('/document-create', { 
             state: { folderName: activeFolderName, folderId: activeFolderId, mode: 'create' }
@@ -372,7 +322,7 @@ const DocumentList = ({ folderId, folderName }) => {
                         >
                             <option value="">Filtrar por...</option>
                             <option value="year">Año</option>
-                            <option value="company">Empresa</option>
+                            <option value="company">Entidad</option>
                         </select>
                         {primaryFilter && secondaryFilterOptions.length > 0 && (
                             <select
@@ -402,7 +352,7 @@ const DocumentList = ({ folderId, folderName }) => {
 
                 {/* Tabla */}
                 <div className="documents-table-wrapper">
-                    {/* Loader solo si el modal NO está abierto, para no parpadear el fondo */}
+                    {/* Loader solo si el modal NO está abierto */}
                     {isLoading && !isModalOpen && allDocuments.length === 0 ? (
                         <p style={{textAlign: 'center', padding: '20px'}}>Cargando documentos...</p>
                     ) : filteredDocuments.length > 0 ? (
@@ -410,7 +360,7 @@ const DocumentList = ({ folderId, folderName }) => {
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>NOMBRE - EMPRESA</th>
+                                    <th>NOMBRE - ENTIDAD</th>
                                     <th>
                                         <span
                                             onClick={() => handleSort('date')}
@@ -427,14 +377,13 @@ const DocumentList = ({ folderId, folderName }) => {
                                 {filteredDocuments.map(doc => (
                                     <tr key={doc.id}>
                                         <td>{doc.id}</td>
-                                        <td>{activeFolderName} - {doc.company}</td>
+                                        <td>{doc.name} - {doc.company}</td>
                                         <td>{formatDate(doc.date)}</td>
                                         <td className="actions-cell">
                                             <button 
                                                 className="view-button" 
                                                 onClick={() => handleViewDocument(doc.id)}
                                                 title="Ver Documento"
-                                                // No deshabilitamos con isLoading general para permitir clic rápido si ya cargó la lista
                                             >
                                                 <img src={eyeIcon} alt="Ver" />
                                             </button>
@@ -470,18 +419,15 @@ const DocumentList = ({ folderId, folderName }) => {
                     documentType={selectedDocTypeStruct}
                     mode={modalMode}
                     
-                    // Datos clave para la edición
                     documentId={selectedDocDetails.DocumentID}
                     initialFormData={selectedDocDetails.fieldsData || {}}
                     
-                    // Extraer nombre limpio del archivo
                     initialAttachmentName={
                         selectedDocDetails.AnnexURL 
                         ? decodeURIComponent(selectedDocDetails.AnnexURL.split('/').pop()) 
                         : ''
                     }
                     
-                    // Callback de éxito
                     onSaveDocument={handleSaveSuccess}
                     currentAnnexUrl={selectedDocDetails.AnnexURL}
                 />
