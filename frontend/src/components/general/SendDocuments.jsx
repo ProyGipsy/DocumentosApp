@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../utils/AuthContext';
 import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/sendDocuments.css'; 
 import SendDocumentModal from './SendDocumentModal';
@@ -10,9 +11,11 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 const ITEMS_PER_PAGE = 20;
 
 const SendDocuments = ({ folderId, folderName }) => {
+    const { user } = useAuth();
+    console.log(user);
     // --- ESTADOS DE DATOS ---
     const [allDocuments, setAllDocuments] = useState([]); // Aquí guardaremos los 186 documentos
-    const [filteredDocuments, setFilteredDocuments] = useState([]); // Aquí los filtrados por empresa/año
+    const [filteredDocuments, setFilteredDocuments] = useState([]); // Aquí los filtrados por Entidad/año
     
     // --- ESTADOS DE UI ---
     const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +72,7 @@ const SendDocuments = ({ folderId, folderName }) => {
                     id: doc.DocumentID || doc.id,
                     name: `Documento #${doc.DocumentID || doc.id}`,
                     type: doc.TypeName || doc.docTypeName || 'Sin Tipo',
-                    company: doc.CompanyName || doc.companyName || 'Sin Empresa',
+                    company: doc.CompanyName || doc.companyName || 'Sin Entidad',
                     // Importante: El SQL optimizado devuelve ExpirationDate
                     date: doc.ExpirationDate || doc.AnnexDate || null 
                 }));
@@ -105,7 +108,7 @@ const SendDocuments = ({ folderId, folderName }) => {
     useEffect(() => {
         let result = [...allDocuments];
 
-        // Filtro por Empresa
+        // Filtro por Entidad
         if (selectedCompany) {
             result = result.filter(doc => doc.company === selectedCompany);
         }
@@ -136,7 +139,6 @@ const SendDocuments = ({ folderId, folderName }) => {
     const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
     
-    // Aquí es donde "cortamos" los 186 documentos en trozos de 20
     const currentDocuments = filteredDocuments.slice(indexOfFirstItem, indexOfLastItem);
     
     const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
@@ -203,7 +205,11 @@ const SendDocuments = ({ folderId, folderName }) => {
             const response = await fetch(`${apiUrl}/documents/sendDocuments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ documentIds: ids, emailData })
+                body: JSON.stringify({ 
+                    userId: user.id,
+                    documentIds: ids,
+                    emailData
+                })
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || 'Error en envío');
@@ -228,13 +234,13 @@ const SendDocuments = ({ folderId, folderName }) => {
                 {/* --- FILTROS --- */}
                 <div className="search-and-controls">
                     <div className="search-filter-group users-table-style send-documents-layout">
-                        {/* Filtro Empresa */}
+                        {/* Filtro Entidad */}
                         <select
                             className="filter-select-admin"
                             value={selectedCompany}
                             onChange={(e) => setSelectedCompany(e.target.value)}
                         >
-                            <option value="">Todas las Empresas</option>
+                            <option value="">Todas las Entidades</option>
                             {companyOptions.map((comp, idx) => (
                                 <option key={idx} value={comp}>{comp}</option>
                             ))}
@@ -281,7 +287,7 @@ const SendDocuments = ({ folderId, folderName }) => {
                                             />
                                         </th>
                                         <th>ID</th>
-                                        <th>NOMBRE - EMPRESA</th>
+                                        <th>NOMBRE - ENTIDAD</th>
                                         <th onClick={() => handleSort('date')} style={{cursor: 'pointer', userSelect: 'none'}}>
                                             {dateHeaderLabel} {getSortIndicator('date')}
                                         </th>

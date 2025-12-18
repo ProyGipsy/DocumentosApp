@@ -13,10 +13,10 @@ const CreateDocumentForm = () => {
     const { folderName, docId, mode, documentDetails } = location.state || {};
 
     const [documentTypes, setDocumentTypes] = useState([]);
-    const [companies, setCompanies] = useState([]);
+    // const [companies, setCompanies] = useState([]); // COMENTADO: Ya no gestionamos Entidads aquí
 
     const [selectedDocTypeId, setSelectedDocTypeId] = useState('');
-    const [selectedCompanyId, setSelectedCompanyId] = useState('');
+    // const [selectedCompanyId, setSelectedCompanyId] = useState(''); // COMENTADO
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -38,18 +38,19 @@ const CreateDocumentForm = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [docsRes, companiesRes] = await Promise.all([
+                // Modificado: Solo pedimos tipos de documento
+                const [docsRes] = await Promise.all([
                     fetch(`${apiUrl}/documents/getDocType`),
-                    fetch(`${apiUrl}/documents/getDocCompanies`)
+                    // fetch(`${apiUrl}/documents/getDocCompanies`) // COMENTADO
                 ]);
 
-                if (!docsRes.ok || !companiesRes.ok) throw new Error("Error cargando datos");
+                if (!docsRes.ok) throw new Error("Error cargando datos");
 
                 const docsData = await docsRes.json();
-                const companiesData = await companiesRes.json();
+                // const companiesData = await companiesRes.json(); // COMENTADO
 
                 setDocumentTypes(docsData);
-                setCompanies(companiesData);
+                // setCompanies(companiesData); // COMENTADO
             } catch (err) {
                 console.error('Error cargando datos:', err);
             } finally {
@@ -65,16 +66,18 @@ const CreateDocumentForm = () => {
         return documentTypes.find(dt => String(dt.id) === String(selectedDocTypeId));
     }, [selectedDocTypeId, documentTypes]); 
 
+    /* COMENTADO: Ya no calculamos la compañía actual
     const currentCompany = useMemo(() => {
         if (!selectedCompanyId) return null;
         return companies.find(c => String(c.id) === String(selectedCompanyId));
     }, [selectedCompanyId, companies]); 
-
+    */
 
     // 3. INICIALIZACIÓN
     useEffect(() => {
         const initializeForm = async () => {
-            if (documentTypes.length > 0 && companies.length > 0) {
+            // Eliminada la condición && companies.length > 0
+            if (documentTypes.length > 0) {
                 
                 if (mode === 'create' && folderName) {
                     const match = documentTypes.find(dt => 
@@ -89,11 +92,13 @@ const CreateDocumentForm = () => {
                     setOperationMode(mode);
                     setSelectedDocTypeId(documentDetails.docTypeId);
                     
+                    /* COMENTADO: Lógica de preselección de Entidad
                     const companyMatch = companies.find(c => 
                         String(c.id) === String(documentDetails.companyId) || 
                         c.name === documentDetails.companyName
                     );
                     if (companyMatch) setSelectedCompanyId(companyMatch.id);
+                    */
 
                     try {
                         setIsLoading(true);
@@ -117,13 +122,14 @@ const CreateDocumentForm = () => {
         };
 
         initializeForm();
-    }, [folderName, docId, mode, documentDetails, documentTypes, companies]); 
+    }, [folderName, docId, mode, documentDetails, documentTypes]); // Quitamos companies de dependencias
     
     // 4. PREPARAR MODAL DE CAMPOS
     const handleContinue = async (e) => {
         e.preventDefault();
         
-        if (operationMode === 'create' && currentDocType && currentCompany) {
+        // MODIFICADO: Ya no requerimos currentCompany para continuar
+        if (operationMode === 'create' && currentDocType) {
             setIsLoading(true);
             try {
                 const params = new URLSearchParams({ id: selectedDocTypeId });
@@ -145,7 +151,7 @@ const CreateDocumentForm = () => {
             }
 
         } else if (operationMode === 'create') {
-            alert('Por favor, seleccione el Tipo de Documento y la Entidad Asociada.');
+            alert('Por favor, seleccione el Tipo de Documento.'); // Mensaje actualizado
         }
     };
 
@@ -155,16 +161,12 @@ const CreateDocumentForm = () => {
 
     const handleDocumentCreatedAndReadyToSend = (documentData) => { 
         handleSaveDocument(documentData); 
-        // Guardamos el documento recién creado (con su ID) para enviarlo
         setDocumentToSend(documentData);
         setIsSendModalOpen(true);
     };
 
-    // --- 5. LÓGICA DE ENVÍO DE CORREO (IMPLEMENTADA) ---
+    // --- 5. LÓGICA DE ENVÍO DE CORREO ---
     const handleSendDocument = async (selectedDocsIgnored, emailData) => { 
-        // Nota: El primer argumento viene del modal como lista de documentos seleccionados.
-        // En este flujo de "Crear y Enviar", enviamos específicamente 'documentToSend'.
-        
         if (!documentToSend || !documentToSend.id) {
             alert("Error: No se ha identificado el documento a enviar.");
             return;
@@ -175,7 +177,7 @@ const CreateDocumentForm = () => {
 
         try {
             const payload = {
-                documentIds: [documentToSend.id], // Enviamos el ID del documento recién creado
+                documentIds: [documentToSend.id], 
                 emailData: emailData
             };
 
@@ -234,6 +236,7 @@ const CreateDocumentForm = () => {
                                     </select>
                                 </div>
 
+                                {/* SELECT DE ENTIDAD COMENTADO 
                                 <div className="form-group-doc-type">
                                     <label htmlFor="company" className="form-label">Entidad Asociada <span className="required-asterisk">*</span></label>
                                     <select 
@@ -252,6 +255,7 @@ const CreateDocumentForm = () => {
                                         ))}
                                     </select>
                                 </div>
+                                */}
                             </div>
 
                             {operationMode === 'create' && (
@@ -266,14 +270,16 @@ const CreateDocumentForm = () => {
                 </div>
                 
                 {/* MODAL DE CAMPOS */}
-                {fullDocTypeDetails && currentCompany && (
+                {/* Modificado: Solo requerimos fullDocTypeDetails, quitamos currentCompany */}
+                {fullDocTypeDetails && (
                     <DocumentFieldsModal
                         isOpen={isModalOpen}
                         onClose={() => {
                             setIsModalOpen(false)
                             setFullDocTypeDetails(null);
                         }}
-                        company={currentCompany}
+                        // Pasamos dummy company para no romper el modal si espera la prop
+                        company={{ id: null, name: '' }} 
                         documentType={fullDocTypeDetails}
                         onSaveDocument={handleSaveDocument}
                         mode={operationMode}
@@ -293,10 +299,9 @@ const CreateDocumentForm = () => {
                             setIsSendModalOpen(false);
                             setDocumentToSend(null);
                         }}
-                        // Pasamos el documento en un array porque el modal espera una lista
                         selectedDocuments={[documentToSend.id]} 
-                        selectedDocumentNames={[`${documentToSend.docTypeName} - ${documentToSend.companyName}`]} 
-                        // Conectamos la función real de envío
+                        // Ajustamos el nombre ya que companyName puede venir vacío o concatenado del backend
+                        selectedDocumentNames={[`${documentToSend.docTypeName} - ${documentToSend.companyName || documentToSend.company || ''}`]} 
                         onSend={handleSendDocument}
                         isLoading={isLoading}
                     />

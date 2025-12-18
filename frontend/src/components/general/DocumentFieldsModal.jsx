@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/general/sendDocModal.css'; 
 
 // --- Configuración de API ---
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// --- Tipos de Datos ---
 const DATA_TYPE_CONFIG = [
     { id: 'text', label: 'Texto Corto', inputType: 'text' },
     { id: 'textarea', label: 'Texto Largo', inputType: 'textarea' },
@@ -14,7 +13,6 @@ const DATA_TYPE_CONFIG = [
     { id: 'money', label: 'Moneda', inputType: 'number', precision: 2 },
     { id: 'date', label: 'Fecha', inputType: 'date' },
     { id: 'char', label: 'Caracter', inputType: 'text' },
-    // 1. MODIFICACIÓN: Agregamos el tipo 'bool' explícitamente
     { id: 'bool', label: 'Sí/No', inputType: 'checkbox' }, 
     { id: 'specificValues', label: 'Valores Específicos', inputType: 'select' },
     { id: 'text-short', label: 'Texto Corto', inputType: 'text' },
@@ -33,19 +31,54 @@ const DocumentFieldsModal = ({
     const [attachmentName, setAttachmentName] = useState(''); 
     const [sendDocument, setSendDocument] = useState(false);
     
+    // --- ESTADOS PARA EMPRESAS ---
+    const [availableCompanies, setAvailableCompanies] = useState([]);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState([]);
+    const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+    
+    const companyDropdownRef = useRef(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const isViewing = mode === 'view';
     const isEditing = mode === 'edit';
     const isCreating = mode === 'create';
 
+    // 1. Fetch de Entidades Disponibles
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/documents/getDocCompanies`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setAvailableCompanies(data);
+                }
+            } catch (error) {
+                console.error("Error cargando entidades:", error);
+            }
+        };
+        if (isOpen) {
+            fetchCompanies();
+        }
+    }, [isOpen]);
+
+    // 2. Click Outside para cerrar dropdown
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target)) {
+                setIsCompanyDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 3. Inicialización de Formulario y Entidades
     useEffect(() => {
         if (isOpen && documentType) {
             const fieldsDef = documentType.fields || [];
 
             if (isCreating) {
                 const initialData = fieldsDef.reduce((acc, field) => {
-                    // Inicializamos bools como false, otros como string vacío
                     acc[field.name] = field.type === 'bool' || field.typeId === 'bool' ? false : '';
                     return acc;
                 }, {});
@@ -53,23 +86,28 @@ const DocumentFieldsModal = ({
                 setAttachment(null);
                 setAttachmentName('');
                 setSendDocument(false);
+                setSelectedCompanyIds([]); 
             } else {
-                const processedData = {...initialFormData};
-
+                const processedData = { ...initialFormData };
                 fieldsDef.forEach(field => {
-                    if (field.type === 'bool' || field.typeId === 'bool'){
+                    if (field.type === 'bool' || field.typeId === 'bool') {
                         const val = initialFormData[field.name];
                         processedData[field.name] = (val === 1 || val === '1' || val === true || val === 'true');
                     }
-                })
+                });
 
                 setFormData(processedData);
                 setAttachment(null); 
                 setAttachmentName(initialAttachmentName || '');
                 setSendDocument(false);
+
+                if (company && company.id) {
+                    const ids = Array.isArray(company.id) ? company.id : [company.id];
+                    setSelectedCompanyIds(ids);
+                }
             }
         }
-    }, [isOpen, documentType, isCreating, initialFormData, initialAttachmentName]);
+    }, [isOpen, documentType, isCreating, initialFormData, initialAttachmentName, company]);
 
     if (!isOpen || !documentType) return null;
     
@@ -78,41 +116,29 @@ const DocumentFieldsModal = ({
         return dataType ? dataType.inputType : 'text'; 
     };
 
-    // --- LÓGICA DE VALIDACIÓN DE ENTRADA ---
+    // --- MANEJADORES ---
     const handleFieldChange = (field, value) => {
         if (isViewing) return;
-
         const inputType = getFieldInputType(field);
         
-        // 1. Validación de Longitud (Length)
         if (field.length && field.length > 0 && typeof value === 'string') {
-            if (value.length > field.length) {
-                return;
-            }
+            if (value.length > field.length) return;
         }
         
-        // 2. Validación específica para 'char'
         if (field.typeId === 'char') {
             const maxLen = (field.length && field.length > 0) ? field.length : 1;
             if (value.length > maxLen) return;
         }
 
-        // 3. Validación para 'int'
         if (inputType === 'number') {
              const typeConfig = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId || dt.id === field.type);
              const isInteger = typeConfig && typeConfig.precision === 0;
-
              if (isInteger) {
-                 if (value !== '' && !/^-?\d*$/.test(value)) {
-                     return;
-                 }
+                 if (value !== '' && !/^-?\d*$/.test(value)) return;
              }
         }
 
-        setFormData(prevData => ({
-            ...prevData,
-            [field.name]: value
-        }));
+        setFormData(prevData => ({ ...prevData, [field.name]: value }));
     };
 
     const handleFileChange = (event) => {
@@ -123,6 +149,17 @@ const DocumentFieldsModal = ({
         }
     };
 
+    const handleToggleCompany = (companyObj) => {
+        setSelectedCompanyIds(prev => {
+            const exists = prev.includes(companyObj.id);
+            if (exists) {
+                return prev.filter(id => id !== companyObj.id);
+            } else {
+                return [...prev, companyObj.id];
+            }
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -131,20 +168,21 @@ const DocumentFieldsModal = ({
             return;
         }
 
+        if (selectedCompanyIds.length === 0) {
+            alert("Debe seleccionar al menos una entidad asociada.");
+            return;
+        }
+
         setIsSaving(true); 
         
         try {
-            // 1. Encontrar el campo "Nombre del Documento"
             const docNameField = (documentType.fields || []).find(
                 f => f.name.trim().toLowerCase() === 'nombre del documento'
             );
-            
             const documentNameValue = docNameField ? (formData[docNameField.name] || '') : 'Documento Sin Nombre';
 
-            // 2. Preparar campos
             const fieldsPayload = (documentType.fields || []).map(field => ({
                 fieldId: field.id,
-                // Para booleanos aseguramos que se envíe el valor correcto
                 value: formData[field.name] 
             }));
 
@@ -162,7 +200,7 @@ const DocumentFieldsModal = ({
                 method = 'POST';
                 jsonPayload = {
                     docTypeId: documentType.id,
-                    companyId: company.id,
+                    companyId: selectedCompanyIds, 
                     documentName: documentNameValue, 
                     fields: fieldsPayload 
                 };
@@ -171,6 +209,7 @@ const DocumentFieldsModal = ({
                 method = 'PUT';
                 jsonPayload = {
                     id: documentId, 
+                    companyId: selectedCompanyIds, 
                     documentName: documentNameValue, 
                     fields: fieldsPayload 
                 };
@@ -190,11 +229,16 @@ const DocumentFieldsModal = ({
             const actionMsg = isCreating ? "creado" : "actualizado";
             alert(`Documento ${actionMsg} exitosamente.`);
 
+            const selectedCompanyNames = availableCompanies
+                .filter(c => selectedCompanyIds.includes(c.id))
+                .map(c => c.name)
+                .join(', ');
+
             const finalDocument = {
                 docTypeId: documentType.id,
                 docTypeName: documentType.name,
-                companyId: company.id,
-                companyName: company.name,
+                companyId: selectedCompanyIds, 
+                companyName: selectedCompanyNames, 
                 fieldsData: formData,
                 id: result.document_id || documentId,
                 docName: result.document_name || documentNameValue,
@@ -239,6 +283,74 @@ const DocumentFieldsModal = ({
                     </h3>
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
+                
+                {/* --- SECCIÓN DE SELECCIÓN DE EMPRESAS --- */}
+                <div className="modal-header-user" style={{ paddingTop: 0, paddingBottom: '15px' }}>
+                    <h5 style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#555' }}>
+                        Entidades Asociadas <span className="required-asterisk">*</span>
+                    </h5>
+                    
+                    {isViewing ? (
+                        // --- MODO VISTA: Muestra solo el contador ---
+                        <div 
+                            className="static-field-value" 
+                            style={{ fontWeight: 'bold', color: '#333', cursor: 'help' }}
+                            // Tooltip con los nombres reales al pasar el mouse
+                            title={availableCompanies
+                                .filter(c => selectedCompanyIds.includes(c.id))
+                                .map(c => c.name)
+                                .join(', ')
+                            }
+                        >
+                            {selectedCompanyIds.length > 0 
+                                ? `${selectedCompanyIds.length} Entidad${selectedCompanyIds.length !== 1 ? 'es' : ''} Asociada${selectedCompanyIds.length !== 1 ? 's' : ''}`
+                                : "Sin entidades asignadas"
+                            }
+                        </div>
+                    ) : (
+                        // MODO EDICIÓN/CREACIÓN: Dropdown con checkboxes
+                        <div className="permisos-container-modal" ref={companyDropdownRef} style={{ position: 'relative' }}>
+                            <div
+                                className="permiso-dropdown-toggle"
+                                onClick={(e) => { e.stopPropagation(); setIsCompanyDropdownOpen(prev => !prev); }}
+                                style={{ 
+                                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                                    border: '1px solid #ccc', padding: '8px', borderRadius: 4, background: '#fff' 
+                                }}
+                            >
+                                <div className="selected-summary" style={{ flex: 1, marginRight: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {selectedCompanyIds.length > 0 
+                                        ? `${selectedCompanyIds.length} Entidades seleccionadas`
+                                        : 'Seleccione las entidades ...'}
+                                </div>
+                                <div className="caret">▾</div>
+                            </div>
+
+                            {isCompanyDropdownOpen && (
+                                <div className="dropdown-panel" style={{ 
+                                    position: 'absolute', width: '100%', maxHeight: 200, overflowY: 'auto', 
+                                    border: '1px solid #ccc', background: '#fff', zIndex: 1000, padding: 8, borderRadius: 4,
+                                    marginTop: '2px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                }}>
+                                    {availableCompanies.map(comp => {
+                                        const isSelected = selectedCompanyIds.includes(comp.id);
+                                        return (
+                                            <label key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleToggleCompany(comp)}
+                                                    style={{ cursor: 'pointer' }}
+                                                />
+                                                <span style={{ fontSize: '14px' }}>{comp.name}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 <form className="modal-body-user" onSubmit={handleSubmit}>
                     
@@ -261,9 +373,7 @@ const DocumentFieldsModal = ({
                             });
                         }
 
-                        // --- MODO VISUALIZACIÓN ---
                         if (isViewing) {
-                            // Manejo especial para visualizar Booleano
                             let displayValue = formData[field.name];
                             if (inputType === 'checkbox') {
                                 displayValue = formData[field.name] ? 'Sí' : 'No';
@@ -279,7 +389,6 @@ const DocumentFieldsModal = ({
                             );
                         }
 
-                        // --- MODO EDICIÓN / CREACIÓN ---
                         return (
                             <div className="form-group-user" key={index}>
                                 <label>{field.isRequired && <span className="required-asterisk">*</span>} {field.name}:</label>
@@ -308,14 +417,11 @@ const DocumentFieldsModal = ({
                                             required={field.isRequired}
                                     />
                                 
-                                // 2. MODIFICACIÓN: Lógica específica para Checkbox (Bool)
                                 ) : inputType === 'checkbox' ? (
                                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
                                         <input 
                                             type="checkbox"
-                                            // Convertimos a booleano real por seguridad (!!value)
                                             checked={!!formData[field.name]}
-                                            // IMPORTANTE: Para checkbox usamos e.target.checked
                                             onChange={(e) => handleFieldChange(field, e.target.checked)}
                                             className="form-input-doc-create"
                                             style={{ width: '20px', height: '20px', cursor: 'pointer', margin: 0 }}

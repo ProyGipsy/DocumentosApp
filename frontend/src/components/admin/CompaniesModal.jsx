@@ -183,7 +183,7 @@ const CompaniesModal = ({ isOpen, onClose, mode = 'add', company = null, onSave 
 
         <div className="modal-footer-user">
           <button className="modal-button-user save-button-user" onClick={handleSave} disabled={isLoading}>
-            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Empresa...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Entidad')}
+            {isLoading ? (mode === 'edit' ? 'Guardando cambios...' : 'Agregando Entidad...') : (mode === 'edit' ? 'Guardar cambios' : 'Agregar Entidad')}
           </button>
         </div>
       </div>
