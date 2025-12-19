@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/general/sendDocModal.css'; 
+import CurrencyInput from 'react-currency-input-field';
 
 // --- Configuración de API ---
 const isDevelopment = import.meta.env.MODE === 'development';
@@ -10,7 +11,7 @@ const DATA_TYPE_CONFIG = [
     { id: 'textarea', label: 'Texto Largo', inputType: 'textarea' },
     { id: 'int', label: 'Número Entero', inputType: 'number', precision: 0 },
     { id: 'float', label: 'Número Decimal', inputType: 'number', precision: 2 },
-    { id: 'money', label: 'Moneda', inputType: 'number', precision: 2 },
+    { id: 'money', label: 'Moneda', inputType: 'money', precision: 2 },
     { id: 'date', label: 'Fecha', inputType: 'date' },
     { id: 'char', label: 'Caracter', inputType: 'text' },
     { id: 'bool', label: 'Sí/No', inputType: 'checkbox' }, 
@@ -27,6 +28,7 @@ const DocumentFieldsModal = ({
 }) => {
     
     const [formData, setFormData] = useState({}); 
+    const [currencyCents, setCurrencyCents] = useState({});
     const [attachment, setAttachment] = useState(null); 
     const [attachmentName, setAttachmentName] = useState(''); 
     const [sendDocument, setSendDocument] = useState(false);
@@ -83,6 +85,17 @@ const DocumentFieldsModal = ({
                     return acc;
                 }, {});
                 setFormData(initialData);
+                // Inicialización de decimales para campos monetarios
+                const initCents = {};
+                fieldsDef.forEach(f => {
+                    const dt = DATA_TYPE_CONFIG.find(dt => dt.id === f.typeId || dt.id === f.type);
+                    if (dt && dt.inputType === 'money') {
+                        initCents[f.name] = 0;
+                        // also ensure displayed value is 0.00
+                        initialData[f.name] = (0).toFixed(dt.precision || 2);
+                    }
+                });
+                setCurrencyCents(initCents);
                 setAttachment(null);
                 setAttachmentName('');
                 setSendDocument(false);
@@ -96,6 +109,24 @@ const DocumentFieldsModal = ({
                     }
                 });
 
+                // Inicialización de decimales para campos monetarios desde valores existentes
+                const initCents = {};
+                fieldsDef.forEach(f => {
+                    const dt = DATA_TYPE_CONFIG.find(dt => dt.id === f.typeId || dt.id === f.type);
+                    if (dt && dt.inputType === 'money') {
+                        const raw = processedData[f.name];
+                        let num = 0;
+                        if (raw !== undefined && raw !== null && raw !== '') {
+                            const cleaned = String(raw).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
+                            const parsed = parseFloat(cleaned);
+                            if (!isNaN(parsed)) num = parsed;
+                        }
+                        const cents = Math.round(num * Math.pow(10, dt.precision || 2));
+                        initCents[f.name] = cents;
+                        processedData[f.name] = (cents / Math.pow(10, dt.precision || 2)).toFixed(dt.precision || 2);
+                    }
+                });
+                setCurrencyCents(initCents);
                 setFormData(processedData);
                 setAttachment(null); 
                 setAttachmentName(initialAttachmentName || '');
@@ -139,6 +170,54 @@ const DocumentFieldsModal = ({
         }
 
         setFormData(prevData => ({ ...prevData, [field.name]: value }));
+    };
+
+    const handleCurrencyChange = (value, name, precision = 2) => {
+        if (isViewing) return;
+        if (value === undefined || value === null || value === '') {
+            setCurrencyCents(prev => ({ ...prev, [name]: 0 }));
+            setFormData(prev => ({ ...prev, [name]: (0).toFixed(precision) }));
+            return;
+        }
+        const parsed = parseFloat(String(value).replace(/,/g, '.'));
+        if (isNaN(parsed)) return;
+        const cents = Math.round(parsed * Math.pow(10, precision));
+        setCurrencyCents(prev => ({ ...prev, [name]: cents }));
+        setFormData(prev => ({ ...prev, [name]: (cents / Math.pow(10, precision)).toFixed(precision) }));
+    };
+
+    const handleCurrencyKeyDown = (e, name, precision = 2) => {
+        if (isViewing) return;
+        const key = e.key;
+        const ctrl = e.ctrlKey || e.metaKey;
+        if (ctrl) return;
+
+        if (/^[0-9]$/.test(key)) {
+            e.preventDefault();
+            setCurrencyCents(prev => {
+                const prevCents = Number(prev[name] || 0);
+                const next = prevCents * 10 + Number(key);
+                const updated = { ...prev, [name]: next };
+                setFormData(fd => ({ ...fd, [name]: (next / Math.pow(10, precision)).toFixed(precision) }));
+                return updated;
+            });
+        } else if (key === 'Backspace') {
+            e.preventDefault();
+            setCurrencyCents(prev => {
+                const prevCents = Number(prev[name] || 0);
+                const next = Math.floor(prevCents / 10);
+                const updated = { ...prev, [name]: next };
+                setFormData(fd => ({ ...fd, [name]: (next / Math.pow(10, precision)).toFixed(precision) }));
+                return updated;
+            });
+        } else if (key === 'Delete') {
+            e.preventDefault();
+            setCurrencyCents(prev => {
+                const updated = { ...prev, [name]: 0 };
+                setFormData(fd => ({ ...fd, [name]: (0).toFixed(precision) }));
+                return updated;
+            });
+        }
     };
 
     const handleFileChange = (event) => {
@@ -415,6 +494,23 @@ const DocumentFieldsModal = ({
                                             placeholder={`Ingrese ${field.name}...`}
                                             className="form-input-doc-create"
                                             required={field.isRequired}
+                                    />
+                                
+                                ) : inputType === 'money' ? (
+                                    <CurrencyInput
+                                        id={`field-${index}`}
+                                        name={field.name}
+                                        placeholder="0,00"
+                                        decimalsLimit={precision || 2}
+                                        decimalSeparator="," 
+                                        groupSeparator="."
+                                        // prefix="Bs. "
+                                        value={formData[field.name] || ''}
+                                        onValueChange={(value, name) => handleCurrencyChange(value, name, precision || 2)}
+                                        onKeyDown={(e) => handleCurrencyKeyDown(e, field.name, precision || 2)}
+                                        className="form-input-doc-create"
+                                        disabled={isSaving}
+                                        required={field.isRequired}
                                     />
                                 
                                 ) : inputType === 'checkbox' ? (
