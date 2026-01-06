@@ -4,6 +4,7 @@ import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/documentTypeForm.css'; 
 import DocumentFieldsModal from './DocumentFieldsModal';
 import SendDocumentModal from './SendDocumentModal';
+import { useAuth } from '../../utils/AuthContext'; // <--- 1. IMPORTAR AUTH
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
@@ -11,9 +12,10 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 const CreateDocumentForm = () => {
     const location = useLocation(); 
     const { folderName, docId, mode, documentDetails } = location.state || {};
+    const { user } = useAuth(); // <--- 2. OBTENER USUARIO ACTUAL
 
     const [documentTypes, setDocumentTypes] = useState([]);
-    // const [companies, setCompanies] = useState([]); // COMENTADO: Ya no gestionamos Entidads aquí
+    // const [companies, setCompanies] = useState([]); // COMENTADO: Ya no gestionamos Entidades aquí
 
     const [selectedDocTypeId, setSelectedDocTypeId] = useState('');
     // const [selectedCompanyId, setSelectedCompanyId] = useState(''); // COMENTADO
@@ -122,7 +124,7 @@ const CreateDocumentForm = () => {
         };
 
         initializeForm();
-    }, [folderName, docId, mode, documentDetails, documentTypes]); // Quitamos companies de dependencias
+    }, [folderName, docId, mode, documentDetails, documentTypes]); 
     
     // 4. PREPARAR MODAL DE CAMPOS
     const handleContinue = async (e) => {
@@ -151,7 +153,7 @@ const CreateDocumentForm = () => {
             }
 
         } else if (operationMode === 'create') {
-            alert('Por favor, seleccione el Tipo de Documento.'); // Mensaje actualizado
+            alert('Por favor, seleccione el Tipo de Documento.'); 
         }
     };
 
@@ -176,9 +178,13 @@ const CreateDocumentForm = () => {
         setIsLoading(true);
 
         try {
+            // <--- 3. CORRECCIÓN DEL PAYLOAD PARA EVITAR ERROR 'dict' --->
             const payload = {
                 documentIds: [documentToSend.id], 
-                emailData: emailData
+                emailData: {
+                    ...emailData,
+                    userId: user?.id // Enviamos solo el ID (entero), no el objeto completo
+                }
             };
 
             const response = await fetch(`${apiUrl}/documents/sendDocuments`, {
@@ -270,7 +276,6 @@ const CreateDocumentForm = () => {
                 </div>
                 
                 {/* MODAL DE CAMPOS */}
-                {/* Modificado: Solo requerimos fullDocTypeDetails, quitamos currentCompany */}
                 {fullDocTypeDetails && (
                     <DocumentFieldsModal
                         isOpen={isModalOpen}
