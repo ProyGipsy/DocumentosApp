@@ -559,7 +559,7 @@ const DocumentFieldsModal = ({
                                     accept=".pdf"
                                     className="form-input-doc-create file-input"
                                     onChange={handleFileChange}
-                                    required={isCreating} 
+                                    //required={isCreating} 
                                 />
                                 {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
