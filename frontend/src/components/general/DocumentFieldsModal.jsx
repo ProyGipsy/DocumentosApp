@@ -549,7 +549,22 @@ const DocumentFieldsModal = ({
                         )}
                         {(isCreating || isEditing) && (
                             <small style={{ display: 'block', marginBottom: '12px', color: '#555' }}>
-                                Solo se aceptan archivos PDF
+                                Solo se aceptan archivos PDF.
+                                <br />
+                                Debe unir todos los archivos asociados a este documento en un <b>ÚNICO PDF.</b>
+                                <br />
+                                {(documentType.name == 'Pago Proveedores') && (
+                                    <span>
+                                        <br />
+                                        Para este tipo de documento debe incluir:
+                                        <ul>
+                                            <li>Notas de Crédito</li>
+                                            <li>Notas de Débito</li>
+                                            <li>Comprobantes de Pago</li>
+                                            <li>Comprobantes de Retenciones</li>
+                                        </ul>
+                                    </span>
+                                )}
                             </small>
                         )}
                         {!isViewing && (
