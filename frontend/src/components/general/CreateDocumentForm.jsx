@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import LayoutBase from '../base/LayoutBase'; 
-import '../../styles/general/documentTypeForm.css'; 
+import LayoutBase from '../base/LayoutBase';
+import '../../styles/general/documentTypeForm.css';
 import DocumentFieldsModal from './DocumentFieldsModal';
 import SendDocumentModal from './SendDocumentModal';
-import { useAuth } from '../../utils/AuthContext'; // <--- 1. IMPORTAR AUTH
+import { useAuth } from '../../utils/AuthContext';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
@@ -12,16 +12,13 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 const CreateDocumentForm = () => {
     const location = useLocation(); 
     const { folderName, docId, mode, documentDetails } = location.state || {};
-    const { user } = useAuth(); // <--- 2. OBTENER USUARIO ACTUAL
+    const { user } = useAuth();
 
     const [documentTypes, setDocumentTypes] = useState([]);
-    // const [companies, setCompanies] = useState([]); // COMENTADO: Ya no gestionamos Entidades aquí
-
     const [selectedDocTypeId, setSelectedDocTypeId] = useState('');
-    // const [selectedCompanyId, setSelectedCompanyId] = useState(''); // COMENTADO
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [operationMode, setOperationMode] = useState(mode || 'create');
 
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -40,19 +37,15 @@ const CreateDocumentForm = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Modificado: Solo pedimos tipos de documento
                 const [docsRes] = await Promise.all([
                     fetch(`${apiUrl}/documents/getDocType`),
-                    // fetch(`${apiUrl}/documents/getDocCompanies`) // COMENTADO
                 ]);
 
                 if (!docsRes.ok) throw new Error("Error cargando datos");
 
                 const docsData = await docsRes.json();
-                // const companiesData = await companiesRes.json(); // COMENTADO
 
                 setDocumentTypes(docsData);
-                // setCompanies(companiesData); // COMENTADO
             } catch (err) {
                 console.error('Error cargando datos:', err);
             } finally {
@@ -68,17 +61,9 @@ const CreateDocumentForm = () => {
         return documentTypes.find(dt => String(dt.id) === String(selectedDocTypeId));
     }, [selectedDocTypeId, documentTypes]); 
 
-    /* COMENTADO: Ya no calculamos la compañía actual
-    const currentCompany = useMemo(() => {
-        if (!selectedCompanyId) return null;
-        return companies.find(c => String(c.id) === String(selectedCompanyId));
-    }, [selectedCompanyId, companies]); 
-    */
-
     // 3. INICIALIZACIÓN
     useEffect(() => {
         const initializeForm = async () => {
-            // Eliminada la condición && companies.length > 0
             if (documentTypes.length > 0) {
                 
                 if (mode === 'create' && folderName) {
@@ -93,14 +78,6 @@ const CreateDocumentForm = () => {
                 else if (docId && (mode === 'view' || mode === 'edit') && documentDetails) {
                     setOperationMode(mode);
                     setSelectedDocTypeId(documentDetails.docTypeId);
-                    
-                    /* COMENTADO: Lógica de preselección de Entidad
-                    const companyMatch = companies.find(c => 
-                        String(c.id) === String(documentDetails.companyId) || 
-                        c.name === documentDetails.companyName
-                    );
-                    if (companyMatch) setSelectedCompanyId(companyMatch.id);
-                    */
 
                     try {
                         setIsLoading(true);
@@ -130,7 +107,6 @@ const CreateDocumentForm = () => {
     const handleContinue = async (e) => {
         e.preventDefault();
         
-        // MODIFICADO: Ya no requerimos currentCompany para continuar
         if (operationMode === 'create' && currentDocType) {
             setIsLoading(true);
             try {
@@ -183,7 +159,7 @@ const CreateDocumentForm = () => {
                 documentIds: [documentToSend.id], 
                 emailData: {
                     ...emailData,
-                    userId: user?.id // Enviamos solo el ID (entero), no el objeto completo
+                    userId: user?.id
                 }
             };
 
@@ -241,27 +217,6 @@ const CreateDocumentForm = () => {
                                         ))}
                                     </select>
                                 </div>
-
-                                {/* SELECT DE ENTIDAD COMENTADO 
-                                <div className="form-group-doc-type">
-                                    <label htmlFor="company" className="form-label">Entidad Asociada <span className="required-asterisk">*</span></label>
-                                    <select 
-                                        id="company"
-                                        className="table-select"
-                                        value={selectedCompanyId}
-                                        onChange={(e) => setSelectedCompanyId(e.target.value)}
-                                        disabled={operationMode !== 'create'}
-                                        required
-                                    >
-                                        <option value="" disabled>Seleccione una Entidad</option>
-                                        {companies.map(company => (
-                                            <option key={company.id} value={company.id}>
-                                                {company.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                */}
                             </div>
 
                             {operationMode === 'create' && (
@@ -283,7 +238,6 @@ const CreateDocumentForm = () => {
                             setIsModalOpen(false)
                             setFullDocTypeDetails(null);
                         }}
-                        // Pasamos dummy company para no romper el modal si espera la prop
                         company={{ id: null, name: '' }} 
                         documentType={fullDocTypeDetails}
                         onSaveDocument={handleSaveDocument}
@@ -304,8 +258,7 @@ const CreateDocumentForm = () => {
                             setIsSendModalOpen(false);
                             setDocumentToSend(null);
                         }}
-                        selectedDocuments={[documentToSend.id]} 
-                        // Ajustamos el nombre ya que companyName puede venir vacío o concatenado del backend
+                        selectedDocuments={[documentToSend.id]}
                         selectedDocumentNames={[`${documentToSend.docTypeName} - ${documentToSend.companyName || documentToSend.company || ''}`]} 
                         onSend={handleSendDocument}
                         isLoading={isLoading}

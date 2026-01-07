@@ -116,11 +116,13 @@ const Roles = () => {
                 </div>
 
                 {/* Botón de Agregar Rol */}
-                <div className="add-doc-button-container">
+                {/*
+                <div className="add-doc-button-container">                     
                     <button className="add-doc-button" onClick={handleAddRole}>
                         + Agregar Rol
                     </button>
                 </div>
+                */}
 
                 <div className="send-action-and-table-container">
                     <div className="documents-table-wrapper">
