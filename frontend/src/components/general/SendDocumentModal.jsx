@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/general/sendDocModal.css';
+import { useAuth } from '../../utils/AuthContext';
+
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumentNames, onSend, isLoading=true }) => {
   
@@ -11,19 +15,86 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     body: ''             
   };
 
+  const { user } = useAuth();
   const [formData, setFormData] = useState(initialFormState);
+  const [availableEmails, setAvailableEmails] = useState([]); // Lista total traída de la API
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]); // Lista filtrada según lo que escribe
+  const [showSuggestions, setShowSuggestions] = useState(false); // Controlar visibilidad
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user?.id) {
       setFormData(initialFormState);
+      
+      const fetchEmails = async () => {
+        try {
+            const response =  await fetch(`${apiUrl}/documents/getSuggestedEmails?userId=${user.id}`);
+
+            if (response.ok) {
+              const data = await response.json();
+              setAvailableEmails(data);
+            }
+        } catch (error) {
+            console.error("Error cargando sugerencias de correo:", error);
+        }
+      };
+      fetchEmails();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
+
+  // --- NUEVO: Lógica para filtrar sugerencias ---
+  useEffect(() => {
+    // 1. Obtenemos el texto actual
+    const text = formData.recipients;
+    
+    // 2. Buscamos la última parte después de una coma (ej: "correo1, corr") -> " corr"
+    const lastCommaIndex = text.lastIndexOf(',');
+    const currentTerm = lastCommaIndex !== -1 
+        ? text.substring(lastCommaIndex + 1).trim() 
+        : text.trim();
+
+    // 3. Si hay texto escribiéndose (mínimo 1 caracter), filtramos
+    if (currentTerm.length > 0) {
+        const matches = availableEmails.filter(email => 
+            email.toLowerCase().includes(currentTerm.toLowerCase()) &&
+            !text.includes(email) // Opcional: Evitar sugerir si ya está agregado
+        );
+        setFilteredSuggestions(matches);
+        setShowSuggestions(matches.length > 0);
+    } else {
+        setShowSuggestions(false);
+    }
+  }, [formData.recipients, availableEmails]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // --- NUEVO: Manejador al hacer clic en una sugerencia ---
+  const handleSelectSuggestion = (email) => {
+    const text = formData.recipients;
+    const lastCommaIndex = text.lastIndexOf(',');
+    
+    // Mantenemos todo lo que estaba antes de la última coma
+    let prefix = lastCommaIndex !== -1 
+        ? text.substring(0, lastCommaIndex + 1) 
+        : '';
+    
+    // Agregamos espacio si hay prefijo
+    if (prefix && !prefix.endsWith(' ')) prefix += ' ';
+
+    // Actualizamos el input: Texto anterior + Email seleccionado + Coma y espacio
+    setFormData(prev => ({
+        ...prev,
+        recipients: prefix + email + ', '
+    }));
+
+    setShowSuggestions(false);
+    
+    // Regresar el foco al input (opcional, requiere usar useRef en el input)
+    document.getElementById('recipients').focus();
   };
 
   const handleSend = () => {
@@ -52,20 +123,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
       .filter(email => email !== '');
 
     // --- 3. VALIDACIÓN DE FORMATO (REGEX) ---
-    // Esta expresión regular verifica:
-    // ^[^\s@]+   : Texto antes del @ (sin espacios)
-    // @          : Arroba obligatoria
-    // [^\s@]+    : Dominio (ej: gmail, hotmail)
-    // \.         : Un punto obligatorio
-    // [^\s@]+$   : Extensión (ej: com, net, ve)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    // Filtramos los que NO cumplen con el formato
     const invalidEmails = emailList.filter(email => !emailRegex.test(email));
 
     if (invalidEmails.length > 0) {
         alert(`Error de validación:\nLos siguientes correos no tienen un formato válido:\n\n${invalidEmails.join('\n')}\n\nPor favor, verifique que contengan "@" y un dominio (ej: .com).`);
-        return; // Detenemos el envío
+        return; 
     }
 
     // --- 4. Preparar datos y Enviar ---
@@ -78,7 +141,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     };
 
     console.log("Enviando datos al padre:", emailData);
-
     onSend(selectedDocuments, emailData);
   };
 
@@ -126,12 +188,13 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          <div className="form-group-user">
+          {/* --- MODIFICADO: Contenedor relativo para posicionar la lista --- */}
+          <div className="form-group-user" style={{ position: 'relative' }}>
             <label htmlFor="recipients">
               Correos Destinatarios <span className="required-asterisk">*</span>
             </label>
             <small style={{ display: 'block', marginBottom: '5px', color: '#666', fontSize: '0.85em' }}>
-              Separe los correos con comas (ej: usuario1@gmail.com, usuario2@empresa.net)
+              Separe los correos con comas. Seleccione de la lista o escriba uno nuevo.
             </small>
             <input
               type="text"
@@ -141,8 +204,47 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               required
               value={formData.recipients}
               onChange={handleChange}
-              placeholder="ejemplo@correo.com"
+              placeholder="ejemplo@correo.com, otro@correo.com"
+              autoComplete="off"
             />
+            
+            {/* --- NUEVO: Lista de Sugerencias Flotante --- */}
+            {showSuggestions && (
+                <ul className="suggestions-list" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #ccc',
+                    borderRadius: '0 0 4px 4px',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}>
+                    {filteredSuggestions.map((email, index) => (
+                        <li 
+                            key={index} 
+                            onClick={() => handleSelectSuggestion(email)}
+                            style={{
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f0f0f0',
+                                fontSize: '0.9em',
+                                color: '#333'
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                        >
+                            {email}
+                        </li>
+                    ))}
+                </ul>
+            )}
           </div>
 
           <div className="form-group-user">
