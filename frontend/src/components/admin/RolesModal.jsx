@@ -70,6 +70,7 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
   const usuarioRef = useRef(null);
 
   // Click Outside para cerrar dropdowns
+  /*
   useEffect(() => {
     const handleClickOutside = (e) => {
       // if (permisoRef.current && !permisoRef.current.contains(e.target)) setIsPermisosOpen(false); // Comentado
@@ -78,7 +79,8 @@ const RolesModal = ({ isOpen, onClose, mode = 'add', role = null, onSave }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
+  */
+ 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
