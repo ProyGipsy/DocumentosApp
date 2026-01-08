@@ -145,7 +145,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   };
 
   return (
-    <div className="modal-overlay-user" onClick={onClose}>
+    <div className="modal-overlay-user">
       <div className="modal-content-user" onClick={e => e.stopPropagation()}>
         <div className="modal-header-user">
           <h3>Enviar {selectedDocuments.length} Documento{selectedDocuments.length !== 1 ? 's' : ''}</h3>
