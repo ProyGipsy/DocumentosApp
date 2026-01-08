@@ -361,7 +361,7 @@ const DocumentFieldsModal = ({
     const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
 
     return (
-        <div className="modal-overlay-user" onClick={onClose}>
+        <div className="modal-overlay-user">
             <div className="modal-content-user" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header-user">
                     <h3>
