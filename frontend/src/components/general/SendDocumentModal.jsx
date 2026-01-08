@@ -41,7 +41,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     }
   }, [isOpen, user]);
 
-  // --- NUEVO: Lógica para filtrar sugerencias ---
+  // --- Lógica para filtrar sugerencias ---
   useEffect(() => {
     // 1. Obtenemos el texto actual
     const text = formData.recipients;
@@ -72,7 +72,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- NUEVO: Manejador al hacer clic en una sugerencia ---
+  // --- Manejador al hacer clic en una sugerencia ---
   const handleSelectSuggestion = (email) => {
     const text = formData.recipients;
     const lastCommaIndex = text.lastIndexOf(',');

@@ -64,6 +64,7 @@ const DocumentFieldsModal = ({
     }, [isOpen]);
 
     // 2. Click Outside para cerrar dropdown
+    /*
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target)) {
@@ -73,6 +74,7 @@ const DocumentFieldsModal = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+    */
 
     // 3. Inicialización de Formulario y Entidades
     useEffect(() => {
@@ -91,7 +93,6 @@ const DocumentFieldsModal = ({
                     const dt = DATA_TYPE_CONFIG.find(dt => dt.id === f.typeId || dt.id === f.type);
                     if (dt && dt.inputType === 'money') {
                         initCents[f.name] = 0;
-                        // also ensure displayed value is 0.00
                         initialData[f.name] = (0).toFixed(dt.precision || 2);
                     }
                 });
@@ -116,11 +117,17 @@ const DocumentFieldsModal = ({
                     if (dt && dt.inputType === 'money') {
                         const raw = processedData[f.name];
                         let num = 0;
+                        
+                        // Lógica de parseo inteligente (Manteniendo tu corrección anterior)
                         if (raw !== undefined && raw !== null && raw !== '') {
-                            const cleaned = String(raw).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
-                            const parsed = parseFloat(cleaned);
+                            let valStr = String(raw);
+                            if (valStr.includes(',')) {
+                                valStr = valStr.replace(/\./g, '').replace(',', '.');
+                            }
+                            const parsed = parseFloat(valStr);
                             if (!isNaN(parsed)) num = parsed;
                         }
+
                         const cents = Math.round(num * Math.pow(10, dt.precision || 2));
                         initCents[f.name] = cents;
                         processedData[f.name] = (cents / Math.pow(10, dt.precision || 2)).toFixed(dt.precision || 2);
@@ -363,31 +370,39 @@ const DocumentFieldsModal = ({
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
                 
-                {/* --- SECCIÓN DE SELECCIÓN DE EMPRESAS --- */}
                 <div className="modal-header-user" style={{ paddingTop: 0, paddingBottom: '15px' }}>
                     <h5 style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#555' }}>
                         Entidades Asociadas <span className="required-asterisk">*</span>
                     </h5>
                     
                     {isViewing ? (
-                        // --- MODO VISTA: Muestra solo el contador ---
+                        // --- CAMBIO: Muestra lista de nombres ---
                         <div 
                             className="static-field-value" 
-                            style={{ fontWeight: 'bold', color: '#333', cursor: 'help' }}
-                            // Tooltip con los nombres reales al pasar el mouse
-                            title={availableCompanies
-                                .filter(c => selectedCompanyIds.includes(c.id))
-                                .map(c => c.name)
-                                .join(', ')
-                            }
+                            style={{ color: '#333', marginTop: '5px' }}
                         >
-                            {selectedCompanyIds.length > 0 
-                                ? `${selectedCompanyIds.length} Entidad${selectedCompanyIds.length !== 1 ? 'es' : ''} Asociada${selectedCompanyIds.length !== 1 ? 's' : ''}`
-                                : "Sin entidades asignadas"
-                            }
+                            {selectedCompanyIds.length > 0 ? (
+                                <ul style={{ 
+                                    margin: 0, 
+                                    paddingLeft: '20px',
+                                    listStyleType: 'disc' 
+                                }}>
+                                    {availableCompanies
+                                        .filter(c => selectedCompanyIds.includes(c.id))
+                                        .map(c => (
+                                            <li key={c.id} style={{ marginBottom: '4px' }}>
+                                                {c.name}
+                                            </li>
+                                        ))
+                                    }
+                                </ul>
+                            ) : (
+                                <span style={{ fontStyle: 'italic', color: '#666' }}>
+                                    Sin entidades asignadas
+                                </span>
+                            )}
                         </div>
                     ) : (
-                        // MODO EDICIÓN/CREACIÓN: Dropdown con checkboxes
                         <div className="permisos-container-modal" ref={companyDropdownRef} style={{ position: 'relative' }}>
                             <div
                                 className="permiso-dropdown-toggle"
@@ -504,7 +519,6 @@ const DocumentFieldsModal = ({
                                         decimalsLimit={precision || 2}
                                         decimalSeparator="," 
                                         groupSeparator="."
-                                        // prefix="Bs. "
                                         value={formData[field.name] || ''}
                                         onValueChange={(value, name) => handleCurrencyChange(value, name, precision || 2)}
                                         onKeyDown={(e) => handleCurrencyKeyDown(e, field.name, precision || 2)}
@@ -553,7 +567,7 @@ const DocumentFieldsModal = ({
                                 <br />
                                 Debe unir todos los archivos asociados a este documento en un <b>ÚNICO PDF.</b>
                                 <br />
-                                {(documentType.name == 'Pago Proveedores') && (
+                                {(documentType.name === 'Pago Proveedores') && (
                                     <span>
                                         <br />
                                         Para este tipo de documento debe incluir:
@@ -574,7 +588,6 @@ const DocumentFieldsModal = ({
                                     accept=".pdf"
                                     className="form-input-doc-create file-input"
                                     onChange={handleFileChange}
-                                    //required={isCreating} 
                                 />
                                 {isEditing && attachmentName && !attachment && currentAnnexUrl && (
                                     <small style={{display:'block', marginTop:'5px', color:'#666'}}>
