@@ -64,7 +64,6 @@ const DocumentFieldsModal = ({
     }, [isOpen]);
 
     // 2. Click Outside para cerrar dropdown
-    /*
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target)) {
@@ -74,7 +73,6 @@ const DocumentFieldsModal = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-    */
 
     // 3. Inicialización de Formulario y Entidades
     useEffect(() => {
@@ -87,7 +85,6 @@ const DocumentFieldsModal = ({
                     return acc;
                 }, {});
                 setFormData(initialData);
-                // Inicialización de decimales para campos monetarios
                 const initCents = {};
                 fieldsDef.forEach(f => {
                     const dt = DATA_TYPE_CONFIG.find(dt => dt.id === f.typeId || dt.id === f.type);
@@ -110,15 +107,12 @@ const DocumentFieldsModal = ({
                     }
                 });
 
-                // Inicialización de decimales para campos monetarios desde valores existentes
                 const initCents = {};
                 fieldsDef.forEach(f => {
                     const dt = DATA_TYPE_CONFIG.find(dt => dt.id === f.typeId || dt.id === f.type);
                     if (dt && dt.inputType === 'money') {
                         const raw = processedData[f.name];
                         let num = 0;
-                        
-                        // Lógica de parseo inteligente (Manteniendo tu corrección anterior)
                         if (raw !== undefined && raw !== null && raw !== '') {
                             let valStr = String(raw);
                             if (valStr.includes(',')) {
@@ -127,7 +121,6 @@ const DocumentFieldsModal = ({
                             const parsed = parseFloat(valStr);
                             if (!isNaN(parsed)) num = parsed;
                         }
-
                         const cents = Math.round(num * Math.pow(10, dt.precision || 2));
                         initCents[f.name] = cents;
                         processedData[f.name] = (cents / Math.pow(10, dt.precision || 2)).toFixed(dt.precision || 2);
@@ -246,6 +239,11 @@ const DocumentFieldsModal = ({
         });
     };
 
+    const handleRemoveCompany = (idToRemove) => {
+        if (isViewing) return;
+        setSelectedCompanyIds(prev => prev.filter(id => id !== idToRemove));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -303,7 +301,6 @@ const DocumentFieldsModal = ({
 
             formDataToSend.append('data', JSON.stringify(jsonPayload));
 
-            console.log(`Enviando ${method}...`, jsonPayload);
             const response = await fetch(url, {
                 method: method,
                 body: formDataToSend
@@ -361,7 +358,7 @@ const DocumentFieldsModal = ({
     const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
 
     return (
-        <div className="modal-overlay-user">
+        <div className="modal-overlay-user" onClick={onClose}>
             <div className="modal-content-user" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header-user">
                     <h3>
@@ -370,39 +367,56 @@ const DocumentFieldsModal = ({
                     <button className="close-button-user" onClick={onClose}>&times;</button>
                 </div>
                 
-                <div className="modal-header-user" style={{ paddingTop: 0, paddingBottom: '15px' }}>
-                    <h5 style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#555' }}>
+                {/* --- SECCIÓN DE SELECCIÓN DE EMPRESAS --- */}
+                <div 
+                    className="modal-header-user" 
+                    style={{ 
+                        paddingTop: 0, 
+                        paddingBottom: '15px',
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'stretch',
+                        gap: '8px',
+                        justifyContent: 'flex-start' 
+                    }}
+                >
+                    <h5 style={{ margin: '0', fontSize: '14px', color: '#555' }}>
                         Entidades Asociadas <span className="required-asterisk">*</span>
                     </h5>
                     
                     {isViewing ? (
-                        // --- CAMBIO: Muestra lista de nombres ---
-                        <div 
-                            className="static-field-value" 
-                            style={{ color: '#333', marginTop: '5px' }}
-                        >
+                        // --- MODO VIEW: CHIPS SIN BOTÓN DE ELIMINAR ---
+                        <div className="static-field-value" style={{ marginTop: '5px' }}>
                             {selectedCompanyIds.length > 0 ? (
-                                <ul style={{ 
-                                    margin: 0, 
-                                    paddingLeft: '20px',
-                                    listStyleType: 'disc' 
+                                <div style={{ 
+                                    display: 'flex', 
+                                    flexWrap: 'wrap', 
+                                    gap: '8px',
+                                    justifyContent: 'flex-start'
                                 }}>
                                     {availableCompanies
                                         .filter(c => selectedCompanyIds.includes(c.id))
                                         .map(c => (
-                                            <li key={c.id} style={{ marginBottom: '4px' }}>
+                                            <div key={c.id} style={{ 
+                                                backgroundColor: '#f0f0f0', 
+                                                border: '1px solid #ddd',
+                                                borderRadius: '15px', 
+                                                padding: '4px 12px', // Un poco más de padding al no tener X
+                                                fontSize: '13px',
+                                                color: '#333',
+                                                display: 'inline-block'
+                                            }}>
                                                 {c.name}
-                                            </li>
+                                            </div>
                                         ))
                                     }
-                                </ul>
+                                </div>
                             ) : (
-                                <span style={{ fontStyle: 'italic', color: '#666' }}>
-                                    Sin entidades asignadas
-                                </span>
+                                <span style={{ fontStyle: 'italic', color: '#666' }}>Sin entidades asignadas</span>
                             )}
                         </div>
                     ) : (
+                        // --- MODO CREAR / EDITAR: CHIPS CON BOTÓN DE ELIMINAR ---
                         <div className="permisos-container-modal" ref={companyDropdownRef} style={{ position: 'relative' }}>
                             <div
                                 className="permiso-dropdown-toggle"
@@ -442,12 +456,56 @@ const DocumentFieldsModal = ({
                                     })}
                                 </div>
                             )}
+
+                            {selectedCompanyIds.length > 0 && (
+                                <div style={{ 
+                                    marginTop: '10px', 
+                                    display: 'flex', 
+                                    flexWrap: 'wrap', 
+                                    gap: '8px',
+                                    justifyContent: 'flex-start'
+                                }}>
+                                    {selectedCompanyIds.map(id => {
+                                        const comp = availableCompanies.find(c => c.id === id);
+                                        return comp ? (
+                                            <div key={id} style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                backgroundColor: '#f0f0f0', 
+                                                border: '1px solid #ddd',
+                                                borderRadius: '15px', 
+                                                padding: '4px 10px',
+                                                fontSize: '13px',
+                                                color: '#333'
+                                            }}>
+                                                {comp.name}
+                                                <span 
+                                                    onClick={() => handleRemoveCompany(id)}
+                                                    style={{ 
+                                                        marginLeft: '8px', 
+                                                        cursor: 'pointer', 
+                                                        fontWeight: 'bold', 
+                                                        color: '#999',
+                                                        display: 'flex',
+                                                        alignItems: 'center'
+                                                    }}
+                                                    title="Eliminar entidad"
+                                                    onMouseEnter={(e) => e.target.style.color = '#ff4d4d'}
+                                                    onMouseLeave={(e) => e.target.style.color = '#999'}
+                                                >
+                                                    &times;
+                                                </span>
+                                            </div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
                 <form className="modal-body-user" onSubmit={handleSubmit}>
-                    
+                    {/* ... (Resto del formulario igual) ... */}
                     {fieldsToRender.map((field, index) => {
                         const inputType = getFieldInputType(field);
                         const precision = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId)?.precision || 0;
