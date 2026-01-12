@@ -64,6 +64,7 @@ const DocumentFieldsModal = ({
     }, [isOpen]);
 
     // 2. Click Outside para cerrar dropdown
+    /*
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target)) {
@@ -73,6 +74,7 @@ const DocumentFieldsModal = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+    */
 
     // 3. Inicialización de Formulario y Entidades
     useEffect(() => {
@@ -358,7 +360,7 @@ const DocumentFieldsModal = ({
     const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
 
     return (
-        <div className="modal-overlay-user" onClick={onClose}>
+        <div className="modal-overlay-user" onClick={(e) => e.stopPropagation()}>
             <div className="modal-content-user" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header-user">
                     <h3>
