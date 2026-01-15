@@ -58,13 +58,18 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             {!isOnlyLector && (
               <>
                 <li className="AdminMenu">
-                  <div className={`optionContainer ${isActive('roles') ? '' : ''}`}>
+                  <div className={`optionContainer ${isActive('roles') ? 'active' : ''}`}>
                     <Link to="/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
                   </div>
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
                     <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Entidades</Link>
+                  </div>
+                </li>
+                <li>
+                  <div className={`optionContainer ${isActive('contacts') ? 'active' : ''}`}>
+                    <Link to="/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
                   </div>
                 </li>
               </>

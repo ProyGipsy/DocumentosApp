@@ -10,156 +10,296 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   const initialFormState = {
     senderName: '',      
     recipientName: '',   
-    recipients: '',      
+    recipients: [], // Array de correos principales
     subject: 'Envío de Documentos', 
-    body: ''             
+    body: '',
+    // --- CAMPOS NUEVO CONTACTO ---
+    saveNewContact: false,
+    newContactAlias: '',
+    newContactEmails: [] // CAMBIO: Ahora es Array para soportar Chips
   };
 
   const { user } = useAuth();
   const [formData, setFormData] = useState(initialFormState);
-  const [availableEmails, setAvailableEmails] = useState([]); // Lista total traída de la API
-  const [filteredSuggestions, setFilteredSuggestions] = useState([]); // Lista filtrada según lo que escribe
-  const [showSuggestions, setShowSuggestions] = useState(false); // Controlar visibilidad
+  
+  // Inputs temporales
+  const [contactSearchInput, setContactSearchInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [newContactEmailInput, setNewContactEmailInput] = useState(''); // Input temporal para el nuevo contacto
 
+  // Estados de datos
+  const [availableEmails, setAvailableEmails] = useState([]); 
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]); 
+  const [showSuggestions, setShowSuggestions] = useState(false); 
+  
+  const [userContacts, setUserContacts] = useState([]); 
+  const [selectedContacts, setSelectedContacts] = useState([]); 
+  const [aliasSuggestions, setAliasSuggestions] = useState([]);
+  const [showAliasSuggestions, setShowAliasSuggestions] = useState(false);
+
+  // Estados para sugerencias del NUEVO contacto (basadas en los destinatarios)
+  const [newContactSuggestions, setNewContactSuggestions] = useState([]);
+  const [showNewContactSuggestions, setShowNewContactSuggestions] = useState(false);
+
+  // 1. CARGA INICIAL
   useEffect(() => {
     if (isOpen && user?.id) {
       setFormData(initialFormState);
+      setSelectedContacts([]);
+      setEmailInput('');
+      setContactSearchInput('');
+      setNewContactEmailInput('');
       
-      const fetchEmails = async () => {
+      const loadData = async () => {
         try {
-            const response =  await fetch(`${apiUrl}/documents/getSuggestedEmails?userId=${user.id}`);
+            const emailRes = await fetch(`${apiUrl}/documents/getSuggestedEmails?userId=${user.id}`);
+            if (emailRes.ok) setAvailableEmails(await emailRes.json());
 
-            if (response.ok) {
-              const data = await response.json();
-              setAvailableEmails(data);
-            }
+            const contactsRes = await fetch(`${apiUrl}/documents/getContacts?userId=${user.id}`);
+            if (contactsRes.ok) setUserContacts(await contactsRes.json());
         } catch (error) {
-            console.error("Error cargando sugerencias de correo:", error);
+            console.error("Error cargando datos:", error);
         }
       };
-      fetchEmails();
+      loadData();
     }
   }, [isOpen, user]);
 
-  // --- Lógica para filtrar sugerencias ---
+  // 2. FILTROS (Email Principal)
   useEffect(() => {
-    // 1. Obtenemos el texto actual
-    const text = formData.recipients;
-    
-    // 2. Buscamos la última parte después de una coma (ej: "correo1, corr") -> " corr"
-    const lastCommaIndex = text.lastIndexOf(',');
-    const currentTerm = lastCommaIndex !== -1 
-        ? text.substring(lastCommaIndex + 1).trim() 
-        : text.trim();
-
-    // 3. Si hay texto escribiéndose (mínimo 1 caracter), filtramos
+    const currentTerm = emailInput.trim();
     if (currentTerm.length > 0) {
         const matches = availableEmails.filter(email => 
             email.toLowerCase().includes(currentTerm.toLowerCase()) &&
-            !text.includes(email) // Opcional: Evitar sugerir si ya está agregado
+            !formData.recipients.includes(email)
         );
         setFilteredSuggestions(matches);
         setShowSuggestions(matches.length > 0);
     } else {
         setShowSuggestions(false);
     }
-  }, [formData.recipients, availableEmails]);
+  }, [emailInput, availableEmails, formData.recipients]);
 
-  if (!isOpen) return null;
+  // 3. FILTROS (Contactos)
+  useEffect(() => {
+    const text = contactSearchInput.trim();
+    if (text.length > 0) {
+        const matches = userContacts.filter(contact => 
+            contact.alias.toLowerCase().includes(text.toLowerCase()) &&
+            !selectedContacts.some(sc => sc.id === contact.id)
+        );
+        setAliasSuggestions(matches);
+        setShowAliasSuggestions(matches.length > 0);
+    } else {
+        setShowAliasSuggestions(false);
+    }
+  }, [contactSearchInput, userContacts, selectedContacts]);
+
+  // 4. FILTROS (NUEVO CONTACTO) - Sugiere lo que ya está en Recipients
+  useEffect(() => {
+    const term = newContactEmailInput.trim().toLowerCase();
+    
+    // Si el usuario escribe algo O si hace focus (term vacío) y hay recipients disponibles
+    if (formData.recipients.length > 0) {
+        const matches = formData.recipients.filter(email => 
+            email.toLowerCase().includes(term) && 
+            !formData.newContactEmails.includes(email)
+        );
+        
+        // Mostrar sugerencias si hay coincidencia o si el input está vacío (para mostrar todos los recipients de una vez)
+        if (matches.length > 0 && (term.length > 0 || document.activeElement.id === 'newContactEmailInput')) {
+            setNewContactSuggestions(matches);
+            setShowNewContactSuggestions(true);
+        } else {
+            setShowNewContactSuggestions(false);
+        }
+    } else {
+        setShowNewContactSuggestions(false);
+    }
+  }, [newContactEmailInput, formData.recipients, formData.newContactEmails]);
+
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    const finalValue = type === 'checkbox' ? checked : value;
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
-  // --- Manejador al hacer clic en una sugerencia ---
-  const handleSelectSuggestion = (email) => {
-    const text = formData.recipients;
-    const lastCommaIndex = text.lastIndexOf(',');
-    
-    // Mantenemos todo lo que estaba antes de la última coma
-    let prefix = lastCommaIndex !== -1 
-        ? text.substring(0, lastCommaIndex + 1) 
-        : '';
-    
-    // Agregamos espacio si hay prefijo
-    if (prefix && !prefix.endsWith(' ')) prefix += ' ';
+  // =========================================================
+  // LÓGICA DE CHIPS (PRINCIPAL - RECIEPIENTS)
+  // =========================================================
+  
+  const addEmailsToChips = (emailsToAdd) => {
+      const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
+      const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.recipients.includes(e));
+      if (cleanList.length > 0) {
+          setFormData(prev => ({ ...prev, recipients: [...prev.recipients, ...cleanList] }));
+      }
+  };
 
-    // Actualizamos el input: Texto anterior + Email seleccionado + Coma y espacio
-    setFormData(prev => ({
-        ...prev,
-        recipients: prefix + email + ', '
-    }));
+  const handleEmailKeyDown = (e) => {
+      if (['Enter', ',', 'Tab'].includes(e.key)) {
+          e.preventDefault();
+          const val = emailInput.trim();
+          if (val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+              addEmailsToChips(val);
+              setEmailInput('');
+          }
+      } else if (e.key === 'Backspace' && emailInput === '' && formData.recipients.length > 0) {
+          const newRecipients = [...formData.recipients];
+          newRecipients.pop();
+          setFormData(prev => ({ ...prev, recipients: newRecipients }));
+      }
+  };
 
+  const handleRemoveEmailChip = (emailToRemove) => {
+      setFormData(prev => ({
+          ...prev,
+          recipients: prev.recipients.filter(e => e !== emailToRemove)
+      }));
+  };
+
+  const handleSelectEmailSuggestion = (email) => {
+    addEmailsToChips(email);
+    setEmailInput('');
     setShowSuggestions(false);
-    
-    // Regresar el foco al input (opcional, requiere usar useRef en el input)
-    document.getElementById('recipients').focus();
+    document.getElementById('emailInput').focus();
   };
+
+  // =========================================================
+  // LÓGICA DE CHIPS (NUEVO CONTACTO)
+  // =========================================================
+
+  const addNewContactEmailsToChips = (emailsToAdd) => {
+      const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
+      const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.newContactEmails.includes(e));
+      if (cleanList.length > 0) {
+          setFormData(prev => ({ ...prev, newContactEmails: [...prev.newContactEmails, ...cleanList] }));
+      }
+  };
+
+  const handleNewContactEmailKeyDown = (e) => {
+      if (['Enter', ',', 'Tab'].includes(e.key)) {
+          e.preventDefault();
+          const val = newContactEmailInput.trim();
+          if (val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+              addNewContactEmailsToChips(val);
+              setNewContactEmailInput('');
+          }
+      } else if (e.key === 'Backspace' && newContactEmailInput === '' && formData.newContactEmails.length > 0) {
+          const newEmails = [...formData.newContactEmails];
+          newEmails.pop();
+          setFormData(prev => ({ ...prev, newContactEmails: newEmails }));
+      }
+  };
+
+  const handleRemoveNewContactEmailChip = (emailToRemove) => {
+      setFormData(prev => ({
+          ...prev,
+          newContactEmails: prev.newContactEmails.filter(e => e !== emailToRemove)
+      }));
+  };
+
+  const handleSelectNewContactSuggestion = (email) => {
+      addNewContactEmailsToChips(email);
+      setNewContactEmailInput('');
+      setShowNewContactSuggestions(false);
+      document.getElementById('newContactEmailInput').focus();
+  };
+
+  // =========================================================
+  // MANEJADORES CONTACTOS
+  // =========================================================
+
+  const handleSelectContact = (contact) => {
+      setSelectedContacts(prev => [...prev, contact]);
+      addEmailsToChips(contact.emails);
+      setContactSearchInput('');
+      setShowAliasSuggestions(false);
+      
+      if (formData.recipientName === '') {
+          setFormData(prev => ({ ...prev, recipientName: contact.alias }));
+      }
+  };
+
+  const handleRemoveContact = (contactId) => {
+      const contactToRemove = selectedContacts.find(c => c.id === contactId);
+      if (!contactToRemove) return;
+      setSelectedContacts(prev => prev.filter(c => c.id !== contactId));
+      const emailsToRemove = contactToRemove.emails;
+      setFormData(prev => ({
+          ...prev,
+          recipients: prev.recipients.filter(email => !emailsToRemove.includes(email))
+      }));
+  };
+
+  // =========================================================
+  // ENVÍO
+  // =========================================================
 
   const handleSend = () => {
-    // --- 1. Validaciones de Campos Vacíos ---
-    if (!formData.senderName.trim()) {
-      alert('Por favor, indique a nombre de quién se envían los documentos.');
-      return;
-    }
-    if (!formData.recipientName.trim()) {
-       alert('Por favor, indique a nombre de quién va dirigido.');
-       return;
-    }
-    if (!formData.recipients.trim()) {
-       alert('Por favor, indique los correos destinatarios.');
-       return;
-    }
-    if (!formData.subject.trim()) {
-       alert('Por favor, indique el asunto.');
-       return;
+    let finalRecipientName = formData.recipientName.trim();
+    if (!finalRecipientName && selectedContacts.length > 0) {
+        finalRecipientName = selectedContacts.map(c => c.alias).join(', ');
     }
 
-    // --- 2. Procesamiento de la lista de correos ---
-    const emailList = formData.recipients
-      .split(',')
-      .map(email => email.trim())
-      .filter(email => email !== '');
-
-    // --- 3. VALIDACIÓN DE FORMATO (REGEX) ---
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = emailList.filter(email => !emailRegex.test(email));
-
-    if (invalidEmails.length > 0) {
-        alert(`Error de validación:\nLos siguientes correos no tienen un formato válido:\n\n${invalidEmails.join('\n')}\n\nPor favor, verifique que contengan "@" y un dominio (ej: .com).`);
-        return; 
+    if (!formData.senderName.trim()) return alert('Indique el remitente.');
+    if (!finalRecipientName) return alert('Indique un nombre para el saludo.');
+    
+    // Validar chips principales pendientes
+    let finalEmailList = [...formData.recipients];
+    if (emailInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+        finalEmailList.push(emailInput.trim());
     }
 
-    // --- 4. Preparar datos y Enviar ---
+    if (finalEmailList.length === 0) return alert('Indique al menos un correo electrónico.');
+    if (!formData.subject.trim()) return alert('Indique el asunto.');
+
+    // --- VALIDACIÓN DE NUEVO CONTACTO ---
+    let newContactData = null;
+    if (formData.saveNewContact) {
+        if (!formData.newContactAlias.trim()) return alert('Debe indicar un Alias para el nuevo contacto.');
+        
+        // Validar chips del nuevo contacto pendientes
+        let finalNewContactEmails = [...formData.newContactEmails];
+        if (newContactEmailInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContactEmailInput.trim())) {
+            finalNewContactEmails.push(newContactEmailInput.trim());
+        }
+
+        if (finalNewContactEmails.length === 0) return alert('Debe indicar los correos para el nuevo contacto.');
+
+        newContactData = {
+            alias: formData.newContactAlias,
+            emails: finalNewContactEmails // Enviamos el Array directamente (tu backend lo maneja)
+        };
+    }
+
     const emailData = {
         senderName: formData.senderName,
-        recipientName: formData.recipientName,
-        recipients: emailList,
+        recipientName: finalRecipientName,
+        recipients: finalEmailList, 
         subject: formData.subject,
-        body: formData.body
+        body: formData.body,
+        newContact: newContactData
     };
 
-    console.log("Enviando datos al padre:", emailData);
     onSend(selectedDocuments, emailData);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="modal-overlay-user" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay-user">
       <div className="modal-content-user" onClick={e => e.stopPropagation()}>
         <div className="modal-header-user">
           <h3>Enviar {selectedDocuments.length} Documento{selectedDocuments.length !== 1 ? 's' : ''}</h3>
-          <button className="close-button-user" onClick={onClose}>
-            &times;
-          </button>
+          <button className="close-button-user" onClick={onClose}>&times;</button>
         </div>
 
         <div className="modal-body-user">
           
           <div className="form-group-user">
-            <label htmlFor="senderName">
-              De <span className="required-asterisk">*</span>
-            </label>
+            <label htmlFor="senderName">De <span className="required-asterisk">*</span></label>
             <input
               type="text"
               id="senderName"
@@ -172,10 +312,9 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-           <div className="form-group-user">
-            <label htmlFor="recipientName">
-              Para (Nombre) <span className="required-asterisk">*</span>
-            </label>
+          {/* CAMPO 2: NOMBRE SALUDO */}
+          <div className="form-group-user">
+            <label htmlFor="recipientName">Nombre para el Saludo <span className="required-asterisk">*</span></label>
             <input
               type="text"
               id="recipientName"
@@ -184,61 +323,100 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               required
               value={formData.recipientName}
               onChange={handleChange}
-              placeholder="Nombre del destinatario"
+              placeholder="Ej: Clientes Varios (Opcional si seleccionó contactos)"
             />
           </div>
 
-          {/* --- MODIFICADO: Contenedor relativo para posicionar la lista --- */}
+          {/* CAMPO 1: BUSCADOR DE CONTACTOS */}
           <div className="form-group-user" style={{ position: 'relative' }}>
-            <label htmlFor="recipients">
-              Correos Destinatarios <span className="required-asterisk">*</span>
-            </label>
-            <small style={{ display: 'block', marginBottom: '5px', color: '#666', fontSize: '0.85em' }}>
-              Separe los correos con comas. Seleccione de la lista o escriba uno nuevo.
-            </small>
+            <label>Buscar Contactos</label>
+            
+            {selectedContacts.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                    {selectedContacts.map(contact => (
+                        <div key={contact.id} className="chip-item">
+                            {contact.alias}
+                            <span 
+                                className="chip-remove-icon"
+                                onClick={() => handleRemoveContact(contact.id)}
+                                title="Quitar contacto"
+                            >
+                                &times;
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <input
               type="text"
-              id="recipients"
-              name="recipients"
               className="form-input-doc-create"
-              required
-              value={formData.recipients}
-              onChange={handleChange}
-              placeholder="ejemplo@correo.com, otro@correo.com"
+              value={contactSearchInput}
+              onChange={(e) => setContactSearchInput(e.target.value)}
+              placeholder="Escriba para buscar contactos..."
               autoComplete="off"
             />
             
-            {/* --- NUEVO: Lista de Sugerencias Flotante --- */}
+            {showAliasSuggestions && (
+                <ul className="suggestions-list">
+                    {aliasSuggestions.map((contact) => (
+                        <li 
+                            key={contact.id} 
+                            onClick={() => handleSelectContact(contact)}
+                            className="suggestion-item"
+                        >
+                            <strong>{contact.alias}</strong> 
+                            <span className="suggestion-detail">
+                                ({contact.emails.length} correos)
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+          </div>
+
+          {/* CAMPO 3: CORREOS DESTINATARIOS (CHIPS) */}
+          <div className="form-group-user" style={{ position: 'relative' }}>
+            <label htmlFor="recipients">Correos Destinatarios <span className="required-asterisk">*</span></label>
+            <small style={{ display: 'block', marginBottom: '5px', color: '#666', fontSize: '0.85em' }}>
+              Escriba y presione Enter o Coma.
+            </small>
+            
+            <div 
+                className="chips-input-container" 
+                onClick={() => document.getElementById('emailInput').focus()}
+            >
+                {formData.recipients.map((email, idx) => (
+                    <div key={idx} className="chip-item">
+                        {email}
+                        <span 
+                            className="chip-remove-icon"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveEmailChip(email); }}
+                        >
+                            &times;
+                        </span>
+                    </div>
+                ))}
+
+                <input
+                    type="text"
+                    id="emailInput"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    onKeyDown={handleEmailKeyDown}
+                    placeholder={formData.recipients.length === 0 ? "ejemplo@correo.com" : ""}
+                    autoComplete="off"
+                    className="chips-input-internal"
+                />
+            </div>
+            
             {showSuggestions && (
-                <ul className="suggestions-list" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    border: '1px solid #ccc',
-                    borderRadius: '0 0 4px 4px',
-                    maxHeight: '150px',
-                    overflowY: 'auto',
-                    zIndex: 1000,
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                }}>
+                <ul className="suggestions-list">
                     {filteredSuggestions.map((email, index) => (
                         <li 
                             key={index} 
-                            onClick={() => handleSelectSuggestion(email)}
-                            style={{
-                                padding: '8px 12px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #f0f0f0',
-                                fontSize: '0.9em',
-                                color: '#333'
-                            }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                            onClick={() => handleSelectEmailSuggestion(email)}
+                            className="suggestion-item"
                         >
                             {email}
                         </li>
@@ -247,10 +425,118 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             )}
           </div>
 
-          <div className="form-group-user">
-            <label htmlFor="subject">
-              Asunto <span className="required-asterisk">*</span>
+          {/* --- SECCIÓN GUARDAR NUEVO CONTACTO (CON CHIPS) --- */}      
+          <div className="form-group-user send-checkbox-group" style={{marginTop: '20px'}}>
+            <label htmlFor="saveNewContact" className="send-checkbox-label">
+                <input
+                    type="checkbox"
+                    id="saveNewContact"
+                    name="saveNewContact"
+                    checked={formData.saveNewContact}
+                    onChange={handleChange}
+                />
+                <span className="custom-checkmark"></span>
+                ¿Desea guardar un nuevo contacto?
             </label>
+          </div>
+
+          {formData.saveNewContact && (
+            <div style={{ 
+                paddingLeft: '15px', 
+                marginLeft: '5px',
+                borderLeft: '3px solid #8b56ed', 
+                marginBottom: '15px',
+                backgroundColor: '#fbfaff',
+                padding: '10px 15px',
+                borderRadius: '0 6px 6px 0'
+            }}>
+                <div className="form-group-user">
+                    <label>Alias del Nuevo Contacto <span className="required-asterisk">*</span></label>
+                    <input
+                        type="text"
+                        name="newContactAlias"
+                        className="form-input-doc-create"
+                        value={formData.newContactAlias}
+                        onChange={handleChange}
+                        placeholder="Ej: Proveedor Papelería"
+                    />
+                </div>
+                
+                {/* --- CHIPS PARA NUEVO CONTACTO --- */}
+                <div className="form-group-user" style={{ marginBottom: 0, position: 'relative' }}>
+                    <label>Correos Asociados <span className="required-asterisk">*</span></label>
+                    <small style={{display:'block', color:'#666', marginBottom:'5px', fontSize:'0.85em'}}>
+                        Agregue correos. (Sugeridos de arriba: haga clic en el campo)
+                    </small>
+                    
+                    <div 
+                        className="chips-input-container" 
+                        onClick={() => {
+                            document.getElementById('newContactEmailInput').focus();
+                            // Forzar mostrar sugerencias al hacer clic si está vacío
+                            if (!newContactEmailInput && formData.recipients.length > 0) {
+                                setNewContactSuggestions(formData.recipients);
+                                setShowNewContactSuggestions(true);
+                            }
+                        }}
+                    >
+                        {formData.newContactEmails.map((email, idx) => (
+                            <div key={idx} className="chip-item">
+                                {email}
+                                <span 
+                                    className="chip-remove-icon"
+                                    onClick={(e) => { e.stopPropagation(); handleRemoveNewContactEmailChip(email); }}
+                                >
+                                    &times;
+                                </span>
+                            </div>
+                        ))}
+
+                        <input
+                            type="text"
+                            id="newContactEmailInput"
+                            value={newContactEmailInput}
+                            onChange={(e) => setNewContactEmailInput(e.target.value)}
+                            onKeyDown={handleNewContactEmailKeyDown}
+                            placeholder={formData.newContactEmails.length === 0 ? "nuevo@correo.com" : ""}
+                            autoComplete="off"
+                            className="chips-input-internal"
+                            onFocus={() => {
+                                if (formData.recipients.length > 0) {
+                                    setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
+                                    setShowNewContactSuggestions(true);
+                                }
+                            }}
+                        />
+                    </div>
+
+                    {/* Sugerencias basadas en RECIPIENTS */}
+                    {showNewContactSuggestions && (
+                        <ul className="suggestions-list">
+                            {newContactSuggestions.length > 0 ? (
+                                newContactSuggestions.map((email, index) => (
+                                    <li 
+                                        key={index} 
+                                        onClick={() => handleSelectNewContactSuggestion(email)}
+                                        className="suggestion-item"
+                                    >
+                                        {email} <span style={{fontSize: '0.8em', color: '#8b56ed', float: 'right'}}>(Del envío)</span>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="suggestion-item" style={{cursor: 'default', color: '#999', fontSize:'0.85em'}}>
+                                    No hay sugerencias disponibles
+                                </li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+            </div>
+          )}
+
+          <br />
+          <div className="form-group-user">
+            <label htmlFor="subject">Asunto <span className="required-asterisk">*</span></label>
             <input
               type="text"
               id="subject"

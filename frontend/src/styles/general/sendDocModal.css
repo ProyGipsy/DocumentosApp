@@ -1,3 +1,6 @@
+/* =========================================
+   ESTILOS GENERALES DEL MODAL
+   ========================================= */
 .modal-overlay-user {
     position: fixed;
     top: 0;
@@ -74,6 +77,9 @@
     font-size: 0.9em;
 }
 
+/* =========================================
+   ESTILOS DE INPUTS (UNIFICADOS)
+   ========================================= */
 .modal-content-user select,
 .modal-content-user textarea,
 .modal-content-user input[type="tel"],
@@ -81,13 +87,14 @@
 .modal-content-user input[type="date"],
 .modal-content-user input[type="email"],
 .modal-content-user input[type="number"],
-.modal-content-user input[type="password"] {
+.modal-content-user input[type="password"],
+.form-input-doc-create { /* Clase genérica para forzar estilo */
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #ccc;
     border-radius: 6px;
     color: #191c16;
-    background-color: #f9f9f9;
+    background-color: #f9f9f9; /* Color Gris Estándar */
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
     font-size: 1em;
@@ -96,7 +103,8 @@
 .modal-content-user input:focus,
 .modal-content-user select:focus,
 .modal-content-user input[type="number"]:focus,
-.modal-content-user textarea:focus {
+.modal-content-user textarea:focus,
+.form-input-doc-create:focus {
     outline: none;
     border-color: #8b56ed;
     box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
@@ -114,6 +122,9 @@
     border-color: #adb5bd;
 }
 
+/* =========================================
+   CHECKBOXES Y OTROS COMPONENTES
+   ========================================= */
 .checkbox-group-user {
     display: flex;
     align-items: center;
@@ -125,13 +136,6 @@
 }
 
 .checkbox-group-user input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.checkbox-group-user input[type="checkbox"] {
-    /* Ocultar el checkbox original */
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -145,13 +149,11 @@
     transition: all 0.2s ease;
 }
 
-/* Estilo para el check cuando está marcado */
 .checkbox-group-user input[type="checkbox"]:checked {
     background-color: #8b56ed;
     border-color: #8b56ed;
 }
 
-/* Pseudo-elemento para crear el visto */
 .checkbox-group-user input[type="checkbox"]:checked::before {
     content: '';
     position: absolute;
@@ -164,63 +166,19 @@
     transform: translate(-50%, -50%) rotate(45deg);
 }
 
-/* Efecto de enfoque para accesibilidad */
 .checkbox-group-user input[type="checkbox"]:focus {
     box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
 }
 
-.password-input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-/*    width: 100%; /* Ensure container fills parent width */
+.required-asterisk {
+    color: #ff4d4f;
+    margin-left: 3px;
+    font-weight: bold;
 }
 
-.password-input-container input {
-    padding-right: 40px;
-/*    width: 100%; /* Ensure container fills parent width */
-}
-
-.password-input-container-modal {
-    position: relative;
-    display: flex;
-    align-items: center;
-/*    width: 100%; /* Ensure container fills parent width */
-}
-
-.password-input-container input-modal {
-    padding-right: 40px;
-/*    width: 100%; /* Ensure container fills parent width */
-}
-
-.password-toggle-button-modal {
-    position: absolute;
-    right: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.password-toggle-button-modal img {
-    width: 20px;
-    height: auto;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-}
-
-.password-toggle-button-modal:hover img {
-    opacity: 1;
-}
-
-input[type="password"]::-ms-reveal,
-input[type="password"]::-webkit-reveal {
-  display: none;
-}
-
+/* =========================================
+   BOTONES Y FOOTER
+   ========================================= */
 .modal-footer-user {
     display: flex;
     justify-content: flex-end;
@@ -258,98 +216,9 @@ input[type="password"]::-webkit-reveal {
     background-color: #5a6268;
 }
 
-.required-asterisk {
-  color: #ff4d4f;
-  margin-left: 3px;
-  font-weight: bold;
-}
-
-.phone-container-modal,
-.national-id-container-modal {
-    display: flex;
-    width: 100%;
-    margin: 12px 0;
-    gap: 8px;
-    align-items: center;
-}
-
-.phone-container-modal select,
-.phone-container-modal input,
-.national-id-container-modal select,
-.national-id-container-modal input {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #f9f9f9;
-    box-sizing: border-box;
-    height: auto;
-    margin: 0;
-}
-
-.phone-container-modal .phone-type,
-.national-id-container-modal .national-id-type-modal {
-  flex: 1.5;
-}
-
-.phone-container-modal .phone-number,
-.national-id-container-modal .national-id-modal {
-  flex: 3.2;
-}
-
-.rif-container-modal {
-    display: flex;
-    width: 100%;
-    gap: 8px;
-    align-items: center;
-}
-
-.rif-type {
-    flex: 2;
-}
-
-.rif-number{
-    flex: 5;
-}
-
-.rif-container-modal select,
-.rif-container-modal input,
-.permisos-container-modal select,
-.users-container-modal select {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #f9f9f9;
-    box-sizing: border-box;
-    margin: 0;
-    height: 100% !important;
-    width: 100% !important;
-}
-
-
-/*Carga de archivo pdf en DocumentFieldsModal.jsx*/
-
-.file-upload-group {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px dashed #E6E6FA; /* Lila claro como separador */
-}
-
-.file-input {
-    border: 1px solid #ccc;
-    background-color: #f9f9f9;
-}
-
-.form-input-doc-create {
-    padding: 10px;
-    border: 1px solid #dcdcdc;
-    border-radius: 6px;
-    font-size: 1em;
-    width: 100%;
-    box-sizing: border-box; 
-}
-/* --- Dropdown multi-select styles for permisos/usuarios --- */
+/* =========================================
+   COMPONENTES ESPECÍFICOS (DROPDOWNS, ETC)
+   ========================================= */
 .permiso-dropdown-toggle,
 .usuario-dropdown-toggle {
     display: flex;
@@ -400,32 +269,6 @@ input[type="password"]::-webkit-reveal {
     box-sizing: border-box;
 }
 
-.checkbox-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.checkbox-item {
-    cursor: pointer;
-    font-size: 0.95em;
-    color: #191c16;
-    display: flex;
-    align-items: center;
-}
-
-.checkbox-item input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    margin-right: 8px;
-    cursor: pointer;
-}
-
-.checkbox-item span {
-    user-select: none;
-}
-
-/* Small scrollbar styling for dropdown panels */
 .dropdown-panel::-webkit-scrollbar {
     width: 8px;
 }
@@ -434,14 +277,9 @@ input[type="password"]::-webkit-reveal {
     border-radius: 6px;
 }
 
-.checkbox-item input[type="checkbox"]:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(139,86,237,0.12);
-}
-
-
-/* --- ESTILOS PARA EL CHECKBOX DE ENVÍO (DocumentFieldsModal) --- */
-
+/* =========================================
+   CHECKBOX DE ENVÍO
+   ========================================= */
 .send-checkbox-group {
     margin-top: 15px;
     margin-bottom: 10px;
@@ -460,7 +298,6 @@ input[type="password"]::-webkit-reveal {
     color: #495057;
 }
 
-/* Ocultar el checkbox nativo */
 .send-checkbox-group input[type="checkbox"] {
     position: absolute;
     opacity: 0;
@@ -469,7 +306,6 @@ input[type="password"]::-webkit-reveal {
     width: 0;
 }
 
-/* Creación del checkmark customizado (el cuadrado) */
 .custom-checkmark {
     position: absolute;
     top: 50%;
@@ -483,30 +319,25 @@ input[type="password"]::-webkit-reveal {
     border: 1px solid #ccc;
 }
 
-/* Al pasar el mouse, cambiar color de fondo */
 .send-checkbox-label:hover input ~ .custom-checkmark {
     background-color: #ccc;
 }
 
-/* Cuando el checkbox está marcado, cambiar el color de fondo a morado */
 .send-checkbox-group input[type="checkbox"]:checked ~ .custom-checkmark {
     background-color: #8b56ed;
     border-color: #8b56ed;
 }
 
-/* Crear el checkmark real (blanco) */
 .custom-checkmark:after {
     content: "";
     position: absolute;
     display: none;
 }
 
-/* Mostrar el checkmark cuando está marcado */
 .send-checkbox-group input[type="checkbox"]:checked ~ .custom-checkmark:after {
     display: block;
 }
 
-/* Estilo del checkmark */
 .send-checkbox-group .custom-checkmark:after {
     left: 6px;
     top: 2px;
@@ -515,4 +346,129 @@ input[type="password"]::-webkit-reveal {
     border: solid white;
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
+}
+
+/* =========================================
+   NUEVOS ESTILOS: CHIPS Y AUTOCOMPLETE
+   ========================================= */
+
+/* 1. Contenedor Maestro: Se disfraza del Input Real */
+.chips-input-container {
+    width: 100%;
+    min-height: 44px; /* Altura calculada para igualar a los inputs normales (padding + texto) */
+    padding: 4px 12px; /* Padding reducido verticalmente para dar espacio a los chips */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f9f9f9; /* Mismo gris que el resto */
+    color: #191c16;
+    
+    /* Flexbox para alinear chips e input */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px; 
+    
+    cursor: text;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Efecto Focus: Se ilumina el contenedor completo cuando escribes */
+.chips-input-container:focus-within {
+    outline: none;
+    border-color: #8b56ed;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(139, 86, 237, 0.2);
+}
+
+/* 2. Input Interno: Invisible pero funcional */
+.chips-input-internal {
+    border: none !important;      /* Sin bordes */
+    outline: none !important;     /* Sin línea de foco */
+    background-color: transparent !important; /* Fondo transparente */
+    box-shadow: none !important;  /* Sin sombras */
+    padding: 0 !important;        /* Sin relleno interno */
+    margin: 0 !important;
+    
+    font-size: 1em;
+    color: #191c16;
+    flex: 1;                      /* Ocupa el espacio restante */
+    min-width: 120px;             /* Ancho mínimo para escribir cómodo */
+    height: 30px;                 /* Altura de línea cómoda */
+}
+
+/* 3. Estilos de los Chips (Azules) */
+.chip-item {
+    display: flex;
+    align-items: center;
+    background-color: #e6f7ff; 
+    border: 1px solid #91d5ff;
+    color: #0050b3; 
+    border-radius: 16px; /* Más redondeado para parecer "chip" moderno */
+    padding: 2px 10px;
+    font-size: 0.9em;
+    user-select: none;
+    height: 26px; /* Altura fija para mantener alineación */
+}
+
+/* Botón "X" dentro del chip */
+.chip-remove-icon {
+    margin-left: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #0050b3;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: opacity 0.2s;
+}
+
+.chip-remove-icon:hover {
+    opacity: 1;
+    color: #ff4d4f; 
+}
+
+/* 4. Lista de Sugerencias Flotante */
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-top: none; /* Se une con el input de arriba */
+    border-radius: 0 0 6px 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95em;
+    color: #333;
+    transition: background-color 0.1s;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f2f5;
+}
+
+.suggestion-detail {
+    font-size: 0.85em;
+    color: #888;
+    margin-left: 8px;
 }
