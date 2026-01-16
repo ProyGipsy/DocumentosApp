@@ -14,7 +14,7 @@ const SendDocuments = ({ folderId, folderName }) => {
     const { user } = useAuth();
     console.log(user);
     // --- ESTADOS DE DATOS ---
-    const [allDocuments, setAllDocuments] = useState([]); // Aquí guardaremos los 186 documentos
+    const [allDocuments, setAllDocuments] = useState([]); // Aquí guardaremos los documentos
     const [filteredDocuments, setFilteredDocuments] = useState([]); // Aquí los filtrados por Entidad/año
     
     // --- ESTADOS DE UI ---
@@ -38,23 +38,10 @@ const SendDocuments = ({ folderId, folderName }) => {
         const fetchAllDocuments = async () => {
             setIsLoading(true);
             try {
-                // TRUCO: Pedimos pageSize=10000 para anular la paginación del backend
-                // y forzar que nos envíe TODOS los documentos para paginarlos aquí en React.
                 const params = new URLSearchParams({
                     page: 1,
                     pageSize: 10000 
                 });
-
-                // Si estás filtrando por carpeta (TypeID)
-                if (folderId) {
-                     // Ajusta 'typeId' según lo que espere tu backend, o usa params.append si es el mismo endpoint
-                     // Si tu backend filtra por carpeta vía query param:
-                     // params.append('typeId', folderId); 
-                     
-                     // O si tu backend usa una ruta distinta:
-                     // url = `${apiUrl}/documents/getDocumentByTypeId?id=${folderId}`;
-                }
-
                 // Usamos el endpoint optimizado
                 const response = await fetch(`${apiUrl}/documents/getAllDocumentsList?${params.toString()}`);
                 
