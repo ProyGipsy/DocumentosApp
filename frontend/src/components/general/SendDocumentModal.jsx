@@ -314,7 +314,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
 
           {/* CAMPO 2: NOMBRE SALUDO */}
           <div className="form-group-user">
-            <label htmlFor="recipientName">Nombre para el Saludo <span className="required-asterisk">*</span></label>
+            <label htmlFor="recipientName">Para (Nombre) <span className="required-asterisk">*</span></label>
             <input
               type="text"
               id="recipientName"
@@ -323,7 +323,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               required
               value={formData.recipientName}
               onChange={handleChange}
-              placeholder="Ej: Clientes Varios (Opcional si seleccionó contactos)"
+              placeholder="Ej: Clientes Varios"
             />
           </div>
 
