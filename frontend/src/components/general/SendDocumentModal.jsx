@@ -10,22 +10,21 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   const initialFormState = {
     senderName: '',      
     recipientName: '',   
-    recipients: [], // Array de correos principales
+    recipients: [], 
     subject: 'Envío de Documentos', 
     body: '',
     // --- CAMPOS NUEVO CONTACTO ---
     saveNewContact: false,
     newContactAlias: '',
-    newContactEmails: [] // CAMBIO: Ahora es Array para soportar Chips
+    newContactEmails: [] 
   };
 
   const { user } = useAuth();
   const [formData, setFormData] = useState(initialFormState);
   
-  // Inputs temporales
   const [contactSearchInput, setContactSearchInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
-  const [newContactEmailInput, setNewContactEmailInput] = useState(''); // Input temporal para el nuevo contacto
+  const [newContactEmailInput, setNewContactEmailInput] = useState('');
 
   // Estados de datos
   const [availableEmails, setAvailableEmails] = useState([]); 
@@ -37,7 +36,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   const [aliasSuggestions, setAliasSuggestions] = useState([]);
   const [showAliasSuggestions, setShowAliasSuggestions] = useState(false);
 
-  // Estados para sugerencias del NUEVO contacto (basadas en los destinatarios)
+  // Estados para sugerencias del NUEVO contacto
   const [newContactSuggestions, setNewContactSuggestions] = useState([]);
   const [showNewContactSuggestions, setShowNewContactSuggestions] = useState(false);
 
@@ -95,26 +94,29 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     }
   }, [contactSearchInput, userContacts, selectedContacts]);
 
-  // 4. FILTROS (NUEVO CONTACTO) - Sugiere lo que ya está en Recipients
+  // 4. FILTROS (NUEVO CONTACTO)
   useEffect(() => {
     const term = newContactEmailInput.trim().toLowerCase();
     
-    // Si el usuario escribe algo O si hace focus (term vacío) y hay recipients disponibles
+    // Solo actualizamos la lista si el usuario está escribiendo o el input tiene el foco activo
     if (formData.recipients.length > 0) {
         const matches = formData.recipients.filter(email => 
             email.toLowerCase().includes(term) && 
             !formData.newContactEmails.includes(email)
         );
         
-        // Mostrar sugerencias si hay coincidencia o si el input está vacío (para mostrar todos los recipients de una vez)
-        if (matches.length > 0 && (term.length > 0 || document.activeElement.id === 'newContactEmailInput')) {
+        // Verificamos document.activeElement para asegurarnos que solo se muestra si el usuario está ahí
+        if (matches.length > 0 && (term.length > 0 || document.activeElement?.id === 'newContactEmailInput')) {
             setNewContactSuggestions(matches);
             setShowNewContactSuggestions(true);
         } else {
-            setShowNewContactSuggestions(false);
+            // Si no hay match, ocultamos
+             // Nota: No forzamos el false aquí drásticamente para no parpadear, 
+             // dejamos que el onBlur se encargue de cerrar si se pierde el foco.
+            if (term.length === 0 && document.activeElement?.id !== 'newContactEmailInput') {
+                 setShowNewContactSuggestions(false);
+            }
         }
-    } else {
-        setShowNewContactSuggestions(false);
     }
   }, [newContactEmailInput, formData.recipients, formData.newContactEmails]);
 
@@ -125,10 +127,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
-  // =========================================================
-  // LÓGICA DE CHIPS (PRINCIPAL - RECIEPIENTS)
-  // =========================================================
-  
+  // ... (Funciones de chips principales sin cambios) ...
   const addEmailsToChips = (emailsToAdd) => {
       const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
       const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.recipients.includes(e));
@@ -166,10 +165,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     document.getElementById('emailInput').focus();
   };
 
-  // =========================================================
-  // LÓGICA DE CHIPS (NUEVO CONTACTO)
-  // =========================================================
-
+  // ... (Funciones de chips nuevo contacto sin cambios) ...
   const addNewContactEmailsToChips = (emailsToAdd) => {
       const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
       const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.newContactEmails.includes(e));
@@ -207,16 +203,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
       document.getElementById('newContactEmailInput').focus();
   };
 
-  // =========================================================
-  // MANEJADORES CONTACTOS
-  // =========================================================
-
+  // ... (Funciones de Contactos existentes) ...
   const handleSelectContact = (contact) => {
       setSelectedContacts(prev => [...prev, contact]);
       addEmailsToChips(contact.emails);
       setContactSearchInput('');
       setShowAliasSuggestions(false);
-      
       if (formData.recipientName === '') {
           setFormData(prev => ({ ...prev, recipientName: contact.alias }));
       }
@@ -233,10 +225,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
       }));
   };
 
-  // =========================================================
-  // ENVÍO
-  // =========================================================
-
   const handleSend = () => {
     let finalRecipientName = formData.recipientName.trim();
     if (!finalRecipientName && selectedContacts.length > 0) {
@@ -246,7 +234,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     if (!formData.senderName.trim()) return alert('Indique el remitente.');
     if (!finalRecipientName) return alert('Indique un nombre para el saludo.');
     
-    // Validar chips principales pendientes
     let finalEmailList = [...formData.recipients];
     if (emailInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
         finalEmailList.push(emailInput.trim());
@@ -255,12 +242,10 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     if (finalEmailList.length === 0) return alert('Indique al menos un correo electrónico.');
     if (!formData.subject.trim()) return alert('Indique el asunto.');
 
-    // --- VALIDACIÓN DE NUEVO CONTACTO ---
     let newContactData = null;
     if (formData.saveNewContact) {
         if (!formData.newContactAlias.trim()) return alert('Debe indicar un Alias para el nuevo contacto.');
         
-        // Validar chips del nuevo contacto pendientes
         let finalNewContactEmails = [...formData.newContactEmails];
         if (newContactEmailInput.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContactEmailInput.trim())) {
             finalNewContactEmails.push(newContactEmailInput.trim());
@@ -270,7 +255,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
 
         newContactData = {
             alias: formData.newContactAlias,
-            emails: finalNewContactEmails // Enviamos el Array directamente (tu backend lo maneja)
+            emails: finalNewContactEmails
         };
     }
 
@@ -312,7 +297,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* CAMPO 2: NOMBRE SALUDO */}
           <div className="form-group-user">
             <label htmlFor="recipientName">Para (Nombre) <span className="required-asterisk">*</span></label>
             <input
@@ -327,7 +311,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             />
           </div>
 
-          {/* CAMPO 1: BUSCADOR DE CONTACTOS */}
+          {/* BUSCADOR DE CONTACTOS */}
           <div className="form-group-user" style={{ position: 'relative' }}>
             <label>Buscar Contactos</label>
             
@@ -355,6 +339,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
               onChange={(e) => setContactSearchInput(e.target.value)}
               placeholder="Escriba para buscar contactos..."
               autoComplete="off"
+              // Agregamos onBlur también aquí por consistencia si quisieras, 
+              // aunque el usuario reportó el error en el de abajo.
+              onBlur={() => setTimeout(() => setShowAliasSuggestions(false), 200)}
+              onFocus={() => {
+                   if(contactSearchInput.length > 0 && aliasSuggestions.length > 0) setShowAliasSuggestions(true);
+              }}
             />
             
             {showAliasSuggestions && (
@@ -375,7 +365,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             )}
           </div>
 
-          {/* CAMPO 3: CORREOS DESTINATARIOS (CHIPS) */}
+          {/* CORREOS DESTINATARIOS */}
           <div className="form-group-user" style={{ position: 'relative' }}>
             <label htmlFor="recipients">Correos Destinatarios <span className="required-asterisk">*</span></label>
             <small style={{ display: 'block', marginBottom: '5px', color: '#666', fontSize: '0.85em' }}>
@@ -407,6 +397,8 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                     placeholder={formData.recipients.length === 0 ? "ejemplo@correo.com" : ""}
                     autoComplete="off"
                     className="chips-input-internal"
+                    // También podemos agregar onBlur aquí para mejorar la UX general
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 />
             </div>
             
@@ -425,7 +417,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
             )}
           </div>
 
-          {/* --- SECCIÓN GUARDAR NUEVO CONTACTO (CON CHIPS) --- */}      
+          {/* SECCIÓN GUARDAR NUEVO CONTACTO */}
           <div className="form-group-user send-checkbox-group" style={{marginTop: '20px'}}>
             <label htmlFor="saveNewContact" className="send-checkbox-label">
                 <input
@@ -442,13 +434,8 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
 
           {formData.saveNewContact && (
             <div style={{ 
-                paddingLeft: '15px', 
-                marginLeft: '5px',
-                borderLeft: '3px solid #8b56ed', 
-                marginBottom: '15px',
-                backgroundColor: '#fbfaff',
-                padding: '10px 15px',
-                borderRadius: '0 6px 6px 0'
+                paddingLeft: '15px', marginLeft: '5px', borderLeft: '3px solid #8b56ed', 
+                marginBottom: '15px', backgroundColor: '#fbfaff', padding: '10px 15px', borderRadius: '0 6px 6px 0'
             }}>
                 <div className="form-group-user">
                     <label>Alias del Nuevo Contacto <span className="required-asterisk">*</span></label>
@@ -462,7 +449,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                     />
                 </div>
                 
-                {/* --- CHIPS PARA NUEVO CONTACTO --- */}
+                {/* --- INPUT DONDE ESTABA EL PROBLEMA --- */}
                 <div className="form-group-user" style={{ marginBottom: 0, position: 'relative' }}>
                     <label>Correos Asociados <span className="required-asterisk">*</span></label>
                     <small style={{display:'block', color:'#666', marginBottom:'5px', fontSize:'0.85em'}}>
@@ -472,10 +459,11 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                     <div 
                         className="chips-input-container" 
                         onClick={() => {
-                            document.getElementById('newContactEmailInput').focus();
-                            // Forzar mostrar sugerencias al hacer clic si está vacío
+                            const input = document.getElementById('newContactEmailInput');
+                            input.focus();
+                            // Forzamos sugerencias al hacer click en el contenedor (simula focus)
                             if (!newContactEmailInput && formData.recipients.length > 0) {
-                                setNewContactSuggestions(formData.recipients);
+                                setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
                                 setShowNewContactSuggestions(true);
                             }
                         }}
@@ -501,16 +489,24 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                             placeholder={formData.newContactEmails.length === 0 ? "nuevo@correo.com" : ""}
                             autoComplete="off"
                             className="chips-input-internal"
+                            
+                            // --- SOLUCIÓN APLICADA AQUÍ ---
                             onFocus={() => {
                                 if (formData.recipients.length > 0) {
                                     setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
                                     setShowNewContactSuggestions(true);
                                 }
                             }}
+                            onBlur={() => {
+                                // Retrasamos el cierre 200ms para permitir que el clic en la lista se registre
+                                setTimeout(() => {
+                                    setShowNewContactSuggestions(false);
+                                }, 200);
+                            }}
+                            // -----------------------------
                         />
                     </div>
 
-                    {/* Sugerencias basadas en RECIPIENTS */}
                     {showNewContactSuggestions && (
                         <ul className="suggestions-list">
                             {newContactSuggestions.length > 0 ? (
