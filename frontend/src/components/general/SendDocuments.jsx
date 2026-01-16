@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// 1. IMPORTAMOS MATERIAL UI
+import { Select, MenuItem, FormControl, OutlinedInput } from '@mui/material';
 import { useAuth } from '../../utils/AuthContext';
 import LayoutBase from '../base/LayoutBase';
 import '../../styles/general/sendDocuments.css'; 
@@ -10,12 +12,68 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 const ITEMS_PER_PAGE = 20;
 
+// ESTILOS PERSONALIZADOS PARA MATERIAL UI (SX)
+const aestheticSelectStyles = {
+    // Estilo del Input (La caja principal)
+    color: '#421d83', // Texto seleccionado morado
+    backgroundColor: '#ffffff',
+    borderRadius: '12px', // Bordes muy redondeados
+    '.MuiOutlinedInput-notchedOutline': {
+        borderColor: '#e0e0e0', // Borde gris suave por defecto
+        transition: 'all 0.3s ease',
+    },
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#8b56ed', // Borde lila al pasar el mouse
+        borderWidth: '1px',
+    },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#421d83', // Borde morado oscuro al hacer click
+        borderWidth: '2px',
+        boxShadow: '0 0 0 3px rgba(139, 86, 237, 0.2)', // Sombra suave (glow)
+    },
+    '.MuiSelect-icon': {
+        color: '#8b56ed', // Flechita morada
+    },
+    // Estilo del texto placeholder
+    '& .MuiSelect-select .placeholder': {
+        color: '#421d83',
+        opacity: 0.7,
+    },
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.02)',
+};
+
+// Estilo del Menú Desplegable (El dropdown)
+const menuPropsStyles = {
+    PaperProps: {
+        sx: {
+            borderRadius: '12px',
+            marginTop: '8px',
+            boxShadow: '0 8px 20px rgba(139, 86, 237, 0.25)',
+            border: '1px solid #f0ebf8',
+            '& .MuiMenuItem-root': {
+                color: '#421d83',
+                fontSize: '0.95rem',
+                padding: '10px 18px',
+                '&:hover': {
+                    backgroundColor: '#f0ebf8', // Lila muy suave al pasar mouse
+                },
+                '&.Mui-selected': {
+                    backgroundColor: '#421d83 !important', // Morado oscuro seleccionado
+                    color: 'white',
+                    fontWeight: 'bold',
+                }
+            }
+        }
+    }
+};
+
+
 const SendDocuments = ({ folderId, folderName }) => {
     const { user } = useAuth();
-    console.log(user);
+    
     // --- ESTADOS DE DATOS ---
-    const [allDocuments, setAllDocuments] = useState([]); // Aquí guardaremos los documentos
-    const [filteredDocuments, setFilteredDocuments] = useState([]); // Aquí los filtrados por Entidad/año
+    const [allDocuments, setAllDocuments] = useState([]); 
+    const [filteredDocuments, setFilteredDocuments] = useState([]); 
     
     // --- ESTADOS DE UI ---
     const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +81,11 @@ const SendDocuments = ({ folderId, folderName }) => {
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
     
     // --- ESTADOS DE FILTROS ---
+    const [selectedType, setSelectedType] = useState(''); 
     const [selectedCompany, setSelectedCompany] = useState('');
     const [selectedYear, setSelectedYear] = useState('');
+    
+    const [typeOptions, setTypeOptions] = useState([]);       
     const [companyOptions, setCompanyOptions] = useState([]);
     const [yearOptions, setYearOptions] = useState([]);
 
@@ -33,45 +94,35 @@ const SendDocuments = ({ folderId, folderName }) => {
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'none' });
 
-    // --- 1. CARGA DE TODOS LOS DATOS (FIX PARA OBTENER TODO DE GOLPE) ---
+    // --- 1. CARGA DE TODOS LOS DATOS ---
     useEffect(() => {
         const fetchAllDocuments = async () => {
             setIsLoading(true);
             try {
-                const params = new URLSearchParams({
-                    page: 1,
-                    pageSize: 10000 
-                });
-                // Usamos el endpoint optimizado
+                const params = new URLSearchParams({ page: 1, pageSize: 10000 });
                 const response = await fetch(`${apiUrl}/documents/getAllDocumentsList?${params.toString()}`);
-                
                 if (!response.ok) throw new Error('Error al cargar documentos');
-                
                 const result = await response.json();
-                
-                // Tu backend devuelve { data: [...], total: ... } o directamente el array
                 const dataList = Array.isArray(result) ? result : (result.data || []);
 
-                console.log(`Documentos cargados: ${dataList.length}`); // Debug: Debería decir 186
-
-                // Mapeo inicial
                 const formattedDocs = dataList.map(doc => ({
                     id: doc.DocumentID || doc.id,
                     name: `Documento #${doc.DocumentID || doc.id}`,
                     type: doc.TypeName || doc.docTypeName || 'Sin Tipo',
                     company: doc.CompanyName || doc.companyName || 'Sin Entidad',
-                    // Importante: El SQL optimizado devuelve ExpirationDate
                     date: doc.ExpirationDate || doc.AnnexDate || null 
                 }));
 
                 setAllDocuments(formattedDocs);
                 setFilteredDocuments(formattedDocs);
 
-                // Determinar etiqueta de fecha
                 const anyHasExpiration = formattedDocs.some(fd => !!fd.date);
                 setDateHeaderLabel(anyHasExpiration ? 'VENCIMIENTO' : 'FECHA');
 
-                // --- GENERAR OPCIONES DE FILTRO (Dinámico basado en los 186 docs) ---
+                // --- GENERAR OPCIONES DE FILTRO ---
+                const types = [...new Set(formattedDocs.map(d => d.type))].sort();
+                setTypeOptions(types);
+
                 const companies = [...new Set(formattedDocs.map(d => d.company))].sort();
                 setCompanyOptions(companies);
 
@@ -91,16 +142,16 @@ const SendDocuments = ({ folderId, folderName }) => {
         fetchAllDocuments();
     }, [folderId]);
 
-    // --- 2. LÓGICA DE FILTRADO (CLIENTE) ---
+    // --- 2. LÓGICA DE FILTRADO ---
     useEffect(() => {
         let result = [...allDocuments];
 
-        // Filtro por Entidad
+        if (selectedType) {
+            result = result.filter(doc => doc.type === selectedType);
+        }
         if (selectedCompany) {
             result = result.filter(doc => doc.company === selectedCompany);
         }
-
-        // Filtro por Año
         if (selectedYear) {
             result = result.filter(doc => {
                 if (!doc.date) return false;
@@ -109,7 +160,6 @@ const SendDocuments = ({ folderId, folderName }) => {
             });
         }
 
-        // Ordenamiento global antes de paginar
         if (sortConfig.key === 'date' && sortConfig.direction !== 'none') {
             result.sort((a, b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
@@ -119,18 +169,15 @@ const SendDocuments = ({ folderId, folderName }) => {
         }
 
         setFilteredDocuments(result);
-        setCurrentPage(1); // Resetear a página 1 al filtrar
-    }, [selectedCompany, selectedYear, allDocuments, sortConfig]);
+        setCurrentPage(1); 
+    }, [selectedType, selectedCompany, selectedYear, allDocuments, sortConfig]);
 
-    // --- 3. PAGINACIÓN (CLIENTE - CORTAR EL ARRAY) ---
+    // --- 3. PAGINACIÓN Y HELPERS (SIN CAMBIOS) ---
     const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-    
     const currentDocuments = filteredDocuments.slice(indexOfFirstItem, indexOfLastItem);
-    
     const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
 
-    // --- HELPERS ---
     const formatDate = (dateString) => {
         if (!dateString) return '-';
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -155,12 +202,10 @@ const SendDocuments = ({ folderId, folderName }) => {
     };
 
     const goToPage = (pageNumber) => {
-        if (pageNumber >= 1 && pageNumber <= totalPages) {
-            setCurrentPage(pageNumber);
-        }
+        if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
     };
 
-    // --- SELECCIÓN ---
+    // --- SELECCIÓN Y ENVÍO ---
     const isAllSelected = currentDocuments.length > 0 && currentDocuments.every(doc => selectedDocuments.includes(doc.id));
 
     const handleSelectAll = (e) => {
@@ -192,11 +237,7 @@ const SendDocuments = ({ folderId, folderName }) => {
             const response = await fetch(`${apiUrl}/documents/sendDocuments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    userId: user.id,
-                    documentIds: ids,
-                    emailData
-                })
+                body: JSON.stringify({ userId: user.id, documentIds: ids, emailData })
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || 'Error en envío');
@@ -218,32 +259,85 @@ const SendDocuments = ({ folderId, folderName }) => {
                 </h2>
                 <br />
 
-                {/* --- FILTROS --- */}
+                {/* --- FILTROS CON MATERIAL UI --- */}
                 <div className="search-and-controls">
-                    <div className="search-filter-group users-table-style send-documents-layout">
-                        {/* Filtro Entidad */}
-                        <select
-                            className="filter-select-admin"
-                            value={selectedCompany}
-                            onChange={(e) => setSelectedCompany(e.target.value)}
-                        >
-                            <option value="">Todas las Entidades</option>
-                            {companyOptions.map((comp, idx) => (
-                                <option key={idx} value={comp}>{comp}</option>
-                            ))}
-                        </select>
+                    <div className="aesthetic-filters-container">
+                        
+                        {/* 1. Filtro Tipo */}
+                        <FormControl sx={{ flex: 1, minWidth: '200px' }} size="small">
+                            <Select
+                                displayEmpty
+                                value={selectedType}
+                                onChange={(e) => setSelectedType(e.target.value)}
+                                input={<OutlinedInput />}
+                                renderValue={(selected) => {
+                                    if (selected.length === 0) {
+                                        return <span className="placeholder">Todos los Tipos</span>;
+                                    }
+                                    return selected;
+                                }}
+                                sx={aestheticSelectStyles}
+                                MenuProps={menuPropsStyles}
+                            >
+                                <MenuItem value="">
+                                    <em>Todos los Tipos</em>
+                                </MenuItem>
+                                {typeOptions.map((type, idx) => (
+                                    <MenuItem key={idx} value={type}>{type}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
-                        {/* Filtro Año */}
-                        <select
-                            className="filter-select-admin"
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                        >
-                            <option value="">Todos los Años</option>
-                            {yearOptions.map((year, idx) => (
-                                <option key={idx} value={year}>{year}</option>
-                            ))}
-                        </select>
+                        {/* 2. Filtro Entidad */}
+                        <FormControl sx={{ flex: 1, minWidth: '200px' }} size="small">
+                            <Select
+                                displayEmpty
+                                value={selectedCompany}
+                                onChange={(e) => setSelectedCompany(e.target.value)}
+                                input={<OutlinedInput />}
+                                renderValue={(selected) => {
+                                    if (selected.length === 0) {
+                                        return <span className="placeholder">Todas las Entidades</span>;
+                                    }
+                                    return selected;
+                                }}
+                                sx={aestheticSelectStyles}
+                                MenuProps={menuPropsStyles}
+                            >
+                                <MenuItem value="">
+                                    <em>Todas las Entidades</em>
+                                </MenuItem>
+                                {companyOptions.map((comp, idx) => (
+                                    <MenuItem key={idx} value={comp}>{comp}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {/* 3. Filtro Año */}
+                        <FormControl sx={{ flex: 1, minWidth: '200px' }} size="small">
+                            <Select
+                                displayEmpty
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                                input={<OutlinedInput />}
+                                renderValue={(selected) => {
+                                    if (selected.length === 0) {
+                                        return <span className="placeholder">Todos los Años</span>;
+                                    }
+                                    return selected;
+                                }}
+                                sx={aestheticSelectStyles}
+                                MenuProps={menuPropsStyles}
+                            >
+                                <MenuItem value="">
+                                    <em>Todos los Años</em>
+                                </MenuItem>
+                                {yearOptions.map((year, idx) => (
+                                    <MenuItem key={idx} value={year.toString()}>{year}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
                     </div>
                 </div>
 
@@ -343,7 +437,6 @@ const SendDocuments = ({ folderId, folderName }) => {
                 onClose={() => setIsSendModalOpen(false)}
                 selectedDocuments={selectedDocuments}
                 selectedDocumentNames={selectedDocuments.map(id => {
-                    // Buscamos en allDocuments para tener el nombre correcto aunque cambiemos de página
                     const doc = allDocuments.find(d => d.id === id);
                     return doc ? `${doc.type} - ${doc.company}` : `Documento #${id}`;
                 })} 

@@ -176,3 +176,18 @@
     color: white;
     font-weight: bold;
 }
+
+/* ======================================================================
+   NUEVOS ESTILOS ESPECÍFICOS PARA LOS FILTROS (NO TOCAR LO DEMÁS)
+   ====================================================================== */
+/* Contenedor Flexbox Centrado */
+.aesthetic-filters-container {
+    display: flex;
+    justify-content: center; /* Centra los elementos horizontalmente */
+    align-items: center;
+    gap: 20px; /* Espacio entre selectores */
+    width: 85%;
+    max-width: 900px; /* Limita el ancho máximo para que no se estiren */
+    margin: 0 auto 30px auto; /* Centra el contenedor en la página */
+    flex-wrap: wrap; /* Permite que se acomoden en móviles */
+}
