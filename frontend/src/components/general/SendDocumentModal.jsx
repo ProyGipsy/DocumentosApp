@@ -457,7 +457,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                         onClick={() => {
                             const input = document.getElementById('newContactEmailInput');
                             input.focus();
-                            // Forzamos sugerencias al hacer click en el contenedor (simula focus)
                             if (!newContactEmailInput && formData.recipients.length > 0) {
                                 setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
                                 setShowNewContactSuggestions(true);
@@ -493,12 +492,10 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
                                 }
                             }}
                             onBlur={() => {
-                                // Retrasamos el cierre 200ms para permitir que el clic en la lista se registre
                                 setTimeout(() => {
                                     setShowNewContactSuggestions(false);
                                 }, 200);
                             }}
-                            // -----------------------------
                         />
                     </div>
 
