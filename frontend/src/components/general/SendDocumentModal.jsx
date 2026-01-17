@@ -13,7 +13,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     recipients: [], 
     subject: 'Envío de Documentos', 
     body: '',
-    // --- CAMPOS NUEVO CONTACTO ---
     saveNewContact: false,
     newContactAlias: '',
     newContactEmails: [] 
@@ -26,7 +25,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   const [emailInput, setEmailInput] = useState('');
   const [newContactEmailInput, setNewContactEmailInput] = useState('');
 
-  // Estados de datos
   const [availableEmails, setAvailableEmails] = useState([]); 
   const [filteredSuggestions, setFilteredSuggestions] = useState([]); 
   const [showSuggestions, setShowSuggestions] = useState(false); 
@@ -36,7 +34,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   const [aliasSuggestions, setAliasSuggestions] = useState([]);
   const [showAliasSuggestions, setShowAliasSuggestions] = useState(false);
 
-  // Estados para sugerencias del NUEVO contacto
   const [newContactSuggestions, setNewContactSuggestions] = useState([]);
   const [showNewContactSuggestions, setShowNewContactSuggestions] = useState(false);
 
@@ -98,21 +95,16 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
   useEffect(() => {
     const term = newContactEmailInput.trim().toLowerCase();
     
-    // Solo actualizamos la lista si el usuario está escribiendo o el input tiene el foco activo
     if (formData.recipients.length > 0) {
         const matches = formData.recipients.filter(email => 
             email.toLowerCase().includes(term) && 
             !formData.newContactEmails.includes(email)
         );
         
-        // Verificamos document.activeElement para asegurarnos que solo se muestra si el usuario está ahí
         if (matches.length > 0 && (term.length > 0 || document.activeElement?.id === 'newContactEmailInput')) {
             setNewContactSuggestions(matches);
             setShowNewContactSuggestions(true);
         } else {
-            // Si no hay match, ocultamos
-             // Nota: No forzamos el false aquí drásticamente para no parpadear, 
-             // dejamos que el onBlur se encargue de cerrar si se pierde el foco.
             if (term.length === 0 && document.activeElement?.id !== 'newContactEmailInput') {
                  setShowNewContactSuggestions(false);
             }
@@ -120,14 +112,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     }
   }, [newContactEmailInput, formData.recipients, formData.newContactEmails]);
 
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const finalValue = type === 'checkbox' ? checked : value;
     setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
-  // ... (Funciones de chips principales sin cambios) ...
   const addEmailsToChips = (emailsToAdd) => {
       const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
       const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.recipients.includes(e));
@@ -165,7 +155,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     document.getElementById('emailInput').focus();
   };
 
-  // ... (Funciones de chips nuevo contacto sin cambios) ...
   const addNewContactEmailsToChips = (emailsToAdd) => {
       const list = Array.isArray(emailsToAdd) ? emailsToAdd : [emailsToAdd];
       const cleanList = list.map(e => e.trim()).filter(e => e !== '' && !formData.newContactEmails.includes(e));
@@ -203,7 +192,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
       document.getElementById('newContactEmailInput').focus();
   };
 
-  // ... (Funciones de Contactos existentes) ...
   const handleSelectContact = (contact) => {
       setSelectedContacts(prev => [...prev, contact]);
       addEmailsToChips(contact.emails);
