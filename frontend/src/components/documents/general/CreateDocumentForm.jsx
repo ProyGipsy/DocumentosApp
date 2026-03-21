@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/documentTypeForm.css';
+import '../../../styles/general/documentTypeForm.css';
 import DocumentFieldsModal from './DocumentFieldsModal';
 import SendDocumentModal from './SendDocumentModal';
-import { useAuth } from '../../utils/AuthContext';
+import { useAuth } from '../../../utils/AuthContext';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;

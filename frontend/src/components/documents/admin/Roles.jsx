@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/sendDocuments.css'; 
-import editIcon from '../../assets/img/edit.png';
+import '../../../styles/general/sendDocuments.css'; 
+import editIcon from '../../../assets/img/edit.png';
 import RolesModal from './RolesModal';
 
 const isDevelopment = import.meta.env.MODE === 'development';
@@ -101,8 +101,11 @@ const Roles = () => {
         <LayoutBase activePage="roles">
             <div className="sendDocument-list-container">
                 <h2 className="folder-title-sendDocuments">Roles</h2>
-
-                {/* Barra de búsqueda */}
+                <br />
+                
+                
+                {/*
+                {/* Barra de búsqueda
                 <div className="search-and-controls">
                     <div className="search-filter-group users-table-style send-documents-layout">
                         <input
@@ -115,8 +118,7 @@ const Roles = () => {
                     </div>
                 </div>
 
-                {/* Botón de Agregar Rol */}
-                {/*
+                {// Botón de Agregar Rol
                 <div className="add-doc-button-container">                     
                     <button className="add-doc-button" onClick={handleAddRole}>
                         + Agregar Rol

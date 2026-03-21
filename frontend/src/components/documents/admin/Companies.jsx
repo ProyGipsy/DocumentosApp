@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/sendDocuments.css'; 
-import editIcon from '../../assets/img/edit.png';
+import '../../../styles/general/sendDocuments.css'; 
+import editIcon from '../../../assets/img/edit.png';
 import CompaniesModal from './CompaniesModal';
 
 const isDevelopment = import.meta.env.MODE === 'development';

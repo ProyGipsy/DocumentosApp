@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
-import searchIcon from '../../assets/img/Lupa.png';
-import folderIcon from '../../assets/img/folder.png'
-import editIcon from '../../assets/img/edit.png';
-import '../../styles/general/homeGeneral.css';
-import { useAuth } from '../../utils/AuthContext';
+import searchIcon from '../../../assets/img/Lupa.png';
+import folderIcon from '../../../assets/img/folder.png'
+import editIcon from '../../../assets/img/edit.png';
+import '../../../styles/general/homeGeneral.css';
+import { useAuth } from '../../../utils/AuthContext';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;

@@ -1,7 +1,7 @@
 /* --- Estilos Generales del Contenedor de la Lista --- */
 .sendDocument-list-container {
     padding: 30px;
-    background-color: white;
+    background-color: #f0f0f0;
     min-height: calc(100vh - 40px);
     flex-direction: column;
     width: 100%;

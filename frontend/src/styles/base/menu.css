@@ -56,9 +56,25 @@ body {
     transition: transform 0.3s ease;
 }
 
+#sidebarAdminAvailability {
+    width: 380px;
+    flex-shrink: 0;
+    height: 100%;
+    background-color: #262626;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
 #sidebarUser .logo,
 #sidebarTech .logo,
-#sidebarAdmin .logo {
+#sidebarAdmin .logo,
+#sidebarAdminAvailability .logo {
     display: flex;
     justify-content: center;
     padding: 20px 0;
@@ -66,14 +82,16 @@ body {
 
 #sidebarUser .logo img,
 #sidebarTech .logo img,
-#sidebarAdmin .logo img {
+#sidebarAdmin .logo img,
+#sidebarAdminAvailability .logo img {
     width: 150px;
     height: auto;
 }
 
 #sidebarUser ul,
 #sidebarTech ul,
-#sidebarAdmin ul {
+#sidebarAdmin ul,
+#sidebarAdminAvailability ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -82,7 +100,8 @@ body {
 
 #sidebarUser ul li,
 #sidebarTech ul li,
-#sidebarAdmin ul li {
+#sidebarAdmin ul li,
+#sidebarAdminAvailability ul li {
     margin: 5px 0;
 }
 
@@ -224,7 +243,8 @@ header {
 
     #sidebarUser.active,
     #sidebarTech.active,
-    #sidebarAdmin.active {
+    #sidebarAdmin.active,
+    #sidebarAdminAvailability.active {
         transform: translateX(280px);
     }
 
@@ -259,7 +279,8 @@ header {
 
     #sidebarUser .logo img,
     #sidebarTech .logo img,
-    #sidebarAdmin .logo img {
+    #sidebarAdmin .logo img,
+    #sidebarAdminAvailability .logo img {
         width: 120px;
     }
 

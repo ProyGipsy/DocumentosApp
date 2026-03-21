@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/sendDocuments.css'; 
-import editIcon from '../../assets/img/edit.png';
+import '../../../styles/general/sendDocuments.css'; 
+import editIcon from '../../../assets/img/edit.png';
 import ContactsModal from './ContactsModal';
-import { useAuth } from '../../utils/AuthContext';
+import { useAuth } from '../../../utils/AuthContext';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;

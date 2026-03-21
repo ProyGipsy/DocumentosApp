@@ -1,8 +1,8 @@
 import React from 'react';
-import { useAuth } from '../../utils/AuthContext';
+import { useAuth } from '../../../utils/AuthContext';
 import { Link } from 'react-router-dom';
-import '../../styles/base/menu.css';
-import logo from '../../assets/img/Gipsy_imagotipo_color.png'
+import '../../../styles/base/menu.css';
+import logo from '../../../assets/img/Gipsy_imagotipo_color.png'
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
@@ -24,7 +24,7 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
       {/* Sidebar */}
       <div className={`sidebar ${sidebarActive ? 'active' : ''}`} id="sidebarAdmin">
         <div className="logo">
-            <Link to="/" onClick={closeSidebar}>
+            <Link to="/documents" onClick={closeSidebar}>
               <img src={logo} alt="Logo" />
             </Link>
         </div>
@@ -32,26 +32,26 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
           <ul>
             <li>
               <div className={`optionContainer ${isActive('home') ? 'active' : ''}`}>
-                <Link to="/" className="optionLink" onClick={closeSidebar}>Inicio</Link>
+                <Link to="/documents" className="optionLink" onClick={closeSidebar}>Inicio</Link>
               </div>
             </li>
             {!isOnlyLector && (
               <>
                 <li>
                   <div className={`optionContainer ${isActive('documentType') ? 'active' : ''}`}>
-                    <Link to="/document-type" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
+                    <Link to="/documents/document-type" className="optionLink" onClick={closeSidebar}>Crear Tipo de Documento</Link>
                   </div>
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('documents') ? 'active' : ''}`}>
-                    <Link to="/document-create" className="optionLink" onClick={closeSidebar}>Crear Documento</Link>
+                    <Link to="/documents/document-create" className="optionLink" onClick={closeSidebar}>Crear Documento</Link>
                   </div>
                 </li>
               </>
             )}
             <li>
               <div className={`optionContainer ${isActive('sendDocuments') ? 'active' : ''}`}>
-                <Link to="/send-documents" className="optionLink" onClick={closeSidebar}>Enviar Documentos</Link>
+                <Link to="/documents/send-documents" className="optionLink" onClick={closeSidebar}>Enviar Documentos</Link>
               </div>
             </li>
             {/* Funciones para usuarios de Rol Administrador */}
@@ -59,17 +59,17 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
               <>
                 <li className="AdminMenu">
                   <div className={`optionContainer ${isActive('roles') ? 'active' : ''}`}>
-                    <Link to="/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
+                    <Link to="/documents/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
                   </div>
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
-                    <Link to="/companies" className="optionLink" onClick={closeSidebar}>Gestionar Entidades</Link>
+                    <Link to="/documents/companies" className="optionLink" onClick={closeSidebar}>Gestionar Entidades</Link>
                   </div>
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('contacts') ? 'active' : ''}`}>
-                    <Link to="/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
+                    <Link to="/documents/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
                   </div>
                 </li>
               </>
