@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import '../../styles/general/sendDocModal.css'; 
+import '../../../styles/general/sendDocModal.css'; 
 import CurrencyInput from 'react-currency-input-field';
 
 // --- Configuración de API ---

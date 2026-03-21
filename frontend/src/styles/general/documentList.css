@@ -1,7 +1,7 @@
 /* --- Estilos Generales del Contenedor de la Lista --- */
 .document-list-container {
     padding: 30px;
-    background-color: white;
+    background-color: rgb(240, 240, 240);
     min-height: calc(100vh - 40px);
     display: flex;
     flex-direction: column;

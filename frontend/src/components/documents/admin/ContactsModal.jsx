@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../styles/general/sendDocModal.css';
+import '../../../styles/general/sendDocModal.css';
 
 // --- Configuración de API ---
 const isDevelopment = import.meta.env.MODE === 'development';

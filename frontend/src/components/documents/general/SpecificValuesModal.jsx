@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import trash from '../../assets/img/trash.png'; 
-import '../../styles/general/sendDocModal.css'; 
+import trash from '../../../assets/img/trash.png'; 
+import '../../../styles/general/sendDocModal.css'; 
 
 const generateTempId = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 const createEmptyItem = () => ({ id: generateTempId(), value: '' });

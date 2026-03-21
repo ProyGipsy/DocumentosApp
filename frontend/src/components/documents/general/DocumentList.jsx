@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../utils/AuthContext';
+import { useAuth } from '../../../utils/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LayoutBaseAdmin from '../base/LayoutBase';
-import eyeIcon from '../../assets/img/eye.png';
-import editIcon from '../../assets/img/edit.png';
-import '../../styles/general/documentList.css';
+import eyeIcon from '../../../assets/img/eye.png';
+import editIcon from '../../../assets/img/edit.png';
+import '../../../styles/general/documentList.css';
 import DocumentFieldsModal from './DocumentFieldsModal';
 
 // Configuración de API

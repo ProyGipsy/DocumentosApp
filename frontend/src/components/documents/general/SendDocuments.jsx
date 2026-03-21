@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-// 1. IMPORTAMOS MATERIAL UI
 import { Select, MenuItem, FormControl, OutlinedInput } from '@mui/material';
-import { useAuth } from '../../utils/AuthContext';
+import { useAuth } from '../../../utils/AuthContext';
 import LayoutBase from '../base/LayoutBase';
-import '../../styles/general/sendDocuments.css'; 
+import '../../../styles/general/sendDocuments.css'; 
 import SendDocumentModal from './SendDocumentModal';
 
 // Configuración de API

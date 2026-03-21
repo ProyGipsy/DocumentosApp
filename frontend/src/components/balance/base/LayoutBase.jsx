@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import '../../styles/base/menu.css';
-import '../../styles/base/home.css';
+import '../../../styles/base/menu.css';
+import '../../../styles/base/home.css';
 
 const LayoutBaseAdmin = ({ activePage, children }) => {
   const [sidebarActive, setSidebarActive] = useState(false);

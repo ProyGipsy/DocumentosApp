@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LayoutBase from '../base/LayoutBase'; 
-import '../../styles/general/documentTypeForm.css'; 
-import trash from '../../assets/img/trash.png';
-import edit from '../../assets/img/edit.png';
+import '../../../styles/general/documentTypeForm.css'; 
+import trash from '../../../assets/img/trash.png';
+import edit from '../../../assets/img/edit.png';
 import SpecificValuesModal from './SpecificValuesModal';
 
 // Configuración de URL según entorno

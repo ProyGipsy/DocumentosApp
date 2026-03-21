@@ -1,6 +1,7 @@
-.home-admin-container {
+.home-admin-container,
+.home-admin-container-availability {
     padding: 30px;
-    background-color: white;
+    background-color: rgb(240, 240, 240);
     min-height: calc(100vh - 40px);
     display: flex;
     flex-direction: column;
@@ -8,7 +9,8 @@
 }
 
 /* --- Títulos --- */
-.title-section-home {
+.title-section-home,
+.title-section-home-availability {
     width: 100%;
     max-width: 1200px;
     text-align: center;
@@ -21,6 +23,12 @@
     font-weight: 600;
 }
 
+.title-section-home-availability h2 {
+    color: #262626;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
 .title-section-home h3 {
     color: #421d83;
     margin-top: 0;
@@ -28,8 +36,16 @@
     font-size: 1.2em;
 }
 
+.title-section-home-availability h3 {
+    color: #262626;
+    margin-top: 0;
+    font-weight: 500;
+    font-size: 1.2em;
+}
+
 /* --- Barra de Búsqueda --- */
-.search-bar-container {
+.search-bar-container,
+.search-bar-container-availability {
     width: 90%;
     max-width: 500px;
     display: flex;
@@ -40,7 +56,8 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.search-input-home {
+.search-input-home,
+.search-input-home-availability {
     padding: 12px 15px;
     border: none;
     font-size: 1em;
@@ -53,7 +70,12 @@
     color: #61608b;
 }
 
-.search-input-home:focus {
+.search-input-home-availability::placeholder {
+    color: #888888;
+}
+
+.search-input-home:focus,
+.search-input-home-availability:focus {
     outline: none;
     background-color: #fff;
 }
@@ -71,11 +93,29 @@
     width: 55px;
 }
 
-.search-button-home:hover {
+.search-button-home-availability {
+    padding: 12px 15px;
+    background-color: #262626;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 55px;
+}
+
+.search-button-home:hover{
     background-color: #8b56ed;
 }
 
-.search-button-home img {
+.search-button-home-availability:hover {
+    background-color: #5e5e5e;
+}
+
+.search-button-home img,
+.search-button-home-availability img {
     width: 20px;
     height: 20px;
 }
@@ -96,7 +136,7 @@
 }
 
 .folder-card {
-    background-color: #f0f0f0;
+    background-color: #fcfcfc;
     border-radius: 8px;
     padding: 20px;
     display: flex;
@@ -109,7 +149,7 @@
 }
 
 .folder-card:hover {
-    background-color: #e5e5e5;
+    background-color: #efefef;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
