@@ -69,7 +69,7 @@ const HomeAdmin = () => {
     const handleFolderClick = (folderId, folderName) => {
         console.log(`Navegando a la carpeta: ${folderName}`);
         const encodedFolderName = encodeURIComponent(folderName);
-        navigate(`/${encodedFolderName}`, { state: { folderId: folderId, folderName: folderName } });
+        navigate(`/documents/${encodedFolderName}`, { state: { folderId: folderId, folderName: folderName } });
     };
 
     // Función para manejar el clic en el ícono de edición

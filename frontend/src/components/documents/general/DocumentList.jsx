@@ -296,7 +296,7 @@ const DocumentList = ({ folderId, folderName }) => {
                 
                 <div className="breadcrumb">
                     <span className="breadcrumb-item">
-                        <Link to="/" className="breadcrumb-link">Inicio</Link>
+                        <Link to="/documents" className="breadcrumb-link">Inicio</Link>
                     </span> 
                     <span className="breadcrumb-separator"> / </span>
                     <span className="breadcrumb-item active">{activeFolderName || 'Lista'}</span>
