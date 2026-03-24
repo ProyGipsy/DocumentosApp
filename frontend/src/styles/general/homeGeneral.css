@@ -44,8 +44,7 @@
 }
 
 /* --- Barra de Búsqueda --- */
-.search-bar-container,
-.search-bar-container-availability {
+.search-bar-container {
     width: 90%;
     max-width: 500px;
     display: flex;
@@ -54,6 +53,16 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.search-bar-container-availability {
+    width: 90%;
+    max-width: 500px;
+    display: flex;
+    margin-bottom: 50px;
+    border: 1px solid #cccccc00;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .search-input-home,
