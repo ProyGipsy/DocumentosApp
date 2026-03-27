@@ -438,26 +438,8 @@ const AvailabilityHome = () => {
                         {editingId ? 'Editar Transacción' : 'Nueva Transacción'}
                     </DialogTitle>
                     <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        
-                        {/* FILA 1: Fecha y Monto */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={customTextFieldStyle} />
-                            
-                            <TextField 
-                                label="Monto" 
-                                name="amount" 
-                                type="number" 
-                                placeholder={amountPlaceholder} 
-                                value={formData.amount} 
-                                onChange={handleInputChange} 
-                                fullWidth 
-                                size="small" 
-                                sx={customTextFieldStyle} 
-                                disabled={!formData.account} // <-- Bloqueo activo hasta que haya cuenta
-                            />
-                        </Box>
 
-                        {/* FILA 2: Entidad y Referencia */}
+                        {/* Entidad y Referencia */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={entityList.map((option) => option.EntityName)}
@@ -472,7 +454,7 @@ const AvailabilityHome = () => {
                             <TextField label="Número de Referencia" name="reference" value={formData.reference} onChange={handleInputChange} fullWidth size="small" sx={customTextFieldStyle} />
                         </Box>
 
-                        {/* FILA 3: Banco y Cuenta (La Cascada) */}
+                        {/* Banco y Cuenta (La Cascada) */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={bankList.map((option) => option.BankName)}
@@ -502,10 +484,28 @@ const AvailabilityHome = () => {
                             />
                         </Box>
 
-                        {/* FILA 4: Concepto (Ancho completo) */}
+                        {/* Fecha y Monto */}
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={customTextFieldStyle} />
+                            
+                            <TextField 
+                                label="Monto" 
+                                name="amount" 
+                                type="number" 
+                                placeholder={amountPlaceholder} 
+                                value={formData.amount} 
+                                onChange={handleInputChange} 
+                                fullWidth 
+                                size="small" 
+                                sx={customTextFieldStyle} 
+                                disabled={!formData.account} // <-- Bloqueo activo hasta que haya cuenta
+                            />
+                        </Box>
+
+                        {/* Concepto (Ancho completo) */}
                         <TextField label="Concepto" name="concept" multiline rows={2} value={formData.concept} onChange={handleInputChange} fullWidth size="small" sx={customTextFieldStyle} />
 
-                        {/* FILA 5: Estado (Ancho completo) */}
+                        {/* Estado (Ancho completo) */}
                         <FormControl fullWidth size="small" sx={customTextFieldStyle}>
                             <InputLabel id="status-select-label">Estado</InputLabel>
                             <Select labelId="status-select-label" name="status" value={formData.status} label="Estado" onChange={handleInputChange}>
