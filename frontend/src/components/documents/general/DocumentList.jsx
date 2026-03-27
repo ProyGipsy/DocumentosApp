@@ -268,7 +268,7 @@ const DocumentList = ({ folderId, folderName }) => {
 
     // Para "Agregar", seguimos navegando a la pantalla de creación
     const handleAddDocument = () => {
-        navigate('/document-create', { 
+        navigate('/documents/document-create', { 
             state: { folderName: activeFolderName, folderId: activeFolderId, mode: 'create' }
         });
     };
