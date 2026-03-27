@@ -335,9 +335,9 @@ const AvailabilityHome = () => {
         if (selectedAcc && selectedAcc.CurrencyID) {
             const matchedCurrency = currencyList.find(c => c.CurrencyID === selectedAcc.CurrencyID);
             if (matchedCurrency) {
-                if (matchedCurrency.CurrencyID === 1) amountPlaceholder = "Ej: 1500,50 VES o -1500,50";
-                else if (matchedCurrency.CurrencyID === 2) amountPlaceholder = "Ej: 100,00 USD o -100,00";
-                else if (matchedCurrency.CurrencyID === 10) amountPlaceholder = "Ej: 100,00 EUR o -100,00";
+                if (matchedCurrency.CurrencyID === 1) amountPlaceholder = "Ej: 1500,50 VES";
+                else if (matchedCurrency.CurrencyID === 2) amountPlaceholder = "Ej: 100,00 USD";
+                else if (matchedCurrency.CurrencyID === 10) amountPlaceholder = "Ej: 100,00 EUR";
                 else amountPlaceholder = `Monto en ${matchedCurrency.Symbol || ''}`;
             }
         }
