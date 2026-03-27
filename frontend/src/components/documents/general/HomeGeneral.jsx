@@ -76,7 +76,7 @@ const HomeAdmin = () => {
     const handleEditClick = (e, folderId, folderName) => {
         e.stopPropagation(); 
         
-        navigate('/document-type', {
+        navigate('/documents/document-type', {
             state: { folderId: folderId, folderName: folderName, isEditing: true }
         });
     };   
