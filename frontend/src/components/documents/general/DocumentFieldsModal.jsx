@@ -63,19 +63,6 @@ const DocumentFieldsModal = ({
         }
     }, [isOpen]);
 
-    // 2. Click Outside para cerrar dropdown
-    /*
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target)) {
-                setIsCompanyDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-    */
-
     // 3. Inicialización de Formulario y Entidades
     useEffect(() => {
         if (isOpen && documentType) {
@@ -354,10 +341,16 @@ const DocumentFieldsModal = ({
     else if (isEditing) buttonText = 'Guardar Cambios';
     else if (isCreating) buttonText = sendDocument ? 'Crear y Enviar' : 'Crear Documento';
 
+    // --- ORDENAMIENTO DE CAMPOS A RENDERIZAR ---
     const rawFields = documentType.fields || [];
+    
     const nameField = rawFields.find(f => f.name.trim().toLowerCase() === 'nombre del documento');
-    const otherFields = rawFields.filter(f => f.name.trim().toLowerCase() !== 'nombre del documento');
-    const fieldsToRender = nameField ? [nameField, ...otherFields] : rawFields;
+    
+    const otherFields = rawFields
+        .filter(f => f.name.trim().toLowerCase() !== 'nombre del documento')
+        .sort((a, b) => (a.fieldOrder || 0) - (b.fieldOrder || 0)); // ORDENAMOS POR SECUENCIA
+
+    const fieldsToRender = nameField ? [nameField, ...otherFields] : otherFields;
 
     return (
         <div className="modal-overlay-user" onClick={(e) => e.stopPropagation()}>
@@ -403,7 +396,7 @@ const DocumentFieldsModal = ({
                                                 backgroundColor: '#f0f0f0', 
                                                 border: '1px solid #ddd',
                                                 borderRadius: '15px', 
-                                                padding: '4px 12px', // Un poco más de padding al no tener X
+                                                padding: '4px 12px', 
                                                 fontSize: '13px',
                                                 color: '#333',
                                                 display: 'inline-block'
@@ -507,7 +500,8 @@ const DocumentFieldsModal = ({
                 </div>
 
                 <form className="modal-body-user" onSubmit={handleSubmit}>
-                    {/* ... (Resto del formulario igual) ... */}
+                    
+                    {/* Renderizado de campos dinámicos */}
                     {fieldsToRender.map((field, index) => {
                         const inputType = getFieldInputType(field);
                         const precision = DATA_TYPE_CONFIG.find(dt => dt.id === field.typeId)?.precision || 0;
@@ -554,10 +548,10 @@ const DocumentFieldsModal = ({
                                             className="form-input-doc-create"
                                             required={field.isRequired}
                                     >
-                                            <option value="" disabled>Seleccione una opción</option>
-                                            {options.map((optValue, idx) => (
-                                                <option key={idx} value={optValue}>{optValue}</option>
-                                            ))}
+                                        <option value="" disabled>Seleccione una opción</option>
+                                        {options.map((optValue, idx) => (
+                                            <option key={idx} value={optValue}>{optValue}</option>
+                                        ))}
                                     </select>
                                 
                                 ) : inputType === 'textarea' ? (
