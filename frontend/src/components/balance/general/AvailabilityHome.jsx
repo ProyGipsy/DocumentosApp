@@ -158,7 +158,7 @@ const AvailabilityHome = () => {
 
             // 5. Transacciones (Tabla Principal)
             try {
-                const txRes = await fetch(`${apiUrl}/availability/getTransactions`, { method: 'GET', headers });
+                const txRes = await fetch(`${apiUrl}/availability/getTransitTransactions`, { method: 'GET', headers });
                 if (txRes.ok) {
                     const data = await txRes.json();
                     setAllTransactions(data);
@@ -166,7 +166,6 @@ const AvailabilityHome = () => {
                     throw new Error("Fallback");
                 }
             } catch (e) {
-                // Si falla el backend, cargamos los mocks para poder simular
                 setAllTransactions(mockTransactions);
             }
         };
@@ -176,19 +175,27 @@ const AvailabilityHome = () => {
 
     // --- 2. CASCADA: BUSCAR CUENTAS CUANDO CAMBIA EL BANCO ---
     useEffect(() => {
-        const fetchAccountsForBank = async () => {
-            if (!formData.bank || bankList.length === 0) {
+        const fetchAccountsForBankAndEntity = async () => {
+            if (!formData.bank || bankList.length === 0 || !formData.entity || entityList.length === 0) {
                 setAccountList([]);
                 return;
             }
 
             const selectedBank = bankList.find(b => b.BankName === formData.bank);
-            if (!selectedBank) return;
+            const selectedEntity = entityList.find(e => e.EntityName === formData.entity); 
+
+            if (!selectedBank || !selectedEntity) return;
 
             const token = sessionStorage.getItem('session_token');
             try {
-                const res = await fetch(`${apiUrl}/availability/banks/${selectedBank.BankID}/accounts`, { 
-                    method: 'GET', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                const fetchUrl = `${apiUrl}/availability/banks/${selectedBank.BankID}/accounts?entity_id=${selectedEntity.EntityID}`;
+                
+                const res = await fetch(fetchUrl, { 
+                    method: 'GET', 
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    }
                 });
                 
                 if (res.ok) {
@@ -198,14 +205,14 @@ const AvailabilityHome = () => {
                 }
             } catch (error) {
                 setAccountList([
-                    { AccountID: 1, AccountNumber: `01${selectedBank.BankID}4-XXXX-XXXX-1111`, CurrencyID: 1 }, 
-                    { AccountID: 2, AccountNumber: `01${selectedBank.BankID}4-YYYY-YYYY-2222`, CurrencyID: 2 }  
+                    { AccountID: 1, AccountNumber: `01${selectedBank.BankID}4-ENT${selectedEntity.EntityID}-1111`, CurrencyID: 1 }, 
+                    { AccountID: 2, AccountNumber: `01${selectedBank.BankID}4-ENT${selectedEntity.EntityID}-2222`, CurrencyID: 2 }  
                 ]);
             }
         };
 
-        fetchAccountsForBank();
-    }, [formData.bank, bankList]);
+        fetchAccountsForBankAndEntity();
+    }, [formData.bank, formData.entity, bankList, entityList]); 
 
     // --- 3. FILTRO DE BÚSQUEDA ---
     useEffect(() => {
@@ -235,6 +242,28 @@ const AvailabilityHome = () => {
 
     const handleSortToggle = () => setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
 
+    // --- FUNCIONES AUXILIARES ---
+    // Función robusta para convertir la fecha a formato 'YY-MM-DD'
+    const formatDateToYYMMDD = (dateString) => {
+        if (!dateString) return '';
+        try {
+            // Convierte el string de SQL/Flask a un objeto Date real
+            const d = new Date(dateString);
+            
+            // Si la fecha es inválida, devolvemos el texto original para no fallar
+            if (isNaN(d.getTime())) return dateString; 
+
+            // Extraemos año, mes y día
+            const year = d.getFullYear().toString().substring(2); 
+            const month = String(d.getMonth() + 1).padStart(2, '0'); 
+            const day = String(d.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            return dateString;
+        }
+    };
+
     // --- MANEJADORES DEL MODAL ---
     const handleOpenCreateModal = () => {
         setEditingId(null); 
@@ -253,8 +282,16 @@ const AvailabilityHome = () => {
 
     const handleOpenEditModal = (trx) => {
         setEditingId(trx.id); 
+        
+        let formattedDate = '';
+        try {
+            formattedDate = new Date(trx.date).toISOString().split('T')[0];
+        } catch (error) {
+            formattedDate = new Date().toISOString().split('T')[0];
+        }
+
         setFormData({
-            date: trx.date,
+            date: formattedDate, 
             entity: trx.entity || '',
             bank: trx.bank,
             account: trx.account || '',
@@ -276,37 +313,114 @@ const AvailabilityHome = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSaveTransaction = () => {
+    const handleSaveTransaction = async () => {
         if (!formData.entity || !formData.bank || !formData.account || !formData.amount || !formData.concept) {
             alert("Por favor llena todos los campos obligatorios.");
             return;
         }
 
-        const amountVal = parseFloat(formData.amount) || 0;
-
-        // Simulamos el guardado localmente (esto luego será un fetch POST)
-        if (editingId) {
-            setAllTransactions(prev => prev.map(trx => 
-                trx.id === editingId ? { ...trx, ...formData, amount: amountVal } : trx
-            ));
-        } else {
-            const newTransaction = {
-                id: allTransactions.length > 0 ? Math.max(...allTransactions.map(t => t.id)) + 1 : 1,
-                ...formData,
-                amount: amountVal
-            };
-            setAllTransactions([newTransaction, ...allTransactions]);
-            setSearchTerm('');
-            setPage(0);
+        const amountVal = parseFloat(formData.amount);
+        if (isNaN(amountVal) || amountVal === 0) {
+            alert("Por favor ingresa un monto válido diferente de cero.");
+            return;
         }
-        handleCloseModal();
+
+        const selectedEntity = entityList.find(e => e.EntityName === formData.entity);
+        const selectedBank = bankList.find(b => b.BankName === formData.bank);
+        const selectedAccount = accountList.find(a => a.AccountNumber === formData.account);
+        const selectedStatus = statusList.find(s => s.StatusName === formData.status);
+
+        if (!selectedEntity || !selectedBank || !selectedAccount || !selectedStatus) {
+            alert("Error: Datos seleccionados inválidos. Por favor, selecciona opciones de las listas.");
+            return;
+        }
+
+        const payload = {
+            DateTrx: formData.date,
+            EntityID: selectedEntity.EntityID,
+            BankID: selectedBank.BankID,
+            AccountID: selectedAccount.AccountID,
+            ReferenceDoc: formData.reference,
+            Concept: formData.concept,
+            Amount: amountVal,
+            TransitStatusID: selectedStatus.TransitStatusID
+        };
+
+        const token = sessionStorage.getItem('session_token');
+        const headers = { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+        };
+
+        try {
+            if (editingId) {
+                const response = await fetch(`${apiUrl}/availability/transactions/${editingId}`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    setAllTransactions(prev => prev.map(trx => 
+                        trx.id === editingId ? { 
+                            ...trx, 
+                            date: formData.date,
+                            entity: formData.entity,
+                            bank: formData.bank,
+                            account: formData.account,
+                            reference: formData.reference,
+                            concept: formData.concept,
+                            amount: amountVal,
+                            status: formData.status
+                        } : trx
+                    ));
+                    handleCloseModal();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error al editar la transacción: ${errorData.error || 'Desconocido'}`);
+                }
+
+            } else {
+                const response = await fetch(`${apiUrl}/availability/transactions`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    const newTransaction = {
+                        id: data.new_id || Math.max(0, ...allTransactions.map(t => t.id)) + 1, 
+                        date: formData.date,
+                        entity: formData.entity,
+                        bank: formData.bank,
+                        account: formData.account,
+                        reference: formData.reference,
+                        concept: formData.concept,
+                        amount: amountVal,
+                        status: formData.status
+                    };
+                    
+                    setAllTransactions([newTransaction, ...allTransactions]);
+                    setSearchTerm('');
+                    setPage(0);
+                    handleCloseModal();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error al crear la transacción: ${errorData.error || 'Desconocido'}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error de red al guardar la transacción:", error);
+            alert("Error de conexión con el servidor. Por favor, intenta de nuevo.");
+        }
     };
 
     const handleOpenCancelModal = (id) => { setCancelId(id); setOpenCancelModal(true); };
     const handleCloseCancelModal = () => { setOpenCancelModal(false); setCancelId(null); };
 
     const handleConfirmCancel = () => {
-        // Simulamos la anulación localmente (esto luego será un fetch PUT/PATCH)
         setAllTransactions(prev => prev.map(trx => 
             trx.id === cancelId ? { ...trx, status: 'Anulada' } : trx 
         ));
@@ -327,7 +441,6 @@ const AvailabilityHome = () => {
         return <Chip label={status} color={color} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />;
     };
 
-    // --- LÓGICA DEL PLACEHOLDER DINÁMICO ---
     let amountPlaceholder = "Seleccione una cuenta primero...";
     
     if (formData.account && accountList.length > 0) {
@@ -394,31 +507,43 @@ const AvailabilityHome = () => {
                                 {sortedTransactions.length > 0 ? (
                                     sortedTransactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => {
                                         
-                                        // Intentamos buscar el símbolo de la moneda si la data lo provee
                                         const trxCurrency = currencyList.find(c => c.CurrencyName === trx.currency);
                                         const symbol = trxCurrency ? trxCurrency.Symbol : '';
 
+                                        // Variable para deshabilitar botones si el estado es final
+                                        const isFinalStatus = trx.status === 'Ejecutada' || trx.status === 'Anulada';
+
                                         return (
                                             <TableRow hover role="checkbox" tabIndex={-1} key={trx.id}>
-                                                <TableCell>{trx.date}</TableCell>
+                                                <TableCell>{formatDateToYYMMDD(trx.date)}</TableCell>
                                                 <TableCell>{trx.entity}</TableCell>
                                                 <TableCell>{trx.bank}</TableCell>
                                                 <TableCell>{trx.account}</TableCell>
                                                 <TableCell>{trx.reference}</TableCell>
                                                 <TableCell>{trx.concept}</TableCell>
-                                                <TableCell align="right" sx={{ fontWeight: 'bold', color: trx.amount > 0 ? '#2e7d32' : '#d32f2f' }}>
-                                                    {trx.amount > 0 ? '+' : ''}{trx.amount.toFixed(2)} {symbol}
+                                                <TableCell align="right" sx={{ fontWeight: 'bold', color: Number(trx.amount) > 0 ? '#2e7d32' : '#d32f2f' }}>
+                                                    {Number(trx.amount) > 0 ? '+' : ''}{Number(trx.amount).toFixed(2)} {symbol}
                                                 </TableCell>
                                                 <TableCell align="center">{getStatusChip(trx.status)}</TableCell>
                                                 <TableCell align="center">
-                                                    <IconButton color="primary" onClick={() => handleOpenEditModal(trx)} sx={{ color: '#262626' }} title="Editar">
+                                                    {/* Botones siempre presentes, pero se bloquean y cambian de color si es estado final */}
+                                                    <IconButton 
+                                                        color="primary" 
+                                                        onClick={() => handleOpenEditModal(trx)} 
+                                                        disabled={isFinalStatus}
+                                                        sx={{ color: isFinalStatus ? 'text.disabled' : '#262626' }} 
+                                                        title={isFinalStatus ? "Edición bloqueada" : "Editar"}
+                                                    >
                                                         <EditIcon />
                                                     </IconButton>
-                                                    {trx.status !== 'Anulada' && (
-                                                        <IconButton color="error" onClick={() => handleOpenCancelModal(trx.id)} title="Anular Transacción">
-                                                            <CancelIcon />
-                                                        </IconButton>
-                                                    )}
+                                                    <IconButton 
+                                                        color="error" 
+                                                        onClick={() => handleOpenCancelModal(trx.id)} 
+                                                        disabled={isFinalStatus}
+                                                        title={isFinalStatus ? "Anulación bloqueada" : "Anular Transacción"}
+                                                    >
+                                                        <CancelIcon />
+                                                    </IconButton>
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -439,13 +564,18 @@ const AvailabilityHome = () => {
                     </DialogTitle>
                     <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-                        {/* Entidad y Referencia */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={entityList.map((option) => option.EntityName)}
                                 value={formData.entity || null}
                                 onChange={(event, newValue) => {
-                                    setFormData(prev => ({ ...prev, entity: newValue || '' }));
+                                    // Limpieza en cascada de Banco y Cuenta al cambiar Entidad
+                                    setFormData(prev => ({ 
+                                        ...prev, 
+                                        entity: newValue || '',
+                                        bank: '',
+                                        account: '' 
+                                    }));
                                 }}
                                 renderInput={(params) => (
                                     <TextField {...params} label="Entidad" placeholder="Cliente, Proveedor..." fullWidth size="small" sx={customTextFieldStyle} />
@@ -454,7 +584,6 @@ const AvailabilityHome = () => {
                             <TextField label="Número de Referencia" name="reference" value={formData.reference} onChange={handleInputChange} fullWidth size="small" sx={customTextFieldStyle} />
                         </Box>
 
-                        {/* Banco y Cuenta (La Cascada) */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={bankList.map((option) => option.BankName)}
@@ -463,7 +592,7 @@ const AvailabilityHome = () => {
                                     setFormData(prev => ({ 
                                         ...prev, 
                                         bank: newValue || '', 
-                                        account: '' // Vaciamos cuenta si cambia banco
+                                        account: '' 
                                     }));
                                 }}
                                 renderInput={(params) => (
@@ -484,7 +613,6 @@ const AvailabilityHome = () => {
                             />
                         </Box>
 
-                        {/* Fecha y Monto */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={customTextFieldStyle} />
                             
@@ -498,14 +626,12 @@ const AvailabilityHome = () => {
                                 fullWidth 
                                 size="small" 
                                 sx={customTextFieldStyle} 
-                                disabled={!formData.account} // <-- Bloqueo activo hasta que haya cuenta
+                                disabled={!formData.account}
                             />
                         </Box>
 
-                        {/* Concepto (Ancho completo) */}
                         <TextField label="Concepto" name="concept" multiline rows={2} value={formData.concept} onChange={handleInputChange} fullWidth size="small" sx={customTextFieldStyle} />
 
-                        {/* Estado (Ancho completo) */}
                         <FormControl fullWidth size="small" sx={customTextFieldStyle}>
                             <InputLabel id="status-select-label">Estado</InputLabel>
                             <Select labelId="status-select-label" name="status" value={formData.status} label="Estado" onChange={handleInputChange}>
@@ -524,7 +650,6 @@ const AvailabilityHome = () => {
                     </DialogActions>
                 </Dialog>
 
-                {/* --- MODAL DE ADVERTENCIA PARA CANCELAR --- */}
                 <Dialog open={openCancelModal} onClose={handleCloseCancelModal} maxWidth="xs" fullWidth>
                     <DialogTitle sx={{ fontWeight: 'bold', color: '#d32f2f' }}>Anular Transacción</DialogTitle>
                     <DialogContent>
