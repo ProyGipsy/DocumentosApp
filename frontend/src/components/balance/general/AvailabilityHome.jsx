@@ -29,7 +29,9 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Autocomplete 
+    Autocomplete,
+    Backdrop,
+    CircularProgress
 } from '@mui/material';
 
 import EditIcon from '@mui/icons-material/Edit';
@@ -69,10 +71,16 @@ const mockTransactions = [];
 
 const AvailabilityHome = () => {
     const { user } = useAuth();
+    console.log("Usuario autenticado:", user);
+    
     const navigate = useNavigate();
 
     // --- ESTADOS DE LA TABLA Y BÚSQUEDA ---
     const [searchTerm, setSearchTerm] = useState('');
+
+    // --- ESTADOS DE CARGA ---
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingText, setLoadingText] = useState('Cargando...');
     
     // Inicializamos vacíos. Se llenarán en el useEffect con el Fetch o los Mocks.
     const [allTransactions, setAllTransactions] = useState([]);
@@ -112,7 +120,26 @@ const AvailabilityHome = () => {
             const token = sessionStorage.getItem('session_token');
             const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-            // 1. Estados
+            // Mensaje de carga
+            setLoadingText('Cargando transacciones...')
+            setIsLoading(true);
+            
+            // 1. Transacciones (Tabla Principal)
+            try {
+                const txRes = await fetch(`${apiUrl}/availability/getTransitTransactions`, { method: 'GET', headers });
+                if (txRes.ok) {
+                    const data = await txRes.json();
+                    setAllTransactions(data);
+                } else {
+                    throw new Error("Fallback");
+                }
+            } catch (e) {
+                setAllTransactions(mockTransactions);
+            } finally {
+                setIsLoading(false);
+            }
+
+            // 2. Estados
             try {
                 const statusRes = await fetch(`${apiUrl}/availability/getTransactionStatuses`, { method: 'GET', headers });
                 if (statusRes.ok) setStatusList(await statusRes.json());
@@ -125,7 +152,7 @@ const AvailabilityHome = () => {
                 ]);
             }
 
-            // 2. Bancos
+            // 3. Bancos
             try {
                 const bankRes = await fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers });
                 if (bankRes.ok) setBankList(await bankRes.json());
@@ -134,7 +161,7 @@ const AvailabilityHome = () => {
                 setBankList([{ BankID: 1, BankName: 'Banesco' }, { BankID: 2, BankName: 'Mercantil' }, { BankID: 3, BankName: 'Provincial' }]);
             }
 
-            // 3. Entidades
+            // 4. Entidades
             try {
                 const entityRes = await fetch(`${apiUrl}/availability/getEntities`, { method: 'GET', headers });
                 if (entityRes.ok) setEntityList(await entityRes.json());
@@ -143,7 +170,7 @@ const AvailabilityHome = () => {
                 setEntityList([{ EntityID: 1, EntityName: 'Cliente A' }, { EntityID: 2, EntityName: 'Cliente B' }, { EntityID: 3, EntityName: 'Proveedor XYZ' }]);
             }
 
-            // 4. Monedas
+            // 5. Monedas
             try {
                 const currencyRes = await fetch(`${apiUrl}/availability/getCurrencies`, { method: 'GET', headers });
                 if (currencyRes.ok) setCurrencyList(await currencyRes.json());
@@ -154,20 +181,7 @@ const AvailabilityHome = () => {
                     { CurrencyID: 2, CurrencyName: 'Dólares', Symbol: 'USD' }, 
                     { CurrencyID: 10, CurrencyName: 'Euros', Symbol: 'EUR' }
                 ]);
-            }
-
-            // 5. Transacciones (Tabla Principal)
-            try {
-                const txRes = await fetch(`${apiUrl}/availability/getTransitTransactions`, { method: 'GET', headers });
-                if (txRes.ok) {
-                    const data = await txRes.json();
-                    setAllTransactions(data);
-                } else {
-                    throw new Error("Fallback");
-                }
-            } catch (e) {
-                setAllTransactions(mockTransactions);
-            }
+            } 
         };
 
         fetchInitialData();
@@ -352,6 +366,10 @@ const AvailabilityHome = () => {
             'Authorization': `Bearer ${token}` 
         };
 
+        // Mensaje de carga
+        setLoadingText('Estamos procesando su solicitud. Por favor, espere.')
+        setIsLoading(true);
+
         try {
             if (editingId) {
                 const response = await fetch(`${apiUrl}/availability/transactions/${editingId}`, {
@@ -414,17 +432,112 @@ const AvailabilityHome = () => {
         } catch (error) {
             console.error("Error de red al guardar la transacción:", error);
             alert("Error de conexión con el servidor. Por favor, intenta de nuevo.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleOpenCancelModal = (id) => { setCancelId(id); setOpenCancelModal(true); };
     const handleCloseCancelModal = () => { setOpenCancelModal(false); setCancelId(null); };
 
-    const handleConfirmCancel = () => {
-        setAllTransactions(prev => prev.map(trx => 
-            trx.id === cancelId ? { ...trx, status: 'Anulada' } : trx 
-        ));
-        handleCloseCancelModal();
+    const handleConfirmCancel = async () => {
+        // 1. Buscamos los datos actuales de la transacción a anular
+        const trxToCancel = allTransactions.find(t => t.id === cancelId);
+        if (!trxToCancel) return;
+
+        // 2. Resolvemos los IDs de Entidad, Banco y el Estado de Anulación
+        const selectedEntity = entityList.find(e => e.EntityName === trxToCancel.entity);
+        const selectedBank = bankList.find(b => b.BankName === trxToCancel.bank);
+        const selectedStatus = statusList.find(s => s.StatusName === 'Anulada');
+
+        if (!selectedEntity || !selectedBank || !selectedStatus) {
+            alert("Error: No se pudieron validar los datos base de la transacción para anularla.");
+            return;
+        }
+
+        const token = sessionStorage.getItem('session_token');
+        const headers = { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+        };
+
+        // Mensaje de carga
+        setLoadingText('Por favor, espere')
+        setIsLoading(true);
+
+        // 3. Resolvemos el AccountID en tiempo real
+        let resolvedAccountId = null;
+        try {
+            const fetchUrl = `${apiUrl}/availability/banks/${selectedBank.BankID}/accounts?entity_id=${selectedEntity.EntityID}`;
+            const res = await fetch(fetchUrl, { method: 'GET', headers });
+            
+            if (res.ok) {
+                const accounts = await res.json();
+                const acc = accounts.find(a => a.AccountNumber === trxToCancel.account);
+                if (acc) resolvedAccountId = acc.AccountID;
+            } else {
+                throw new Error("Fallo al obtener cuentas del servidor");
+            }
+        } catch (error) {
+            // Fallback en caso de que falle la red, usando la lógica de tus mocks
+            resolvedAccountId = trxToCancel.account.includes('1111') ? 1 : 2;
+        } finally {
+            setIsLoading(false);
+        }
+
+        if (!resolvedAccountId) {
+            alert("Error: No se encontró la cuenta bancaria asociada en la base de datos.");
+            return;
+        }
+
+        // 4. Formateamos la fecha al estándar YYYY-MM-DD para evitar el error 241 de SQL Server
+        let formattedDate = '';
+        try {
+            formattedDate = new Date(trxToCancel.date).toISOString().split('T')[0];
+        } catch (error) {
+            formattedDate = new Date().toISOString().split('T')[0];
+        }
+
+        // 5. Armamos el Payload idéntico al de edición, pero forzando el estado a "Anulada"
+        const payload = {
+            DateTrx: formattedDate,
+            EntityID: selectedEntity.EntityID,
+            BankID: selectedBank.BankID,
+            AccountID: resolvedAccountId,
+            ReferenceDoc: trxToCancel.reference,
+            Concept: trxToCancel.concept,
+            Amount: parseFloat(trxToCancel.amount),
+            TransitStatusID: selectedStatus.TransitStatusID
+        };
+
+        // Mensaje de carga
+        setLoadingText('Estamos procesando su solicitud. Por favor, espere.')
+        setIsLoading(true);
+
+        // 6. Ejecutamos el PUT contra el backend
+        try {
+            const response = await fetch(`${apiUrl}/availability/transactions/${cancelId}`, {
+                method: 'PUT',
+                headers: headers,
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                // Si la BD responde OK, actualizamos el estado visual de la tabla
+                setAllTransactions(prev => prev.map(trx => 
+                    trx.id === cancelId ? { ...trx, status: 'Anulada' } : trx 
+                ));
+                handleCloseCancelModal();
+            } else {
+                const errorData = await response.json();
+                alert(`Error al anular la transacción: ${errorData.error || 'Desconocido'}`);
+            }
+        } catch (error) {
+            console.error("Error de red al anular:", error);
+            alert("Error de conexión con el servidor. Por favor, intenta de nuevo.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleChangePage = (event, newPage) => setPage(newPage);
@@ -665,6 +778,24 @@ const AvailabilityHome = () => {
                     </DialogActions>
                 </Dialog>
 
+                {/* --- PANTALLA DE CARGA (BLUR) --- */}
+                <Backdrop
+                    sx={{
+                        color: '#fff',
+                        zIndex: (theme) => theme.zIndex.drawer + 999, // Para que quede por encima de los modales
+                        backdropFilter: 'blur(5px)', // Efecto cristal/desenfoque
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Fondo ligeramente oscuro
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2
+                    }}
+                    open={isLoading}
+                >
+                    <CircularProgress color="inherit" size={60} thickness={4} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+                        {loadingText}
+                    </Typography>
+                </Backdrop>
             </Box>
         </LayoutBaseAdmin>
     );
