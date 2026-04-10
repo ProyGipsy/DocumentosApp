@@ -71,7 +71,6 @@ const mockTransactions = [];
 
 const AvailabilityHome = () => {
     const { user } = useAuth();
-    console.log("Usuario autenticado:", user);
     
     const navigate = useNavigate();
 
@@ -82,7 +81,6 @@ const AvailabilityHome = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingText, setLoadingText] = useState('Cargando...');
     
-    // Inicializamos vacíos. Se llenarán en el useEffect con el Fetch o los Mocks.
     const [allTransactions, setAllTransactions] = useState([]);
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     
@@ -92,7 +90,8 @@ const AvailabilityHome = () => {
 
     // --- ESTADOS DE DATOS DESDE EL BACKEND ---
     const [statusList, setStatusList] = useState([]);
-    const [bankList, setBankList] = useState([]); 
+    const [allBanksList, setAllBanksList] = useState([]); // <-- NUEVO: Guarda todos los bancos para resolución global (ej. anular)
+    const [bankList, setBankList] = useState([]); // <-- Dinámico: Solo los bancos de la entidad seleccionada en el modal
     const [accountList, setAccountList] = useState([]);
     const [entityList, setEntityList] = useState([]); 
     const [currencyList, setCurrencyList] = useState([]); 
@@ -120,11 +119,10 @@ const AvailabilityHome = () => {
             const token = sessionStorage.getItem('session_token');
             const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-            // Mensaje de carga
             setLoadingText('Cargando transacciones...')
             setIsLoading(true);
             
-            // 1. Transacciones (Tabla Principal)
+            // 1. Transacciones
             try {
                 const txRes = await fetch(`${apiUrl}/availability/getTransitTransactions`, { method: 'GET', headers });
                 if (txRes.ok) {
@@ -152,13 +150,13 @@ const AvailabilityHome = () => {
                 ]);
             }
 
-            // 3. Bancos
+            // 3. Bancos Globales (Para la tabla y anulaciones)
             try {
                 const bankRes = await fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers });
-                if (bankRes.ok) setBankList(await bankRes.json());
+                if (bankRes.ok) setAllBanksList(await bankRes.json());
                 else throw new Error("Fallback");
             } catch (e) {
-                setBankList([{ BankID: 1, BankName: 'Banesco' }, { BankID: 2, BankName: 'Mercantil' }, { BankID: 3, BankName: 'Provincial' }]);
+                setAllBanksList([{ BankID: 1, BankName: 'Banesco' }, { BankID: 2, BankName: 'Mercantil' }, { BankID: 3, BankName: 'Provincial' }]);
             }
 
             // 4. Entidades
@@ -187,7 +185,45 @@ const AvailabilityHome = () => {
         fetchInitialData();
     }, []);
 
-    // --- 2. CASCADA: BUSCAR CUENTAS CUANDO CAMBIA EL BANCO ---
+    // --- 2. CASCADA 1: BUSCAR BANCOS CUANDO CAMBIA LA ENTIDAD ---
+    useEffect(() => {
+        const fetchBanksForEntity = async () => {
+            if (!formData.entity || entityList.length === 0) {
+                setBankList([]);
+                return;
+            }
+
+            const selectedEntity = entityList.find(e => e.EntityName === formData.entity);
+            if (!selectedEntity) return;
+
+            const token = sessionStorage.getItem('session_token');
+            try {
+                // Fetch al futuro endpoint que filtra bancos por entidad
+                const fetchUrl = `${apiUrl}/availability/entities/${selectedEntity.EntityID}/banks`;
+                
+                const res = await fetch(fetchUrl, { 
+                    method: 'GET', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    setBankList(await res.json());
+                } else {
+                    throw new Error("Fallback banks");
+                }
+            } catch (error) {
+                // Fallback temporal usando todos los bancos mientras configuramos el backend
+                setBankList(allBanksList.length > 0 ? allBanksList : [
+                    { BankID: 1, BankName: 'Banesco' }, 
+                    { BankID: 2, BankName: 'Mercantil' }
+                ]);
+            }
+        };
+
+        fetchBanksForEntity();
+    }, [formData.entity, entityList, allBanksList]);
+
+    // --- 3. CASCADA 2: BUSCAR CUENTAS CUANDO CAMBIA EL BANCO ---
     useEffect(() => {
         const fetchAccountsForBankAndEntity = async () => {
             if (!formData.bank || bankList.length === 0 || !formData.entity || entityList.length === 0) {
@@ -206,16 +242,13 @@ const AvailabilityHome = () => {
                 
                 const res = await fetch(fetchUrl, { 
                     method: 'GET', 
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${token}` 
-                    }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
                 });
                 
                 if (res.ok) {
                     setAccountList(await res.json());
                 } else {
-                    throw new Error("Fallback");
+                    throw new Error("Fallback accounts");
                 }
             } catch (error) {
                 setAccountList([
@@ -228,7 +261,7 @@ const AvailabilityHome = () => {
         fetchAccountsForBankAndEntity();
     }, [formData.bank, formData.entity, bankList, entityList]); 
 
-    // --- 3. FILTRO DE BÚSQUEDA ---
+    // --- 4. FILTRO DE BÚSQUEDA ---
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredTransactions(allTransactions);
@@ -247,7 +280,7 @@ const AvailabilityHome = () => {
         setPage(0); 
     }, [searchTerm, allTransactions]);
 
-    // --- 4. ORDENAMIENTO DE FECHAS ---
+    // --- 5. ORDENAMIENTO DE FECHAS ---
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
@@ -257,21 +290,14 @@ const AvailabilityHome = () => {
     const handleSortToggle = () => setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
 
     // --- FUNCIONES AUXILIARES ---
-    // Función robusta para convertir la fecha a formato 'YY-MM-DD'
     const formatDateToYYMMDD = (dateString) => {
         if (!dateString) return '';
         try {
-            // Convierte el string de SQL/Flask a un objeto Date real
             const d = new Date(dateString);
-            
-            // Si la fecha es inválida, devolvemos el texto original para no fallar
             if (isNaN(d.getTime())) return dateString; 
-
-            // Extraemos año, mes y día
             const year = d.getFullYear().toString().substring(2); 
             const month = String(d.getMonth() + 1).padStart(2, '0'); 
             const day = String(d.getDate()).padStart(2, '0');
-            
             return `${year}-${month}-${day}`;
         } catch (error) {
             return dateString;
@@ -361,12 +387,8 @@ const AvailabilityHome = () => {
         };
 
         const token = sessionStorage.getItem('session_token');
-        const headers = { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${token}` 
-        };
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-        // Mensaje de carga
         setLoadingText('Estamos procesando su solicitud. Por favor, espere.')
         setIsLoading(true);
 
@@ -441,13 +463,12 @@ const AvailabilityHome = () => {
     const handleCloseCancelModal = () => { setOpenCancelModal(false); setCancelId(null); };
 
     const handleConfirmCancel = async () => {
-        // 1. Buscamos los datos actuales de la transacción a anular
         const trxToCancel = allTransactions.find(t => t.id === cancelId);
         if (!trxToCancel) return;
 
-        // 2. Resolvemos los IDs de Entidad, Banco y el Estado de Anulación
         const selectedEntity = entityList.find(e => e.EntityName === trxToCancel.entity);
-        const selectedBank = bankList.find(b => b.BankName === trxToCancel.bank);
+        // IMPORTANTE: Aquí usamos allBanksList porque el banco puede no estar en la lista reducida del modal
+        const selectedBank = allBanksList.find(b => b.BankName === trxToCancel.bank);
         const selectedStatus = statusList.find(s => s.StatusName === 'Anulada');
 
         if (!selectedEntity || !selectedBank || !selectedStatus) {
@@ -456,16 +477,11 @@ const AvailabilityHome = () => {
         }
 
         const token = sessionStorage.getItem('session_token');
-        const headers = { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${token}` 
-        };
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-        // Mensaje de carga
         setLoadingText('Por favor, espere')
         setIsLoading(true);
 
-        // 3. Resolvemos el AccountID en tiempo real
         let resolvedAccountId = null;
         try {
             const fetchUrl = `${apiUrl}/availability/banks/${selectedBank.BankID}/accounts?entity_id=${selectedEntity.EntityID}`;
@@ -479,18 +495,15 @@ const AvailabilityHome = () => {
                 throw new Error("Fallo al obtener cuentas del servidor");
             }
         } catch (error) {
-            // Fallback en caso de que falle la red, usando la lógica de tus mocks
             resolvedAccountId = trxToCancel.account.includes('1111') ? 1 : 2;
-        } finally {
-            setIsLoading(false);
-        }
+        } 
 
         if (!resolvedAccountId) {
+            setIsLoading(false);
             alert("Error: No se encontró la cuenta bancaria asociada en la base de datos.");
             return;
         }
 
-        // 4. Formateamos la fecha al estándar YYYY-MM-DD para evitar el error 241 de SQL Server
         let formattedDate = '';
         try {
             formattedDate = new Date(trxToCancel.date).toISOString().split('T')[0];
@@ -498,7 +511,6 @@ const AvailabilityHome = () => {
             formattedDate = new Date().toISOString().split('T')[0];
         }
 
-        // 5. Armamos el Payload idéntico al de edición, pero forzando el estado a "Anulada"
         const payload = {
             DateTrx: formattedDate,
             EntityID: selectedEntity.EntityID,
@@ -510,11 +522,8 @@ const AvailabilityHome = () => {
             TransitStatusID: selectedStatus.TransitStatusID
         };
 
-        // Mensaje de carga
         setLoadingText('Estamos procesando su solicitud. Por favor, espere.')
-        setIsLoading(true);
 
-        // 6. Ejecutamos el PUT contra el backend
         try {
             const response = await fetch(`${apiUrl}/availability/transactions/${cancelId}`, {
                 method: 'PUT',
@@ -523,7 +532,6 @@ const AvailabilityHome = () => {
             });
 
             if (response.ok) {
-                // Si la BD responde OK, actualizamos el estado visual de la tabla
                 setAllTransactions(prev => prev.map(trx => 
                     trx.id === cancelId ? { ...trx, status: 'Anulada' } : trx 
                 ));
@@ -623,7 +631,6 @@ const AvailabilityHome = () => {
                                         const trxCurrency = currencyList.find(c => c.CurrencyName === trx.currency);
                                         const symbol = trxCurrency ? trxCurrency.Symbol : '';
 
-                                        // Variable para deshabilitar botones si el estado es final
                                         const isFinalStatus = trx.status === 'Ejecutada' || trx.status === 'Anulada';
 
                                         return (
@@ -634,12 +641,11 @@ const AvailabilityHome = () => {
                                                 <TableCell>{trx.account}</TableCell>
                                                 <TableCell>{trx.reference}</TableCell>
                                                 <TableCell>{trx.concept}</TableCell>
-                                                <TableCell align="right" sx={{ fontWeight: 'bold', color: Number(trx.amount) > 0 ? '#2e7d32' : '#d32f2f' }}>
-                                                    {Number(trx.amount) > 0 ? '+' : ''}{Number(trx.amount).toFixed(2)} {symbol}
+                                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                                    {Number(trx.amount).toFixed(2)} {symbol}
                                                 </TableCell>
                                                 <TableCell align="center">{getStatusChip(trx.status)}</TableCell>
                                                 <TableCell align="center">
-                                                    {/* Botones siempre presentes, pero se bloquean y cambian de color si es estado final */}
                                                     <IconButton 
                                                         color="primary" 
                                                         onClick={() => handleOpenEditModal(trx)} 
@@ -682,7 +688,6 @@ const AvailabilityHome = () => {
                                 options={entityList.map((option) => option.EntityName)}
                                 value={formData.entity || null}
                                 onChange={(event, newValue) => {
-                                    // Limpieza en cascada de Banco y Cuenta al cambiar Entidad
                                     setFormData(prev => ({ 
                                         ...prev, 
                                         entity: newValue || '',
@@ -701,6 +706,7 @@ const AvailabilityHome = () => {
                             <Autocomplete
                                 options={bankList.map((option) => option.BankName)}
                                 value={formData.bank || null}
+                                disabled={!formData.entity} // <-- NUEVO: Bloquea el campo si no hay entidad
                                 onChange={(event, newValue) => {
                                     setFormData(prev => ({ 
                                         ...prev, 
@@ -709,7 +715,14 @@ const AvailabilityHome = () => {
                                     }));
                                 }}
                                 renderInput={(params) => (
-                                    <TextField {...params} label="Entidad Bancaria" placeholder="Banco..." fullWidth size="small" sx={customTextFieldStyle} />
+                                    <TextField 
+                                        {...params} 
+                                        label="Entidad Bancaria" 
+                                        placeholder={!formData.entity ? "Seleccione una entidad primero" : "Banco..."} // <-- Placeholder dinámico
+                                        fullWidth 
+                                        size="small" 
+                                        sx={customTextFieldStyle} 
+                                    />
                                 )}
                             />
                             
@@ -782,9 +795,9 @@ const AvailabilityHome = () => {
                 <Backdrop
                     sx={{
                         color: '#fff',
-                        zIndex: (theme) => theme.zIndex.drawer + 999, // Para que quede por encima de los modales
-                        backdropFilter: 'blur(5px)', // Efecto cristal/desenfoque
-                        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Fondo ligeramente oscuro
+                        zIndex: (theme) => theme.zIndex.drawer + 999, 
+                        backdropFilter: 'blur(5px)', 
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)', 
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 2
