@@ -706,7 +706,7 @@ const AvailabilityHome = () => {
                             <Autocomplete
                                 options={bankList.map((option) => option.BankName)}
                                 value={formData.bank || null}
-                                disabled={!formData.entity} // <-- NUEVO: Bloquea el campo si no hay entidad
+                                disabled={!formData.entity}
                                 onChange={(event, newValue) => {
                                     setFormData(prev => ({ 
                                         ...prev, 
@@ -753,6 +753,16 @@ const AvailabilityHome = () => {
                                 size="small" 
                                 sx={customTextFieldStyle} 
                                 disabled={!formData.account}
+                                inputProps={{ 
+                                    min: 0, 
+                                    step: "any" // Permite decimales
+                                }} 
+                                onKeyDown={(e) => {
+                                    // Bloquea el signo menos y la letra 'e' (exponente)
+                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                                        e.preventDefault();
+                                    }
+                                }}
                             />
                         </Box>
 
