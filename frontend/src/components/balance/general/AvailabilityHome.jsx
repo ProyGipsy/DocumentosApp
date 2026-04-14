@@ -234,15 +234,19 @@ const AvailabilityHome = () => {
     const handleSortToggle = () => setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
 
     // --- FUNCIONES AUXILIARES ---
-    const formatDateToYYMMDD = (dateString) => {
+    const formatDateToDDMMYYYY = (dateString) => {
         if (!dateString) return '';
         try {
             const d = new Date(dateString);
             if (isNaN(d.getTime())) return dateString; 
-            const year = d.getFullYear().toString().substring(2); 
-            const month = String(d.getMonth() + 1).padStart(2, '0'); 
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+
+            // Usamos los métodos getUTC para evitar el desplazamiento por zona horaria
+            const day = String(d.getUTCDate()).padStart(2, '0'); 
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
+            const year = d.getUTCFullYear();
+
+            // Retornamos en el formato solicitado: DD/MM/YYYY
+            return `${month}/${day}/${year}`;
         } catch (error) {
             return dateString;
         }
@@ -402,6 +406,7 @@ const AvailabilityHome = () => {
         if (!trxToCancel) return;
 
         const selectedEntity = entityList.find(e => e.EntityName === trxToCancel.entity);
+        
         // IMPORTANTE: Aquí usamos allBanksList porque el banco puede no estar en la lista reducida del modal
         const selectedBank = allBanksList.find(b => b.BankName === trxToCancel.bank);
         const selectedStatus = statusList.find(s => s.StatusName === 'Anulada');
@@ -570,16 +575,25 @@ const AvailabilityHome = () => {
 
                                         return (
                                             <TableRow hover role="checkbox" tabIndex={-1} key={trx.id}>
-                                                <TableCell>{formatDateToYYMMDD(trx.date)}</TableCell>
+                                                {/* Fecha */}
+                                                <TableCell>{formatDateToDDMMYYYY(trx.date)}</TableCell>
+                                                {/* Entidad */}
                                                 <TableCell>{trx.entity}</TableCell>
+                                                {/* Banco */}
                                                 <TableCell>{trx.bank}</TableCell>
+                                                {/* Cuenta */}
                                                 <TableCell>{trx.account}</TableCell>
+                                                {/* Referencia */}
                                                 <TableCell>{trx.reference}</TableCell>
+                                                {/* Concepto */}
                                                 <TableCell>{trx.concept}</TableCell>
+                                                {/* Monto */}
                                                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                                                     {Number(trx.amount).toFixed(2)} {symbol}
                                                 </TableCell>
+                                                {/* Estado */}
                                                 <TableCell align="center">{getStatusChip(trx.status)}</TableCell>
+                                                {/* Acciones */}
                                                 <TableCell align="center">
                                                     <IconButton 
                                                         color="primary" 
