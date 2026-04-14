@@ -246,7 +246,7 @@ const AvailabilityHome = () => {
             const year = d.getUTCFullYear();
 
             // Retornamos en el formato solicitado: DD/MM/YYYY
-            return `${month}/${day}/${year}`;
+            return `${day}/${month}/${year}`;
         } catch (error) {
             return dateString;
         }
