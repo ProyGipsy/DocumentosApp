@@ -58,6 +58,16 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
             {!isOnlyLector && (
               <>
                 <li className="AdminMenu">
+                  <div className={`optionContainer ${isActive('agenda') ? 'active' : ''}`}>
+                    <Link to="/documents/agenda" className="optionLink" onClick={closeSidebar}>Agenda General</Link>
+                  </div>
+                </li>
+                <li>
+                  <div className={`optionContainer ${isActive('contacts') ? 'active' : ''}`}>
+                    <Link to="/documents/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
+                  </div>
+                </li>
+                <li>
                   <div className={`optionContainer ${isActive('roles') ? 'active' : ''}`}>
                     <Link to="/documents/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
                   </div>
@@ -65,11 +75,6 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
                 <li>
                   <div className={`optionContainer ${isActive('companies') ? 'active' : ''}`}>
                     <Link to="/documents/companies" className="optionLink" onClick={closeSidebar}>Gestionar Entidades</Link>
-                  </div>
-                </li>
-                <li>
-                  <div className={`optionContainer ${isActive('contacts') ? 'active' : ''}`}>
-                    <Link to="/documents/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
                   </div>
                 </li>
               </>

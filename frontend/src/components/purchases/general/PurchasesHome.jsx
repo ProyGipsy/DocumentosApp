@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LayoutBaseAvailability from '../base/LayoutBaseAvailability';
+import LayoutBaseAdmin from '../base/LayoutBasePurchases';
 import '../../../styles/general/homeGeneral.css';
 import { useAuth } from '../../../utils/AuthContext';
 
@@ -518,7 +518,7 @@ const AvailabilityHome = () => {
     }
 
     return (
-        <LayoutBaseAvailability activePage="home">
+        <LayoutBaseAdmin activePage="home">
             <Box className="home-admin-container-availability" sx={{ padding: '20px', margin: '0 auto' }}>
                 <Box className="title-section-home-availability" sx={{ marginBottom: '20px' }}>
                     <Typography variant="h4" sx={{ color: '#262626', fontWeight: 'bold', mb: 1 }}>
@@ -762,7 +762,7 @@ const AvailabilityHome = () => {
                     </Typography>
                 </Backdrop>
             </Box>
-        </LayoutBaseAvailability>
+        </LayoutBaseAdmin>
     );
 };
 
