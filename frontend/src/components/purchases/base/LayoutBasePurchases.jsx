@@ -32,7 +32,7 @@ const drawerWidth = 285;
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-const LayoutBaseAdmin = ({ activePage, children }) => {
+const LayoutBasePurchases = ({ activePage, children }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -213,4 +213,4 @@ const LayoutBaseAdmin = ({ activePage, children }) => {
   );
 };
 
-export default LayoutBaseAdmin;
+export default LayoutBasePurchases;

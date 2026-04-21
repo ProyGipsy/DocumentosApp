@@ -11,9 +11,13 @@ import CreateDocument from './components/documents/general/CreateDocumentForm.js
 import Companies from './components/documents/admin/Companies.jsx';
 import Roles from './components/documents/admin/Roles.jsx';
 import Contacts from './components/documents/admin/Contacts.jsx';
+import Agenda from './components/documents/admin/Agenda.jsx';
 
 /* Rutas para el modulo de Disponibilidad */
 import AvailabilityHome from './components/balance/general/AvailabilityHome.jsx';
+
+/* Rutas para el modulo de Compras Divisas */
+import PurchasesHome from './components/purchases/general/PurchasesHome.jsx';
 
 export default function AppRoutes(){
     return (
@@ -57,12 +61,23 @@ export default function AppRoutes(){
                 element={<Contacts />}
             />
 
+            <Route 
+                path='/documents/agenda'
+                element={<Agenda />} 
+            />
+
+
             {/* Rutas de Disponibilidad */}
             <Route
                 path="/availability"
                 element={<AvailabilityHome />}
             />
-            
+
+            {/* Rutas de Compras Divisas */}
+            <Route
+                path="/purchases"
+                element={<PurchasesHome />}
+            />
         </Routes>
     );
 }
