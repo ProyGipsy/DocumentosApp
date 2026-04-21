@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LayoutBaseAdmin from '../base/LayoutBasePurchases';
+import LayoutBasePurchases from '../base/LayoutBasePurchases';
 import '../../../styles/general/homeGeneral.css';
 import { useAuth } from '../../../utils/AuthContext';
 
@@ -42,34 +42,34 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 // --- ESTILOS REUTILIZABLES ---
 const tableHeaderStyle = {
-    backgroundColor: '#262626', 
+    backgroundColor: '#6d36ce', 
     fontWeight: 'bold', 
     color: '#f4f4f4', 
     transition: 'background-color 0.3s ease', 
-    '&:hover': { backgroundColor: '#595959', color: '#ffffff', cursor: 'pointer' }
+    '&:hover': { backgroundColor: '#975cfc', color: '#ffffff', cursor: 'pointer' }
 };
 
 const darkButtonStyle = {
-    backgroundColor: '#262626', 
+    backgroundColor: '#6d36ce', 
     color: '#f4f4f4', 
     fontWeight: 'bold', 
     borderRadius: '16px',
     padding: '10px 20px',
     boxShadow: 3,
-    '&:hover': { backgroundColor: '#595959', color: '#ffffff' }
+    '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' }
 };
 
 const customTextFieldStyle = {
-    '& label.Mui-focused': { color: '#262626' },
+    '& label.Mui-focused': { color: '#6d36ce' },
     '& .MuiOutlinedInput-root': {
-        '&.Mui-focused fieldset': { borderColor: '#262626' },
+        '&.Mui-focused fieldset': { borderColor: '#975cfc' },
     },
 };
 
 // --- DATOS SIMULADOS (MOCKS) COMO RESPALDO ---
 const mockTransactions = [];
 
-const AvailabilityHome = () => {
+const PurchasesHome = () => {
     const { user } = useAuth();
     
     const navigate = useNavigate();
@@ -518,11 +518,11 @@ const AvailabilityHome = () => {
     }
 
     return (
-        <LayoutBaseAdmin activePage="home">
+        <LayoutBasePurchases activePage="home">
             <Box className="home-admin-container-availability" sx={{ padding: '20px', margin: '0 auto' }}>
                 <Box className="title-section-home-availability" sx={{ marginBottom: '20px' }}>
-                    <Typography variant="h4" sx={{ color: '#262626', fontWeight: 'bold', mb: 1 }}>
-                        Módulo de Disponibilidad Gipsy
+                    <Typography variant="h4" sx={{ color: '#191c16', fontWeight: 'bold', mb: 1 }}>
+                        Módulo de Compras Divisas Gipsy
                     </Typography>
                     <Typography variant="h6" color="textSecondary">
                         Bienvenido(a){user ? `, ${user.firstName}` : ''}
@@ -762,8 +762,8 @@ const AvailabilityHome = () => {
                     </Typography>
                 </Backdrop>
             </Box>
-        </LayoutBaseAdmin>
+        </LayoutBasePurchases>
     );
 };
 
-export default AvailabilityHome;
+export default PurchasesHome;

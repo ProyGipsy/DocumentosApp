@@ -35,11 +35,9 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 const LayoutBasePurchases = ({ activePage, children }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // Estado para controlar el menú en pantallas móviles
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Lógica de roles extraída de tu componente original
+  // --- LÓGICA DE ROLES ---
   const hasRole = (roleId) => {
     if (!user) return false;
     return Array.isArray(user.roles) && user.roles.some(r => (typeof r === 'number' ? r === roleId : (r.id === roleId || r.roleId === roleId)));
@@ -48,84 +46,98 @@ const LayoutBasePurchases = ({ activePage, children }) => {
   const isLector = hasRole(12);
   const isOnlyLector = isLector && !isEditor;
 
-  // Manejadores
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  // --- MANEJADORES ---
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const closeSidebarOnMobile = () => { if (mobileOpen) setMobileOpen(false); };
+
+  // DICCIONARIO CENTRALIZADO DE ESTILOS
+  const isHomeActive = activePage === 'home';
+
+  const styles = {
+    // Layout Principal
+    rootBox: { display: 'flex', minHeight: '100vh', backgroundColor: '#f9f9f9' },
+    appBar: { width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` }, display: { sm: 'none' }, backgroundColor: '#975cfc', },
+    menuIconButton: { mr: 2, display: { sm: 'none' } },
+    drawerContainer: { width: { sm: drawerWidth }, flexShrink: { sm: 0 } },
+    drawerMobile: { display: { xs: 'block', sm: 'none' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } },
+    drawerDesktop: { display: { xs: 'none', sm: 'block' }, '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } },
+    mainContent: { flexGrow: 1, p: 0, width: { sm: `calc(100% - ${drawerWidth}px)` } },
+    mobileSpacer: { display: { sm: 'none' } },
+
+    // Contenido del Sidebar
+    sidebarBox: { display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#6d36ce', color: '#f4f4f4' },
+    logoContainer: { p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '64px' },
+    logoLink: { display: 'flex', alignItems: 'center' },
+    logoImg: { maxWidth: '100%', maxHeight: '50px', objectFit: 'contain' },
+    divider: { backgroundColor: 'rgba(255,255,255,0.1)' },
+    topList: { flexGrow: 1, pt: 2 },
+
+    // Item: Inicio
+    homeButton: {
+      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
+      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+    },
+    homeIcon: { color: isHomeActive ? '#ffffff' : '#b3b3b3' },
+    homeText: { color: isHomeActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isHomeActive ? 'bold' : 'normal' } },
+
+    // Item: Menú Principal
+    menuAppButton: { '&:hover': { backgroundColor: '#ffffff0d' } },
+    menuAppIcon: { color: '#f1f1f1' },
+    menuAppText: { color: '#f1f1f1', '& .MuiTypography-root': { fontWeight: 'normal' } },
+
+    // Item: Cerrar Sesión
+    logoutButton: { '&:hover': { backgroundColor: '#ff4d4f1a' } },
+    logoutIcon: { color: '#f1f1f1' },
+    logoutText: { color: '#f1f1f1', '& .MuiTypography-root': { fontWeight: 'bold' } },
   };
 
-  const closeSidebarOnMobile = () => {
-    if (mobileOpen) setMobileOpen(false);
-  };
-
-  // --- CONTENIDO DEL SIDEBAR (Oscuro para que resalte el logo blanco) ---
+  // --- CONTENIDO DEL SIDEBAR ---
   const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#262626', color: '#f4f4f4' }}>
+    <Box sx={styles.sidebarBox}>
       
       {/* Área del Logo */}
-      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '64px' }}>
-        <Link to="/availability/" onClick={closeSidebarOnMobile} style={{ display: 'flex', alignItems: 'center' }}>
-          <img 
-            src={logo} 
-            alt="Logo Gipsy" 
-            style={{ maxWidth: '100%', maxHeight: '50px', objectFit: 'contain' }} 
-          />
+      <Box sx={styles.logoContainer}>
+        <Link to="/purchases" onClick={closeSidebarOnMobile} style={styles.logoLink}>
+          <img src={logo} alt="Logo Gipsy" style={styles.logoImg} />
         </Link>
       </Box>
 
-      <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <Divider sx={styles.divider} />
       
-      {/* Opciones Superiores (Internas de React) */}
-      <List sx={{ flexGrow: 1, pt: 2 }}>
+      {/* Opciones Superiores */}
+      <List sx={styles.topList}>
         <ListItem disablePadding>
-          {/* Usamos component={Link} para que MUI lo trate como un Link de React Router */}
           <ListItemButton 
             component={Link}
-            to="/availability/"
-            selected={activePage === 'home'} 
+            to="/purchases"
+            selected={isHomeActive} 
             onClick={closeSidebarOnMobile}
-            sx={{
-              // 1. Estado cuando está seleccionado (Click activo)
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRight: '4px solid #ffffff'
-              },
-              // 2. Estado cuando está seleccionado Y pasas el mouse (¡ESTO ELIMINA EL AZUL!)
-              '&.Mui-selected:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.15)', 
-              },
-              // 3. Estado cuando NO está seleccionado y pasas el mouse
-              '&:hover': { 
-                backgroundColor: 'rgba(255, 255, 255, 0.08)' 
-              }
-            }}
+            sx={styles.homeButton}
           >
             <ListItemIcon>
-              <HomeIcon sx={{ color: activePage === 'home' ? '#ffffff' : '#b3b3b3' }} />
+              <HomeIcon sx={styles.homeIcon} />
             </ListItemIcon>
-            <ListItemText 
-              primary="Inicio" 
-              sx={{ color: activePage === 'home' ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: activePage === 'home' ? 'bold' : 'normal' } }} 
-            />
+            <ListItemText primary="Inicio" sx={styles.homeText} />
           </ListItemButton>
         </ListItem>
       </List>
 
-      <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <Divider sx={styles.divider} />
       
-      {/* Menú Inferior (Redireccionamiento a Flask) */}
+      {/* Menú Inferior */}
       <List>
         <ListItem disablePadding>
-          {/* Usamos component="a" y href para redireccionar fuera de React */}
           <ListItemButton 
             component="a" 
             href={`${apiUrl}/welcome`} 
             onClick={closeSidebarOnMobile}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' } }}
+            sx={styles.menuAppButton}
           >
             <ListItemIcon>
-              <AppsIcon sx={{ color: '#b3b3b3' }} />
+              <AppsIcon sx={styles.menuAppIcon} />
             </ListItemIcon>
-            <ListItemText primary="Menú Principal" sx={{ color: '#b3b3b3' }} />
+            <ListItemText primary="Menú Principal" sx={styles.menuAppText} />
           </ListItemButton>
         </ListItem>
 
@@ -133,12 +145,12 @@ const LayoutBasePurchases = ({ activePage, children }) => {
           <ListItemButton 
             component="a" 
             href={`${apiUrl}/`} 
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 77, 79, 0.1)' } }}
+            sx={styles.logoutButton}
           >
             <ListItemIcon>
-              <LogoutIcon sx={{ color: '#ff4d4f' }} />
+              <LogoutIcon sx={styles.logoutIcon} />
             </ListItemIcon>
-            <ListItemText primary="Cerrar Sesión" sx={{ color: '#ff4d4f', '& .MuiTypography-root': { fontWeight: 'bold' } }} />
+            <ListItemText primary="Cerrar Sesión" sx={styles.logoutText} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -146,25 +158,17 @@ const LayoutBasePurchases = ({ activePage, children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+    <Box sx={styles.rootBox}>
       
-      {/* BARRA SUPERIOR (Solo se ve en móviles para mostrar el botón de menú) */}
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          display: { sm: 'none' },
-          backgroundColor: '#262626'
-        }}
-      >
+      {/* BARRA SUPERIOR (Móviles) */}
+      <AppBar position="fixed" sx={styles.appBar}>
         <Toolbar>
           <IconButton
             color="inherit"
             aria-label="abrir menú"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={styles.menuIconButton}
           >
             <MenuIcon />
           </IconButton>
@@ -175,38 +179,32 @@ const LayoutBasePurchases = ({ activePage, children }) => {
       </AppBar>
 
       {/* CONTENEDOR DEL SIDEBAR */}
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+      <Box component="nav" sx={styles.drawerContainer}>
         
-        {/* VERSIÓN MÓVIL: Se abre por encima de la pantalla */}
+        {/* VERSIÓN MÓVIL */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
+          sx={styles.drawerMobile}
         >
           {drawerContent}
         </Drawer>
         
-        {/* VERSIÓN ESCRITORIO: Fija a la izquierda */}
+        {/* VERSIÓN ESCRITORIO */}
         <Drawer
           variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
+          sx={styles.drawerDesktop}
           open
         >
           {drawerContent}
         </Drawer>
       </Box>
 
-      {/* CONTENIDO PRINCIPAL DE TUS VISTAS */}
-      <Box component="main" sx={{ flexGrow: 1, p: 0, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
-        <Toolbar sx={{ display: { sm: 'none' } }} /> {/* Espaciador móvil */}
+      {/* CONTENIDO PRINCIPAL */}
+      <Box component="main" sx={styles.mainContent}>
+        <Toolbar sx={styles.mobileSpacer} />
         {children}
       </Box>
     </Box>
