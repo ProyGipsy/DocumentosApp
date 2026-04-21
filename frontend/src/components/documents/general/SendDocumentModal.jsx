@@ -48,10 +48,12 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
       
       const loadData = async () => {
         try {
+            // Se mantienen los correos sugeridos por usuario (historial de envíos)
             const emailRes = await fetch(`${apiUrl}/documents/getSuggestedEmails?userId=${user.id}`);
             if (emailRes.ok) setAvailableEmails(await emailRes.json());
 
-            const contactsRes = await fetch(`${apiUrl}/documents/getContacts?userId=${user.id}`);
+            // NUEVO: Se obtienen TODOS los contactos de la Agenda General
+            const contactsRes = await fetch(`${apiUrl}/documents/getContactsAgenda`);
             if (contactsRes.ok) setUserContacts(await contactsRes.json());
         } catch (error) {
             console.error("Error cargando datos:", error);
@@ -76,7 +78,7 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
     }
   }, [emailInput, availableEmails, formData.recipients]);
 
-  // 3. FILTROS (Contactos)
+  // 3. FILTROS (Contactos de la Agenda)
   useEffect(() => {
     const text = contactSearchInput.trim();
     if (text.length > 0) {
@@ -547,117 +549,6 @@ const SendDocumentModal = ({ isOpen, onClose, selectedDocuments, selectedDocumen
           </div>
 
         </div>
-
-        {/* SECCIÓN GUARDAR NUEVO CONTACTO AL FINAL POR SI ACASO*/}
-        {/*
-          <div className="form-group-user send-checkbox-group" style={{marginTop: '20px'}}>
-            <label htmlFor="saveNewContact" className="send-checkbox-label">
-                <input
-                    type="checkbox"
-                    id="saveNewContact"
-                    name="saveNewContact"
-                    checked={formData.saveNewContact}
-                    onChange={handleChange}
-                />
-                <span className="custom-checkmark"></span>
-                ¿Desea guardar un nuevo contacto?
-            </label>
-          </div>
-
-          {formData.saveNewContact && (
-            <div style={{ 
-                paddingLeft: '15px', marginLeft: '5px', borderLeft: '3px solid #8b56ed', 
-                marginBottom: '15px', backgroundColor: '#fbfaff', padding: '10px 15px', borderRadius: '0 6px 6px 0'
-            }}>
-                <div className="form-group-user">
-                    <label>Alias del Nuevo Contacto <span className="required-asterisk">*</span></label>
-                    <input
-                        type="text"
-                        name="newContactAlias"
-                        className="form-input-doc-create"
-                        value={formData.newContactAlias}
-                        onChange={handleChange}
-                        placeholder="Ej: Proveedor Papelería"
-                    />
-                </div>
-                
-                <div className="form-group-user" style={{ marginBottom: 0, position: 'relative' }}>
-                    <label>Correos Asociados <span className="required-asterisk">*</span></label>
-                    <small style={{display:'block', color:'#666', marginBottom:'5px', fontSize:'0.85em'}}>
-                        Agregue correos. (Sugeridos de arriba: haga clic en el campo)
-                    </small>
-                    
-                    <div 
-                        className="chips-input-container" 
-                        onClick={() => {
-                            const input = document.getElementById('newContactEmailInput');
-                            input.focus();
-                            // Forzamos sugerencias al hacer click en el contenedor (simula focus)
-                            if (!newContactEmailInput && formData.recipients.length > 0) {
-                                setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
-                                setShowNewContactSuggestions(true);
-                            }
-                        }}
-                    >
-                        {formData.newContactEmails.map((email, idx) => (
-                            <div key={idx} className="chip-item">
-                                {email}
-                                <span 
-                                    className="chip-remove-icon"
-                                    onClick={(e) => { e.stopPropagation(); handleRemoveNewContactEmailChip(email); }}
-                                >
-                                    &times;
-                                </span>
-                            </div>
-                        ))}
-
-                        <input
-                            type="text"
-                            id="newContactEmailInput"
-                            value={newContactEmailInput}
-                            onChange={(e) => setNewContactEmailInput(e.target.value)}
-                            onKeyDown={handleNewContactEmailKeyDown}
-                            placeholder={formData.newContactEmails.length === 0 ? "nuevo@correo.com" : ""}
-                            autoComplete="off"
-                            className="chips-input-internal"
-                            
-                            onFocus={() => {
-                                if (formData.recipients.length > 0) {
-                                    setNewContactSuggestions(formData.recipients.filter(e => !formData.newContactEmails.includes(e)));
-                                    setShowNewContactSuggestions(true);
-                                }
-                            }}
-                            onBlur={() => {
-                                setTimeout(() => {
-                                    setShowNewContactSuggestions(false);
-                                }, 200);
-                            }}
-                        />
-                    </div>
-
-                    {showNewContactSuggestions && (
-                        <ul className="suggestions-list">
-                            {newContactSuggestions.length > 0 ? (
-                                newContactSuggestions.map((email, index) => (
-                                    <li 
-                                        key={index} 
-                                        onClick={() => handleSelectNewContactSuggestion(email)}
-                                        className="suggestion-item"
-                                    >
-                                        {email} <span style={{fontSize: '0.8em', color: '#8b56ed', float: 'right'}}>(Del envío)</span>
-                                    </li>
-                                ))
-                            ) : (
-                                <li className="suggestion-item" style={{cursor: 'default', color: '#999', fontSize:'0.85em'}}>
-                                    No hay sugerencias disponibles
-                                </li>
-                            )}
-                        </ul>
-                    )}
-                </div>
-            </div>
-          )}
-        */}
 
         <div className="modal-footer-user">
           <button className="modal-button-user save-button-user" onClick={handleSend} disabled={isLoading}>

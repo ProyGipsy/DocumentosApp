@@ -64,10 +64,10 @@ const Sidebar = ({ activePage, sidebarActive, closeSidebar, onLogout }) => {
                 </li>
                 <li>
                   <div className={`optionContainer ${isActive('contacts') ? 'active' : ''}`}>
-                    <Link to="/documents/contacts" className="optionLink" onClick={closeSidebar}>Gestionar Contactos</Link>
+                    <Link to="/documents/contacts" className="optionLink" onClick={closeSidebar}>Gestionar mis contactos</Link>
                   </div>
                 </li>
-                <li>
+                <li className='AdminMenu'>
                   <div className={`optionContainer ${isActive('roles') ? 'active' : ''}`}>
                     <Link to="/documents/roles" className="optionLink" onClick={closeSidebar}>Gestionar Roles</Link>
                   </div>
