@@ -23,7 +23,9 @@ import {
 
 // Iconos de Material UI
 import MenuIcon from '@mui/icons-material/Menu';
-import HomeIcon from '@mui/icons-material/Home';
+import HomeIcon from '@mui/icons-material/AddCard';
+import ReceptionIcon from '@mui/icons-material/CreditScore';
+import BeneficiariesIcon from '@mui/icons-material/People';
 import AppsIcon from '@mui/icons-material/Apps';
 import LogoutIcon from '@mui/icons-material/Logout';
 
@@ -52,6 +54,8 @@ const LayoutBasePurchases = ({ activePage, children }) => {
 
   // DICCIONARIO CENTRALIZADO DE ESTILOS
   const isHomeActive = activePage === 'home';
+  const isBeneficiariesActive = activePage === 'beneficiaries';
+  const isReceptionActive = activePage === 'reception';
 
   const styles = {
     // Layout Principal
@@ -80,6 +84,24 @@ const LayoutBasePurchases = ({ activePage, children }) => {
     },
     homeIcon: { color: isHomeActive ? '#ffffff' : '#b3b3b3' },
     homeText: { color: isHomeActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isHomeActive ? 'bold' : 'normal' } },
+
+    // Item: Recepción de fondos
+    receptionButton: {
+      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
+      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+    },
+    receptionIcon: { color: isReceptionActive ? '#ffffff' : '#b3b3b3' },
+    receptionText: { color: isReceptionActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isReceptionActive ? 'bold' : 'normal' } },
+
+    // Item: Beneficiarios
+    beneficiariesButton: {
+      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
+      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+    },
+    beneficiariesIcon: { color: isBeneficiariesActive ? '#ffffff' : '#b3b3b3' },
+    beneficiariesText: { color: isBeneficiariesActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isBeneficiariesActive ? 'bold' : 'normal' } },
 
     // Item: Menú Principal
     menuAppButton: { '&:hover': { backgroundColor: '#ffffff0d' } },
@@ -118,7 +140,37 @@ const LayoutBasePurchases = ({ activePage, children }) => {
             <ListItemIcon>
               <HomeIcon sx={styles.homeIcon} />
             </ListItemIcon>
-            <ListItemText primary="Inicio" sx={styles.homeText} />
+            <ListItemText primary="Compra de divisas" sx={styles.homeText} />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton 
+            component={Link}
+            to="/purchases/reception"
+            selected={isReceptionActive} 
+            onClick={closeSidebarOnMobile}
+            sx={styles.receptionButton}
+          >
+            <ListItemIcon>
+              <ReceptionIcon sx={styles.receptionIcon} />
+            </ListItemIcon>
+            <ListItemText primary="Recepción de fondos" sx={styles.receptionText} />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton 
+            component={Link}
+            to="/purchases/beneficiaries"
+            selected={isBeneficiariesActive} 
+            onClick={closeSidebarOnMobile}
+            sx={styles.beneficiariesButton}
+          >
+            <ListItemIcon>
+              <BeneficiariesIcon sx={styles.beneficiariesIcon} />
+            </ListItemIcon>
+            <ListItemText primary="Beneficiarios" sx={styles.beneficiariesText} />
           </ListItemButton>
         </ListItem>
       </List>
