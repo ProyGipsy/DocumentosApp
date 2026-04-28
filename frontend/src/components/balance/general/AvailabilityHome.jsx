@@ -1,77 +1,117 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LayoutBaseAvailability from '../base/LayoutBaseAvailability';
-import '../../../styles/general/homeGeneral.css';
 import { useAuth } from '../../../utils/AuthContext';
 
 // Importaciones de Material UI
 import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableContainer, 
-    TableHead, 
-    TableRow, 
-    Paper, 
-    TablePagination,
-    Chip,
-    Typography,
-    Button,
-    Box,
-    Dialog,           
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    TableSortLabel,
-    IconButton,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Autocomplete,
-    Backdrop,
-    CircularProgress
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
+    Chip, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions,
+    TextField, TableSortLabel, IconButton, FormControl, InputLabel, Select, MenuItem,
+    Autocomplete, Backdrop, CircularProgress, InputBase
 } from '@mui/material';
 
 import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
+import SearchIcon from '@mui/icons-material/Search';
 
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// --- ESTILOS REUTILIZABLES ---
-const tableHeaderStyle = {
-    backgroundColor: '#262626', 
-    fontWeight: 'bold', 
-    color: '#f4f4f4', 
-    transition: 'background-color 0.3s ease', 
-    '&:hover': { backgroundColor: '#595959', color: '#ffffff', cursor: 'pointer' }
-};
-
-const darkButtonStyle = {
-    backgroundColor: '#262626', 
-    color: '#f4f4f4', 
-    fontWeight: 'bold', 
-    borderRadius: '16px',
-    padding: '10px 20px',
-    boxShadow: 3,
-    '&:hover': { backgroundColor: '#595959', color: '#ffffff' }
-};
-
-const customTextFieldStyle = {
-    '& label.Mui-focused': { color: '#262626' },
-    '& .MuiOutlinedInput-root': {
-        '&.Mui-focused fieldset': { borderColor: '#262626' },
+// --- DICCIONARIO DE ESTILOS UNIFICADO (CSS + MUI) ---
+const styles = {
+    // Contenedor principal
+    container: {
+        padding: '30px',
+        backgroundColor: 'rgb(240, 240, 240)',
+        minHeight: 'calc(100vh - 40px)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
     },
+    // Sección del título
+    titleSection: {
+        width: '100%',
+        maxWidth: '1200px',
+        textAlign: 'center',
+        marginBottom: '10px',
+    },
+    titleH2: {
+        color: '#262626',
+        marginBottom: '5px',
+        fontWeight: 600,
+    },
+    titleH3: {
+        color: '#262626',
+        marginTop: 0,
+        fontWeight: 500,
+        fontSize: '1.2em',
+    },
+    // Barra de búsqueda
+    searchContainer: {
+        p: '2px 4px',
+        display: 'flex',
+        alignItems: 'center',
+        width: '90%',
+        maxWidth: '500px',
+        marginBottom: '50px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)',
+        backgroundColor: '#f9f9f9',
+        border: '1px solid #cccccc00',
+        transition: 'background-color 0.3s',
+        '&:focus-within': {
+            backgroundColor: '#fff',
+        }
+    },
+    searchInput: {
+        ml: 1,
+        flex: 1,
+        padding: '8px 10px',
+        color: '#191c16',
+        '& input::placeholder': {
+            color: '#888888',
+            opacity: 1,
+        }
+    },
+    searchButton: {
+        p: '10px',
+        backgroundColor: '#262626',
+        color: 'white',
+        borderRadius: '0 8px 8px 0',
+        width: '55px',
+        height: '100%',
+        '&:hover': {
+            backgroundColor: '#595959',
+        }
+    },
+    // Estilos de la Tabla y Botones Generales
+    tableHeader: {
+        backgroundColor: '#262626', 
+        fontWeight: 'bold', 
+        color: '#f4f4f4', 
+        transition: 'background-color 0.3s ease', 
+        '&:hover': { backgroundColor: '#595959', color: '#ffffff', cursor: 'pointer' }
+    },
+    darkButton: {
+        backgroundColor: '#262626', 
+        color: '#f4f4f4', 
+        fontWeight: 'bold', 
+        borderRadius: '16px',
+        padding: '10px 20px',
+        boxShadow: 3,
+        '&:hover': { backgroundColor: '#595959', color: '#ffffff' }
+    },
+    customTextField: {
+        '& label.Mui-focused': { color: '#262626' },
+        '& .MuiOutlinedInput-root': {
+            '&.Mui-focused fieldset': { borderColor: '#262626' },
+        },
+    }
 };
-
-// --- DATOS SIMULADOS (MOCKS) COMO RESPALDO ---
-const mockTransactions = [];
 
 const AvailabilityHome = () => {
     const { user } = useAuth();
-    
     const navigate = useNavigate();
 
     // --- ESTADOS DE LA TABLA Y BÚSQUEDA ---
@@ -90,8 +130,8 @@ const AvailabilityHome = () => {
 
     // --- ESTADOS DE DATOS DESDE EL BACKEND ---
     const [statusList, setStatusList] = useState([]);
-    const [allBanksList, setAllBanksList] = useState([]); // <-- NUEVO: Guarda todos los bancos para resolución global (ej. anular)
-    const [bankList, setBankList] = useState([]); // <-- Dinámico: Solo los bancos de la entidad seleccionada en el modal
+    const [allBanksList, setAllBanksList] = useState([]); 
+    const [bankList, setBankList] = useState([]); 
     const [accountList, setAccountList] = useState([]);
     const [entityList, setEntityList] = useState([]); 
     const [currencyList, setCurrencyList] = useState([]); 
@@ -134,7 +174,6 @@ const AvailabilityHome = () => {
                 setIsLoading(false);
             }
 
-            // Carga de catálogos
             try {
                 const [statusRes, bankRes, entityRes, currencyRes] = await Promise.all([
                     fetch(`${apiUrl}/availability/getTransactionStatuses`, { method: 'GET', headers }),
@@ -224,7 +263,6 @@ const AvailabilityHome = () => {
         setPage(0); 
     }, [searchTerm, allTransactions]);
 
-    // --- 5. ORDENAMIENTO DE FECHAS ---
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
@@ -239,13 +277,9 @@ const AvailabilityHome = () => {
         try {
             const d = new Date(dateString);
             if (isNaN(d.getTime())) return dateString; 
-
-            // Usamos los métodos getUTC para evitar el desplazamiento por zona horaria
             const day = String(d.getUTCDate()).padStart(2, '0'); 
-            const month = String(d.getUTCMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0'); 
             const year = d.getUTCFullYear();
-
-            // Retornamos en el formato solicitado: DD/MM/YYYY
             return `${day}/${month}/${year}`;
         } catch (error) {
             return dateString;
@@ -334,23 +368,16 @@ const AvailabilityHome = () => {
         try {
             if (editingId) {
                 const response = await fetch(`${apiUrl}/availability/transactions/${editingId}`, {
-                    method: 'PUT',
-                    headers: headers,
-                    body: JSON.stringify(payload)
+                    method: 'PUT', headers, body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     setAllTransactions(prev => prev.map(trx => 
                         trx.id === editingId ? { 
-                            ...trx, 
-                            date: formData.date,
-                            entity: formData.entity,
-                            bank: formData.bank,
-                            account: formData.account,
-                            reference: formData.reference,
-                            concept: formData.concept,
-                            amount: amountVal,
-                            status: formData.status
+                            ...trx, date: formData.date, entity: formData.entity,
+                            bank: formData.bank, account: formData.account,
+                            reference: formData.reference, concept: formData.concept,
+                            amount: amountVal, status: formData.status
                         } : trx
                     ));
                     handleCloseModal();
@@ -361,24 +388,16 @@ const AvailabilityHome = () => {
 
             } else {
                 const response = await fetch(`${apiUrl}/availability/transactions`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
+                    method: 'POST', headers, body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    
                     const newTransaction = {
                         id: data.new_id || Math.max(0, ...allTransactions.map(t => t.id)) + 1, 
-                        date: formData.date,
-                        entity: formData.entity,
-                        bank: formData.bank,
-                        account: formData.account,
-                        reference: formData.reference,
-                        concept: formData.concept,
-                        amount: amountVal,
-                        status: formData.status
+                        date: formData.date, entity: formData.entity, bank: formData.bank,
+                        account: formData.account, reference: formData.reference,
+                        concept: formData.concept, amount: amountVal, status: formData.status
                     };
                     
                     setAllTransactions([newTransaction, ...allTransactions]);
@@ -406,8 +425,6 @@ const AvailabilityHome = () => {
         if (!trxToCancel) return;
 
         const selectedEntity = entityList.find(e => e.EntityName === trxToCancel.entity);
-        
-        // IMPORTANTE: Aquí usamos allBanksList porque el banco puede no estar en la lista reducida del modal
         const selectedBank = allBanksList.find(b => b.BankName === trxToCancel.bank);
         const selectedStatus = statusList.find(s => s.StatusName === 'Anulada');
 
@@ -445,20 +462,13 @@ const AvailabilityHome = () => {
         }
 
         let formattedDate = '';
-        try {
-            formattedDate = new Date(trxToCancel.date).toISOString().split('T')[0];
-        } catch (error) {
-            formattedDate = new Date().toISOString().split('T')[0];
-        }
+        try { formattedDate = new Date(trxToCancel.date).toISOString().split('T')[0]; } 
+        catch (error) { formattedDate = new Date().toISOString().split('T')[0]; }
 
         const payload = {
-            DateTrx: formattedDate,
-            EntityID: selectedEntity.EntityID,
-            BankID: selectedBank.BankID,
-            AccountID: resolvedAccountId,
-            ReferenceDoc: trxToCancel.reference,
-            Concept: trxToCancel.concept,
-            Amount: parseFloat(trxToCancel.amount),
+            DateTrx: formattedDate, EntityID: selectedEntity.EntityID, BankID: selectedBank.BankID,
+            AccountID: resolvedAccountId, ReferenceDoc: trxToCancel.reference,
+            Concept: trxToCancel.concept, Amount: parseFloat(trxToCancel.amount),
             TransitStatusID: selectedStatus.TransitStatusID
         };
 
@@ -466,9 +476,7 @@ const AvailabilityHome = () => {
 
         try {
             const response = await fetch(`${apiUrl}/availability/transactions/${cancelId}`, {
-                method: 'PUT',
-                headers: headers,
-                body: JSON.stringify(payload)
+                method: 'PUT', headers, body: JSON.stringify(payload)
             });
 
             if (response.ok) {
@@ -519,28 +527,29 @@ const AvailabilityHome = () => {
 
     return (
         <LayoutBaseAvailability activePage="home">
-            <Box className="home-admin-container-availability" sx={{ padding: '20px', margin: '0 auto' }}>
-                <Box className="title-section-home-availability" sx={{ marginBottom: '20px' }}>
-                    <Typography variant="h4" sx={{ color: '#262626', fontWeight: 'bold', mb: 1 }}>
+            <Box sx={styles.container}>
+                <Box sx={styles.titleSection}>
+                    <Typography variant="h4" sx={styles.titleH2}>
                         Módulo de Disponibilidad Gipsy
                     </Typography>
-                    <Typography variant="h6" color="textSecondary">
+                    <Typography variant="h6" sx={styles.titleH3}>
                         Bienvenido(a){user ? `, ${user.firstName}` : ''}
                     </Typography>
                 </Box>
 
-                <Box className="search-bar-container-availability" sx={{ display: 'flex', gap: '10px', marginBottom: '20px', maxWidth: '500px' }}>
-                    <input
-                        type="text"
+                {/* --- BARRA DE BÚSQUEDA TIPO MATERIAL UI COMPUESTA --- */}
+                <Paper component="form" sx={styles.searchContainer} onSubmit={(e) => e.preventDefault()}>
+                    <InputBase
+                        sx={styles.searchInput}
                         placeholder="Buscar por concepto, entidad, banco, cuenta..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ flex: 1, padding: '10px 15px', borderRadius: '16px', border: '1px solid #ccc' }}
+                        inputProps={{ 'aria-label': 'buscar transacciones' }}
                     />
-                </Box>
+                </Paper>
                 
                 <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
-                    <Button variant="contained" sx={darkButtonStyle} onClick={handleOpenCreateModal}>
+                    <Button variant="contained" sx={styles.darkButton} onClick={handleOpenCreateModal}>
                         Agregar Transacción
                     </Button>
                 </Box>
@@ -551,49 +560,38 @@ const AvailabilityHome = () => {
                         <Table stickyHeader aria-label="tabla de disponibilidad">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={tableHeaderStyle}>
+                                    <TableCell sx={styles.tableHeader}>
                                         <TableSortLabel active={true} direction={sortOrder} onClick={handleSortToggle} sx={{ color: '#f4f4f4 !important', '& .MuiTableSortLabel-icon': { color: '#f4f4f4 !important' } }}>Fecha</TableSortLabel>
                                     </TableCell>
-                                    <TableCell sx={tableHeaderStyle}>Entidad</TableCell>
-                                    <TableCell sx={tableHeaderStyle}>Banco</TableCell>
-                                    <TableCell sx={tableHeaderStyle}>Cuenta</TableCell>
-                                    <TableCell sx={tableHeaderStyle}>Referencia</TableCell>
-                                    <TableCell sx={tableHeaderStyle}>Concepto</TableCell>
-                                    <TableCell align='center' sx={tableHeaderStyle}>Monto</TableCell>
-                                    <TableCell align='center' sx={tableHeaderStyle}>Estado</TableCell>
-                                    <TableCell align='center' sx={tableHeaderStyle}>Acciones</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Entidad</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Banco</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Cuenta</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Referencia</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Concepto</TableCell>
+                                    <TableCell align='center' sx={styles.tableHeader}>Monto</TableCell>
+                                    <TableCell align='center' sx={styles.tableHeader}>Estado</TableCell>
+                                    <TableCell align='center' sx={styles.tableHeader}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {sortedTransactions.length > 0 ? (
                                     sortedTransactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => {
-                                        
                                         const trxCurrency = currencyList.find(c => c.CurrencyName === trx.currency);
                                         const symbol = trxCurrency ? trxCurrency.Symbol : '';
-
                                         const isFinalStatus = trx.status === 'Ejecutada' || trx.status === 'Anulada';
 
                                         return (
                                             <TableRow hover role="checkbox" tabIndex={-1} key={trx.id}>
-                                                {/* Fecha */}
                                                 <TableCell>{formatDateToDDMMYYYY(trx.date)}</TableCell>
-                                                {/* Entidad */}
                                                 <TableCell>{trx.entity}</TableCell>
-                                                {/* Banco */}
                                                 <TableCell>{trx.bank}</TableCell>
-                                                {/* Cuenta */}
                                                 <TableCell>{trx.account}</TableCell>
-                                                {/* Referencia */}
                                                 <TableCell>{trx.reference}</TableCell>
-                                                {/* Concepto */}
                                                 <TableCell>{trx.concept}</TableCell>
-                                                {/* Monto */}
                                                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                                                     {Number(trx.amount).toFixed(2)} {symbol}
                                                 </TableCell>
-                                                {/* Estado */}
                                                 <TableCell align="center">{getStatusChip(trx.status)}</TableCell>
-                                                {/* Acciones */}
                                                 <TableCell align="center">
                                                     <IconButton 
                                                         color="primary" 
@@ -631,8 +629,6 @@ const AvailabilityHome = () => {
                         {editingId ? 'Editar Transacción' : 'Nueva Transacción'}
                     </DialogTitle>
                     <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
-
-                        {/* Entidad sola en una fila (Referencia eliminada) */}
                         <Autocomplete
                             options={entityList.map((option) => option.EntityName)}
                             value={formData.entity || null}
@@ -640,34 +636,21 @@ const AvailabilityHome = () => {
                                 setFormData(prev => ({ ...prev, entity: newValue || '', bank: '', account: '' }));
                             }}
                             renderInput={(params) => (
-                                <TextField {...params} label="Entidad" fullWidth size="small" sx={customTextFieldStyle} />
+                                <TextField {...params} label="Entidad" fullWidth size="small" sx={styles.customTextField} />
                             )}
                         />
-
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={bankList.map((option) => option.BankName)}
                                 value={formData.bank || null}
                                 disabled={!formData.entity}
                                 onChange={(event, newValue) => {
-                                    setFormData(prev => ({ 
-                                        ...prev, 
-                                        bank: newValue || '', 
-                                        account: '' 
-                                    }));
+                                    setFormData(prev => ({ ...prev, bank: newValue || '', account: '' }));
                                 }}
                                 renderInput={(params) => (
-                                    <TextField 
-                                        {...params} 
-                                        label="Entidad Bancaria" 
-                                        placeholder={!formData.entity ? "Seleccione una entidad primero" : "Banco..."} // <-- Placeholder dinámico
-                                        fullWidth 
-                                        size="small" 
-                                        sx={customTextFieldStyle} 
-                                    />
+                                    <TextField {...params} label="Entidad Bancaria" placeholder={!formData.entity ? "Seleccione una entidad primero" : "Banco..."} fullWidth size="small" sx={styles.customTextField} />
                                 )}
                             />
-                            
                             <Autocomplete
                                 options={accountList.map((option) => option.AccountNumber)}
                                 value={formData.account || null}
@@ -676,41 +659,23 @@ const AvailabilityHome = () => {
                                     setFormData(prev => ({ ...prev, account: newValue || '' }));
                                 }}
                                 renderInput={(params) => (
-                                    <TextField {...params} label="Cuenta Asociada" placeholder={!formData.bank ? "Seleccione banco" : "N° de Cuenta..."} fullWidth size="small" sx={customTextFieldStyle} />
+                                    <TextField {...params} label="Cuenta Asociada" placeholder={!formData.bank ? "Seleccione banco" : "N° de Cuenta..."} fullWidth size="small" sx={styles.customTextField} />
                                 )}
                             />
                         </Box>
-
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={customTextFieldStyle} />
-                            
+                            <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={styles.customTextField} />
                             <TextField 
-                                label="Monto" 
-                                name="amount" 
-                                type="number" 
-                                placeholder={amountPlaceholder} 
-                                value={formData.amount} 
-                                onChange={handleInputChange} 
-                                fullWidth 
-                                size="small" 
-                                sx={customTextFieldStyle} 
-                                disabled={!formData.account}
-                                inputProps={{ 
-                                    min: 0, 
-                                    step: "any" // Permite decimales
-                                }} 
+                                label="Monto" name="amount" type="number" placeholder={amountPlaceholder} value={formData.amount} 
+                                onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} disabled={!formData.account}
+                                inputProps={{ min: 0, step: "any" }} 
                                 onKeyDown={(e) => {
-                                    // Bloquea el signo menos y la letra 'e' (exponente)
-                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-                                        e.preventDefault();
-                                    }
+                                    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
                                 }}
                             />
                         </Box>
-
-                        <TextField label="Concepto" name="concept" multiline rows={2} value={formData.concept} onChange={handleInputChange} fullWidth size="small" sx={customTextFieldStyle} />
-
-                        <FormControl fullWidth size="small" sx={customTextFieldStyle}>
+                        <TextField label="Concepto" name="concept" multiline rows={2} value={formData.concept} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} />
+                        <FormControl fullWidth size="small" sx={styles.customTextField}>
                             <InputLabel id="status-select-label">Estado</InputLabel>
                             <Select labelId="status-select-label" name="status" value={formData.status} label="Estado" onChange={handleInputChange}>
                                 {statusList.map((statusItem) => (
@@ -720,11 +685,10 @@ const AvailabilityHome = () => {
                                 ))}
                             </Select>
                         </FormControl>
-
                     </DialogContent>
                     <DialogActions sx={{ padding: '16px', borderTop: '1px solid #ddd' }}>
                         <Button onClick={handleCloseModal} color="inherit" variant="text" sx={{ fontWeight: 'bold' }}>Cancelar</Button>
-                        <Button onClick={handleSaveTransaction} variant="contained" sx={darkButtonStyle}>Guardar</Button>
+                        <Button onClick={handleSaveTransaction} variant="contained" sx={styles.darkButton}>Guardar</Button>
                     </DialogActions>
                 </Dialog>
 

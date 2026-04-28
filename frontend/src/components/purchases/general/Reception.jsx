@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import LayoutBasePurchases from '../base/LayoutBasePurchases';
 import { useAuth } from '../../../utils/AuthContext';
+import LayoutBasePurchases from '../base/LayoutBasePurchases';
 
 // Importaciones de Material UI
 import { 
@@ -103,43 +102,38 @@ const styles = {
 };
 
 // --- DATOS SIMULADOS (MOCKS) ---
-// Estructura basada en: FECHA, EMPRESA, BANCO PAGADOR, NUMERO DE CUENTA, DOLARES COMPRADOS, TASA, BOLIVARES, OBSERVACIONES
 const initialMockData = [
     {
         id: 1,
-        date: '2025-10-15',
-        company: 'Empresa Alpha C.A.',
-        bank: 'Banesco',
-        account: '01340000000000001234',
-        dollarsBought: 1000.00,
-        exchangeRate: 35.50,
-        bolivares: 35500.00,
-        observations: 'Compra mensual regular'
+        date: '2025-10-16',
+        receivingCompany: 'Inversiones XYZ',
+        receivingBank: 'Banesco',
+        account: '01340000000000009999',
+        amountReceived: 1000.00, // Ajustado a dólares
+        observations: 'Recepción exitosa'
     },
     {
         id: 2,
-        date: '2025-10-18',
-        company: 'Servicios Beta S.A.',
-        bank: 'Mercantil',
-        account: '01050000000000005678',
-        dollarsBought: 500.00,
-        exchangeRate: 36.00,
-        bolivares: 18000.00,
-        observations: 'Pago a proveedores externos'
+        date: '2025-10-19',
+        receivingCompany: 'Servicios Corporativos',
+        receivingBank: 'Provincial',
+        account: '01080000000000008888',
+        amountReceived: 500.00, // Ajustado a dólares
+        observations: 'Llegó con un día de retraso'
     }
 ];
 
 // Listas simuladas para los selects
-const mockCompanies = ['Empresa Alpha C.A.', 'Servicios Beta S.A.', 'Inversiones Gamma'];
-const mockBanks = ['Banesco', 'Mercantil', 'Provincial', 'BNC'];
+const mockCompanies = ['Inversiones XYZ', 'Servicios Corporativos', 'Logística Omega'];
+const mockBanks = ['Banesco', 'Mercantil', 'Provincial', 'BNC', 'Banco de Venezuela'];
 
-const PurchasesHome = () => {
+const Reception = () => {
     const { user } = useAuth();
     
     // --- ESTADOS DE LA TABLA Y BÚSQUEDA ---
     const [searchTerm, setSearchTerm] = useState('');
-    const [allTransactions, setAllTransactions] = useState(initialMockData);
-    const [filteredTransactions, setFilteredTransactions] = useState(initialMockData);
+    const [allReceptions, setAllReceptions] = useState(initialMockData);
+    const [filteredReceptions, setFilteredReceptions] = useState(initialMockData);
     
     // Paginación y Orden
     const [page, setPage] = useState(0);
@@ -151,33 +145,31 @@ const PurchasesHome = () => {
     const [editingId, setEditingId] = useState(null); 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
-        company: '', 
-        bank: '', 
+        receivingCompany: '', 
+        receivingBank: '', 
         account: '', 
-        dollarsBought: '',
-        exchangeRate: '',
-        bolivares: '',
+        amountReceived: '',
         observations: ''
     });
 
     // --- FILTRO Y ORDENAMIENTO ---
     useEffect(() => {
         if (!searchTerm.trim()) {
-            setFilteredTransactions(allTransactions);
+            setFilteredReceptions(allReceptions);
             return;
         }
         const lowerCaseSearch = searchTerm.toLowerCase();
-        const results = allTransactions.filter(trx =>
-            trx.company.toLowerCase().includes(lowerCaseSearch) ||
-            trx.bank.toLowerCase().includes(lowerCaseSearch) ||
+        const results = allReceptions.filter(trx =>
+            trx.receivingCompany.toLowerCase().includes(lowerCaseSearch) ||
+            trx.receivingBank.toLowerCase().includes(lowerCaseSearch) ||
             trx.account.includes(lowerCaseSearch) ||
             (trx.observations && trx.observations.toLowerCase().includes(lowerCaseSearch))
         );
-        setFilteredTransactions(results);
+        setFilteredReceptions(results);
         setPage(0); 
-    }, [searchTerm, allTransactions]);
+    }, [searchTerm, allReceptions]);
 
-    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    const sortedReceptions = [...filteredReceptions].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
         return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
@@ -208,8 +200,8 @@ const PurchasesHome = () => {
         setEditingId(null); 
         setFormData({
             date: new Date().toISOString().split('T')[0],
-            company: '', bank: '', account: '', 
-            dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
+            receivingCompany: '', receivingBank: '', account: '', 
+            amountReceived: '', observations: ''
         });
         setOpenModal(true);
     };
@@ -218,12 +210,10 @@ const PurchasesHome = () => {
         setEditingId(trx.id); 
         setFormData({
             date: trx.date, 
-            company: trx.company,
-            bank: trx.bank,
+            receivingCompany: trx.receivingCompany,
+            receivingBank: trx.receivingBank,
             account: trx.account,
-            dollarsBought: trx.dollarsBought, 
-            exchangeRate: trx.exchangeRate,
-            bolivares: trx.bolivares,
+            amountReceived: trx.amountReceived, 
             observations: trx.observations || ''
         });
         setOpenModal(true);
@@ -236,45 +226,30 @@ const PurchasesHome = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
-        setFormData(prev => {
-            const newData = { ...prev, [name]: value };
-            
-            // Lógica sencilla para calcular bolívares automáticamente si hay dólares y tasa
-            if (name === 'dollarsBought' || name === 'exchangeRate') {
-                const dollars = parseFloat(newData.dollarsBought);
-                const rate = parseFloat(newData.exchangeRate);
-                if (!isNaN(dollars) && !isNaN(rate)) {
-                    newData.bolivares = (dollars * rate).toFixed(2);
-                }
-            }
-            return newData;
-        });
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSaveTransaction = () => {
+    const handleSaveReception = () => {
         // Validaciones básicas
-        if (!formData.company || !formData.bank || !formData.account || !formData.dollarsBought || !formData.exchangeRate || !formData.bolivares) {
-            alert("Por favor llena todos los campos numéricos y de selección.");
+        if (!formData.receivingCompany || !formData.receivingBank || !formData.account || !formData.amountReceived) {
+            alert("Por favor llena todos los campos obligatorios.");
             return;
         }
 
-        const newTransaction = {
-            id: editingId ? editingId : Math.max(0, ...allTransactions.map(t => t.id)) + 1, 
+        const newReception = {
+            id: editingId ? editingId : Math.max(0, ...allReceptions.map(t => t.id)) + 1, 
             date: formData.date,
-            company: formData.company,
-            bank: formData.bank,
+            receivingCompany: formData.receivingCompany,
+            receivingBank: formData.receivingBank,
             account: formData.account,
-            dollarsBought: parseFloat(formData.dollarsBought),
-            exchangeRate: parseFloat(formData.exchangeRate),
-            bolivares: parseFloat(formData.bolivares),
+            amountReceived: parseFloat(formData.amountReceived),
             observations: formData.observations
         };
 
         if (editingId) {
-            setAllTransactions(prev => prev.map(trx => trx.id === editingId ? newTransaction : trx));
+            setAllReceptions(prev => prev.map(trx => trx.id === editingId ? newReception : trx));
         } else {
-            setAllTransactions([newTransaction, ...allTransactions]);
+            setAllReceptions([newReception, ...allReceptions]);
         }
         
         handleCloseModal();
@@ -288,14 +263,14 @@ const PurchasesHome = () => {
     };
 
     return (
-        <LayoutBasePurchases activePage="home">
+        <LayoutBasePurchases activePage="reception">
             <Box sx={styles.container}>
                 <Box sx={styles.titleSection}>
                     <Typography variant="h4" sx={styles.titleH2}>
-                        Registro de Compra de Dólares
+                        Registro de Recepción de Fondos
                     </Typography>
                     <Typography variant="h6" sx={styles.titleH3}>
-                        Bienvenido(a){user ? `, ${user.firstName}` : ''}
+                        Listado de liquidaciones recibidas (*)
                     </Typography>
                 </Box>
 
@@ -306,53 +281,45 @@ const PurchasesHome = () => {
                         placeholder="Buscar por empresa, banco, cuenta..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        inputProps={{ 'aria-label': 'buscar compras' }}
+                        inputProps={{ 'aria-label': 'buscar recepciones' }}
                     />
                 </Paper>
                 
                 <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
                     <Button variant="contained" sx={styles.darkButton} onClick={handleOpenCreateModal}>
-                        Agregar Compra
+                        Agregar Nueva Recepción (*)
                     </Button>
                 </Box>
 
                 {/* --- TABLA --- */}
                 <Paper sx={{ width: '90%', overflow: 'hidden', boxShadow: 3, borderRadius: 2 }}>
                     <TableContainer sx={{ maxHeight: 600 }}>
-                        <Table stickyHeader aria-label="tabla de compras de dolares">
+                        <Table stickyHeader aria-label="tabla de recepcion de fondos">
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={styles.tableHeader}>
                                         <TableSortLabel active={true} direction={sortOrder} onClick={handleSortToggle} sx={{ color: '#f4f4f4 !important', '& .MuiTableSortLabel-icon': { color: '#f4f4f4 !important' } }}>
-                                            Fecha
+                                            Fecha de Recepción
                                         </TableSortLabel>
                                     </TableCell>
-                                    <TableCell sx={styles.tableHeader}>Empresa</TableCell>
-                                    <TableCell sx={styles.tableHeader}>Banco Pagador</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Empresa que Recibe</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Banco que Recibe</TableCell>
                                     <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Dólares Comprados</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Tasa</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Bolívares</TableCell>
+                                    <TableCell align='right' sx={styles.tableHeader}>Monto Recibido</TableCell>
                                     <TableCell sx={styles.tableHeader}>Observaciones</TableCell>
                                     <TableCell align='center' sx={styles.tableHeader}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {sortedTransactions.length > 0 ? (
-                                    sortedTransactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => (
+                                {sortedReceptions.length > 0 ? (
+                                    sortedReceptions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => (
                                         <TableRow hover role="checkbox" tabIndex={-1} key={trx.id}>
                                             <TableCell>{formatDateToDDMMYYYY(trx.date)}</TableCell>
-                                            <TableCell>{trx.company}</TableCell>
-                                            <TableCell>{trx.bank}</TableCell>
+                                            <TableCell>{trx.receivingCompany}</TableCell>
+                                            <TableCell>{trx.receivingBank}</TableCell>
                                             <TableCell>{trx.account}</TableCell>
                                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
-                                                ${formatCurrency(trx.dollarsBought)}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                Bs. {formatCurrency(trx.exchangeRate)}
-                                            </TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                                Bs. {formatCurrency(trx.bolivares)}
+                                                ${formatCurrency(trx.amountReceived)}
                                             </TableCell>
                                             <TableCell>{trx.observations}</TableCell>
                                             <TableCell align="center">
@@ -368,8 +335,8 @@ const PurchasesHome = () => {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
-                                            <Typography variant="body1" color="textSecondary">No se encontraron registros.</Typography>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                            <Typography variant="body1" color="textSecondary">No se encontraron registros de recepción.</Typography>
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -379,7 +346,7 @@ const PurchasesHome = () => {
                     <TablePagination 
                         rowsPerPageOptions={[5, 10, 25]} 
                         component="div" 
-                        count={filteredTransactions.length} 
+                        count={filteredReceptions.length} 
                         rowsPerPage={rowsPerPage} 
                         page={page} 
                         onPageChange={handleChangePage} 
@@ -388,17 +355,16 @@ const PurchasesHome = () => {
                     />
                 </Paper>
 
-                {/* --- MODAL PARA AGREGAR / EDITAR COMPRA --- */}
-                <Dialog open={openModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+                {/* --- MODAL PARA AGREGAR / EDITAR RECEPCIÓN --- */}
+                <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
                     <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: '#f4f4f4', borderBottom: '1px solid #ddd' }}>
-                        {editingId ? 'Editar Compra' : 'Agregar Nueva Compra'}
+                        {editingId ? 'Editar Recepción' : 'Agregar Nueva Recepción'}
                     </DialogTitle>
                     <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 3 }}>
                         
-                        {/* Fila 1: Fecha y Empresa */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 2 }}>
                             <TextField 
-                                label="Fecha" 
+                                label="Fecha de Recepción" 
                                 name="date" 
                                 type="date" 
                                 value={formData.date} 
@@ -410,26 +376,25 @@ const PurchasesHome = () => {
                             />
                             <Autocomplete
                                 options={mockCompanies}
-                                value={formData.company || null}
+                                value={formData.receivingCompany || null}
                                 onChange={(event, newValue) => {
-                                    setFormData(prev => ({ ...prev, company: newValue || '' }));
+                                    setFormData(prev => ({ ...prev, receivingCompany: newValue || '' }));
                                 }}
                                 renderInput={(params) => (
-                                    <TextField {...params} label="Empresa" fullWidth size="small" sx={styles.customTextField} />
+                                    <TextField {...params} label="Empresa que Recibe" fullWidth size="small" sx={styles.customTextField} />
                                 )}
                             />
                         </Box>
 
-                        {/* Fila 2: Banco y Cuenta */}
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <Autocomplete
                                 options={mockBanks}
-                                value={formData.bank || null}
+                                value={formData.receivingBank || null}
                                 onChange={(event, newValue) => {
-                                    setFormData(prev => ({ ...prev, bank: newValue || '' }));
+                                    setFormData(prev => ({ ...prev, receivingBank: newValue || '' }));
                                 }}
                                 renderInput={(params) => (
-                                    <TextField {...params} label="Banco Pagador" fullWidth size="small" sx={styles.customTextField} />
+                                    <TextField {...params} label="Banco que Recibe" fullWidth size="small" sx={styles.customTextField} />
                                 )}
                             />
                             <TextField 
@@ -447,61 +412,35 @@ const PurchasesHome = () => {
                             />
                         </Box>
 
-                        {/* Fila 3: Cálculos (Dólares, Tasa, Bolívares) */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                            <TextField 
-                                label="Dólares Comprados ($)" 
-                                name="dollarsBought" 
-                                type="number" 
-                                value={formData.dollarsBought} 
-                                onChange={handleInputChange} 
-                                fullWidth 
-                                size="small" 
-                                sx={styles.customTextField}
-                                inputProps={{ min: 0, step: "any" }} 
-                            />
-                            <TextField 
-                                label="Tasa (Bs.)" 
-                                name="exchangeRate" 
-                                type="number" 
-                                value={formData.exchangeRate} 
-                                onChange={handleInputChange} 
-                                fullWidth 
-                                size="small" 
-                                sx={styles.customTextField}
-                                inputProps={{ min: 0, step: "any" }} 
-                            />
-                            <TextField 
-                                label="Bolívares (Bs.)" 
-                                name="bolivares" 
-                                type="number" 
-                                value={formData.bolivares} 
-                                onChange={handleInputChange} 
-                                fullWidth 
-                                disabled
-                                size="small" 
-                                sx={styles.customTextField}
-                                inputProps={{ min: 0, step: "any" }} 
-                            />
-                        </Box>
+                        <TextField 
+                            label="Monto Recibido ($)" 
+                            name="amountReceived" 
+                            type="number" 
+                            value={formData.amountReceived} 
+                            onChange={handleInputChange} 
+                            fullWidth 
+                            size="small" 
+                            sx={styles.customTextField}
+                            inputProps={{ min: 0, step: "any" }} 
+                        />
 
-                        {/* Fila 4: Observaciones */}
                         <TextField 
                             label="Observaciones" 
                             name="observations" 
                             multiline 
-                            rows={2} 
+                            rows={3} 
                             value={formData.observations} 
                             onChange={handleInputChange} 
                             fullWidth 
                             size="small" 
                             sx={styles.customTextField} 
                         />
+
                     </DialogContent>
                     
                     <DialogActions sx={{ padding: '16px', borderTop: '1px solid #ddd' }}>
                         <Button onClick={handleCloseModal} color="inherit" variant="text" sx={{ fontWeight: 'bold' }}>Cancelar</Button>
-                        <Button onClick={handleSaveTransaction} variant="contained" sx={styles.darkButton}>Guardar</Button>
+                        <Button onClick={handleSaveReception} variant="contained" sx={styles.darkButton}>Guardar</Button>
                     </DialogActions>
                 </Dialog>
 
@@ -510,4 +449,4 @@ const PurchasesHome = () => {
     );
 };
 
-export default PurchasesHome;
+export default Reception;

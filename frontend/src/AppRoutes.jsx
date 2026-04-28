@@ -18,6 +18,8 @@ import AvailabilityHome from './components/balance/general/AvailabilityHome.jsx'
 
 /* Rutas para el modulo de Compras Divisas */
 import PurchasesHome from './components/purchases/general/PurchasesHome.jsx';
+import Beneficiaries from './components/purchases/general/Beneficiaries.jsx';
+import Reception from './components/purchases/general/Reception.jsx';
 
 export default function AppRoutes(){
     return (
@@ -77,6 +79,16 @@ export default function AppRoutes(){
             <Route
                 path="/purchases"
                 element={<PurchasesHome />}
+            />
+
+            <Route
+                path="/purchases/beneficiaries"
+                element={<Beneficiaries />}
+            />
+
+            <Route
+                path="/purchases/reception"
+                element={<Reception />}
             />
         </Routes>
     );
