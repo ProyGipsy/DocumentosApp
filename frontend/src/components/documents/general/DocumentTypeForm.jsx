@@ -26,7 +26,7 @@ const initialField = {
 // --- DICCIONARIO DE ESTILOS (MUI SX) ---
 const styles = {
     pageWrapper: { backgroundColor: '#f1efef', minHeight: '100vh', padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap', boxSizing: 'border-box' },
-    cardContainer: { padding: '35px 30px', borderRadius: '12px', width: '100%', maxWidth: '800px', margin: '0 auto' },
+    cardContainer: { padding: '35px 30px', borderRadius: '12px', width: '100%', maxWidth: '1250px', margin: '0 auto' },
     mainTitle: { color: '#421d83', mb: 4, fontWeight: 600, textAlign: 'center' },
     formGroup: { mb: 3 },
     label: { fontWeight: 'bold', mb: 1, color: '#191c16' },
@@ -253,10 +253,10 @@ const CreateDocumentType = () => {
                                     <TableHead sx={styles.tableHeadRow}>
                                         <TableRow>
                                             <TableCell sx={{ ...styles.tableHeadCell, width: '30%' }}>Nombre del Campo</TableCell>
-                                            <TableCell sx={{ ...styles.tableHeadCell, width: '30%' }}>Tipo de Dato</TableCell>
-                                            <TableCell sx={{ ...styles.tableHeadCell, width: '15%' }}>Longitud</TableCell>
-                                            <TableCell sx={{ ...styles.tableHeadCell, width: '15%' }}>Precisión</TableCell>
-                                            <TableCell align="center" sx={styles.tableHeadCell}>Obligatorio</TableCell>
+                                            <TableCell sx={{ ...styles.tableHeadCell, width: '15%' }}>Tipo de Dato</TableCell>
+                                            <TableCell sx={{ ...styles.tableHeadCell, width: '5%' }}>Longitud</TableCell>
+                                            <TableCell sx={{ ...styles.tableHeadCell, width: '5%' }}>Precisión</TableCell>
+                                            <TableCell align="center" sx={{ ...styles.tableHeadCell, width: '5%' }}>Obligatorio</TableCell>
                                             <TableCell align="center" sx={{ ...styles.tableHeadCell, width: '5%', minWidth: '80px' }}>Acción</TableCell>
                                         </TableRow>
                                     </TableHead>

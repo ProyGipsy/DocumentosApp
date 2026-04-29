@@ -12,7 +12,7 @@ body {
 }
 
 #sidebarUser {
-    width: 380px;
+    width: 310px;
     flex-shrink: 0;
     height: 100%;
     background-color: #4068f8;
@@ -27,7 +27,7 @@ body {
 }
 
 #sidebarTech {
-    width: 380px;
+    width: 310px;
     flex-shrink: 0;
     height: 100%;
     background-color: #455a64;
@@ -42,7 +42,7 @@ body {
 }
 
 #sidebarAdmin {
-    width: 380px;
+    width: 310px;
     flex-shrink: 0;
     height: 100%;
     background-color: #8b56ed;
@@ -57,7 +57,7 @@ body {
 }
 
 #sidebarAdminAvailability {
-    width: 380px;
+    width: 310px;
     flex-shrink: 0;
     height: 100%;
     background-color: #262626;
