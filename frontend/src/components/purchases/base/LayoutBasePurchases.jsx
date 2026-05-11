@@ -78,30 +78,30 @@ const LayoutBasePurchases = ({ activePage, children }) => {
 
     // Item: Inicio
     homeButton: {
-      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
-      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
-      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+      '&.Mui-selected': { backgroundColor: '#ffffff1a', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: '#ffffff26' },
+      '&:hover': { backgroundColor: '#ffffff14' }
     },
-    homeIcon: { color: isHomeActive ? '#ffffff' : '#b3b3b3' },
-    homeText: { color: isHomeActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isHomeActive ? 'bold' : 'normal' } },
+    homeIcon: { color: isHomeActive ? '#ffffff' : '#cdcdcd' },
+    homeText: { color: isHomeActive ? '#ffffff' : '#cdcdcd', '& .MuiTypography-root': { fontWeight: isHomeActive ? 'bold' : 'normal' } },
 
     // Item: Recepción de fondos
     receptionButton: {
-      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
-      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
-      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+      '&.Mui-selected': { backgroundColor: '#ffffff1a', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: '#ffffff26' },
+      '&:hover': { backgroundColor: '#ffffff14' }
     },
-    receptionIcon: { color: isReceptionActive ? '#ffffff' : '#b3b3b3' },
-    receptionText: { color: isReceptionActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isReceptionActive ? 'bold' : 'normal' } },
+    receptionIcon: { color: isReceptionActive ? '#ffffff' : '#cdcdcd' },
+    receptionText: { color: isReceptionActive ? '#ffffff' : '#cdcdcd', '& .MuiTypography-root': { fontWeight: isReceptionActive ? 'bold' : 'normal' } },
 
     // Item: Beneficiarios
     beneficiariesButton: {
-      '&.Mui-selected': { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRight: '4px solid #ffffff' },
-      '&.Mui-selected:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
-      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' }
+      '&.Mui-selected': { backgroundColor: '#ffffff1a', borderRight: '4px solid #ffffff' },
+      '&.Mui-selected:hover': { backgroundColor: '#ffffff26' },
+      '&:hover': { backgroundColor: '#ffffff14' }
     },
-    beneficiariesIcon: { color: isBeneficiariesActive ? '#ffffff' : '#b3b3b3' },
-    beneficiariesText: { color: isBeneficiariesActive ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: isBeneficiariesActive ? 'bold' : 'normal' } },
+    beneficiariesIcon: { color: isBeneficiariesActive ? '#ffffff' : '#cdcdcd' },
+    beneficiariesText: { color: isBeneficiariesActive ? '#ffffff' : '#cdcdcd', '& .MuiTypography-root': { fontWeight: isBeneficiariesActive ? 'bold' : 'normal' } },
 
     // Item: Menú Principal
     menuAppButton: { '&:hover': { backgroundColor: '#ffffff0d' } },

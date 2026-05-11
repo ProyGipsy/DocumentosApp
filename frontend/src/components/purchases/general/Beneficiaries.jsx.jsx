@@ -12,117 +12,77 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 
+// --- CONFIGURACIÓN API ---
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
+
 // --- DICCIONARIO DE ESTILOS UNIFICADO (CSS + MUI) ---
 const styles = {
-    // Contenedor principal
-    container: {
-        padding: '30px',
-        backgroundColor: 'rgb(240, 240, 240)',
-        minHeight: 'calc(100vh - 40px)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-    },
-    // Sección del título
-    titleSection: {
-        width: '100%',
-        maxWidth: '1200px',
-        textAlign: 'center',
-        marginBottom: '10px',
-    },
-    titleH2: {
-        color: '#191c16',
-        marginBottom: '5px',
-        fontWeight: 600,
-    },
-    titleH3: {
-        color: '#61608b',
-        marginTop: 0,
-        fontWeight: 500,
-        fontSize: '1.2em',
-    },
-    // Barra de búsqueda
-    searchContainer: {
-        p: '2px 4px',
-        display: 'flex',
-        alignItems: 'center',
-        width: '90%',
-        maxWidth: '500px',
-        marginBottom: '50px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)',
-        backgroundColor: '#f9f9f9',
-        border: '1px solid #cccccc00',
-        transition: 'background-color 0.3s',
-        '&:focus-within': {
-            backgroundColor: '#fff',
-        }
-    },
-    searchInput: {
-        ml: 1,
-        flex: 1,
-        padding: '8px 10px',
-        color: '#191c16',
-        '& input::placeholder': {
-            color: '#888888',
-            opacity: 1,
-        }
-    },
-    searchButton: {
-        p: '10px',
-        backgroundColor: '#6d36ce',
-        color: 'white',
-        borderRadius: '0 8px 8px 0',
-        width: '55px',
-        height: '100%',
-        '&:hover': {
-            backgroundColor: '#975cfc',
-        }
-    },
-    // Estilos de la Tabla y Botones Generales
-    tableHeader: {
-        backgroundColor: '#6d36ce', 
-        fontWeight: 'bold', 
-        color: '#f4f4f4', 
-        transition: 'background-color 0.3s ease', 
-        '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' }
-    },
-    darkButton: {
-        backgroundColor: '#6d36ce', 
-        color: '#f4f4f4', 
-        fontWeight: 'bold', 
-        borderRadius: '16px',
-        padding: '10px 20px',
-        boxShadow: 3,
-        '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' }
-    }
+    container: { padding: '30px', backgroundColor: 'rgb(240, 240, 240)', minHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+    titleSection: { width: '100%', maxWidth: '1200px', textAlign: 'center', marginBottom: '10px' },
+    titleH2: { color: '#191c16', marginBottom: '5px', fontWeight: 600 },
+    titleH3: { color: '#61608b', marginTop: 0, fontWeight: 500, fontSize: '1.2em' },
+    searchContainer: { p: '2px 4px', display: 'flex', alignItems: 'center', width: '90%', maxWidth: '500px', marginBottom: '50px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)', backgroundColor: '#f9f9f9', border: '1px solid #cccccc00', transition: 'background-color 0.3s', '&:focus-within': { backgroundColor: '#fff' } },
+    searchInput: { ml: 1, flex: 1, padding: '8px 10px', color: '#191c16', '& input::placeholder': { color: '#888888', opacity: 1 } },
+    searchButton: { p: '10px', backgroundColor: '#6d36ce', color: 'white', borderRadius: '0 8px 8px 0', width: '55px', height: '100%', '&:hover': { backgroundColor: '#975cfc' } },
+    tableHeader: { backgroundColor: '#6d36ce', fontWeight: 'bold', color: '#f4f4f4', transition: 'background-color 0.3s ease', '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' } },
+    darkButton: { backgroundColor: '#6d36ce', color: '#f4f4f4', fontWeight: 'bold', borderRadius: '16px', padding: '10px 20px', boxShadow: 3, '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' } }
 };
-
-// --- MOCK DATA INICIAL ---
-const initialMockData = [
-    { id: 1, name: 'Inversiones XYZ', bank: 'Banesco', account: '01340000000000000000', observations: 'Pago a proveedores' },
-    { id: 2, name: 'Servicios Corporativos', bank: 'Mercantil', account: '01050000000000000000', observations: 'Suscripción mensual' }
-];
 
 const Beneficiaries = () => {
     const { user } = useAuth();
     
     // --- ESTADOS ---
-    const [allBeneficiaries, setAllBeneficiaries] = useState(initialMockData);
-    const [filteredBeneficiaries, setFilteredBeneficiaries] = useState(initialMockData);
+    const [allBeneficiaries, setAllBeneficiaries] = useState([]);
+    const [filteredBeneficiaries, setFilteredBeneficiaries] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [banksList, setBanksList] = useState([]); // <-- NUEVO ESTADO PARA BANCOS
     
-    // Paginación
+    // Paginación y Carga
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    
-    // Carga
     const [isLoading, setIsLoading] = useState(false);
     
     // Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add'); 
     const [beneficiaryToEdit, setBeneficiaryToEdit] = useState(null);
+
+    // --- 1. LLAMADA AL BACKEND: OBTENER BENEFICIARIOS Y BANCOS ---
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            const token = sessionStorage.getItem('session_token');
+            const headers = { 'Authorization': `Bearer ${token}` };
+            
+            setIsLoading(true);
+            try {
+                // Ejecutamos ambas peticiones en paralelo para mayor rapidez
+                const [beneficiariesRes, banksRes] = await Promise.all([
+                    fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
+                    fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers }) // <-- Reutilizando el endpoint de disponibilidad
+                ]);
+
+                if (beneficiariesRes.ok) {
+                    const data = await beneficiariesRes.json();
+                    setAllBeneficiaries(data);
+                }
+                
+                if (banksRes.ok) {
+                    const banksData = await banksRes.json();
+                    setBanksList(banksData);
+                }
+
+            } catch (error) {
+                console.error("Network error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchInitialData();
+        }
+    }, [user]);
 
     // --- EFECTO DE BÚSQUEDA ---
     useEffect(() => {
@@ -132,22 +92,21 @@ const Beneficiaries = () => {
         }
         const lowerCaseSearch = searchTerm.toLowerCase();
         const results = allBeneficiaries.filter(b =>
-            b.name.toLowerCase().includes(lowerCaseSearch) || 
-            b.bank.toLowerCase().includes(lowerCaseSearch) ||
-            b.account.includes(lowerCaseSearch)
+            (b.name && b.name.toLowerCase().includes(lowerCaseSearch)) || 
+            (b.bank && b.bank.toLowerCase().includes(lowerCaseSearch)) ||
+            (b.account && b.account.includes(lowerCaseSearch))
         );
         setFilteredBeneficiaries(results);
-        setPage(0); // Regresar a la página 0 al buscar
+        setPage(0);
     }, [searchTerm, allBeneficiaries]);
 
-    // --- MANEJADORES DE PAGINACIÓN ---
+    // --- MANEJADORES DE PAGINACIÓN Y MODAL ---
     const handleChangePage = (event, newPage) => setPage(newPage);
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    // --- MANEJADORES DEL MODAL ---
     const handleAddClick = () => {
         setModalMode('add');
         setBeneficiaryToEdit(null);
@@ -160,20 +119,54 @@ const Beneficiaries = () => {
         setIsModalOpen(true);
     };
 
-    // Callback para guardar desde el modal
-    const handleSaveBeneficiary = (savedData, mode) => {
+    // --- 2. LLAMADA AL BACKEND: CREAR O ACTUALIZAR BENEFICIARIO ---
+    const handleSaveBeneficiary = async (savedData, mode) => {
+        const token = sessionStorage.getItem('session_token');
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        };
+        
         setIsLoading(true);
-        // Simulamos el retraso de una llamada al backend
-        setTimeout(() => {
+
+        try {
             if (mode === 'add') {
-                const newId = Math.max(0, ...allBeneficiaries.map(b => b.id)) + 1;
-                setAllBeneficiaries(prev => [{ ...savedData, id: newId }, ...prev]);
+                const response = await fetch(`${apiUrl}/purchases/addBeneficiaries`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(savedData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const newBeneficiary = { ...savedData, id: data.new_id };
+                    setAllBeneficiaries([newBeneficiary, ...allBeneficiaries]);
+                    setIsModalOpen(false);
+                } else {
+                    const err = await response.json();
+                    alert(`Error al crear: ${err.error || 'Desconocido'}`);
+                }
             } else {
-                setAllBeneficiaries(prev => prev.map(b => b.id === savedData.id ? savedData : b));
+                const response = await fetch(`${apiUrl}/purchases/updateBeneficiaries/${savedData.id}`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(savedData)
+                });
+
+                if (response.ok) {
+                    setAllBeneficiaries(prev => prev.map(b => b.id === savedData.id ? savedData : b));
+                    setIsModalOpen(false);
+                } else {
+                    const err = await response.json();
+                    alert(`Error al editar: ${err.error || 'Desconocido'}`);
+                }
             }
+        } catch (error) {
+            console.error("Error saving beneficiary:", error);
+            alert('Error de conexión con el servidor.');
+        } finally {
             setIsLoading(false);
-            setIsModalOpen(false);
-        }, 800);
+        }
     };
 
     return (
@@ -181,15 +174,10 @@ const Beneficiaries = () => {
             <Box sx={styles.container}>
                 
                 <Box sx={styles.titleSection}>
-                    <Typography variant="h4" sx={styles.titleH2}>
-                        Gestión de Beneficiarios
-                    </Typography>
-                    <Typography variant="h6" sx={styles.titleH3}>
-                        Directorio de recepción de divisas (*)
-                    </Typography>
+                    <Typography variant="h4" sx={styles.titleH2}>Gestión de Beneficiarios</Typography>
+                    <Typography variant="h6" sx={styles.titleH3}>Directorio de recepción de divisas (*)</Typography>
                 </Box>
 
-                {/* --- BARRA DE BÚSQUEDA TIPO MATERIAL UI COMPUESTA --- */}
                 <Paper component="form" sx={styles.searchContainer} onSubmit={(e) => e.preventDefault()}>
                     <InputBase
                         sx={styles.searchInput}
@@ -206,7 +194,6 @@ const Beneficiaries = () => {
                     </Button>
                 </Box>
 
-                {/* --- TABLA MUI --- */}
                 <Paper sx={{ width: '90%', overflow: 'hidden', boxShadow: 3, borderRadius: 2 }}>
                     <TableContainer sx={{ maxHeight: 600 }}>
                         <Table stickyHeader aria-label="tabla de beneficiarios">
@@ -214,7 +201,7 @@ const Beneficiaries = () => {
                                 <TableRow>
                                     <TableCell sx={styles.tableHeader}>Beneficiario</TableCell>
                                     <TableCell sx={styles.tableHeader}>Banco</TableCell>
-                                    <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell>
+                                    {/* <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell> */}
                                     <TableCell sx={styles.tableHeader}>Observaciones</TableCell>
                                     <TableCell align='center' sx={styles.tableHeader}>Acciones</TableCell>
                                 </TableRow>
@@ -225,14 +212,10 @@ const Beneficiaries = () => {
                                         <TableRow hover key={row.id}>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#421d83' }}>{row.name}</TableCell>
                                             <TableCell>{row.bank}</TableCell>
-                                            <TableCell>{row.account}</TableCell>
+                                            {/* <TableCell>{row.account}</TableCell> */}
                                             <TableCell>{row.observations}</TableCell>
                                             <TableCell align="center">
-                                                <IconButton 
-                                                    color="primary" 
-                                                    onClick={() => handleEditClick(row)} 
-                                                    title="Editar Beneficiario"
-                                                >
+                                                <IconButton color="primary" onClick={() => handleEditClick(row)} title="Editar Beneficiario">
                                                     <EditIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -248,32 +231,19 @@ const Beneficiaries = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
-                    <TablePagination 
-                        rowsPerPageOptions={[5, 10, 25]} 
-                        component="div" 
-                        count={filteredBeneficiaries.length} 
-                        rowsPerPage={rowsPerPage} 
-                        page={page} 
-                        onPageChange={handleChangePage} 
-                        onRowsPerPageChange={handleChangeRowsPerPage} 
-                        labelRowsPerPage="Filas por página:" 
-                    />
+                    <TablePagination rowsPerPageOptions={[5, 10, 25]} component="div" count={filteredBeneficiaries.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} labelRowsPerPage="Filas por página:" />
                 </Paper>
 
-                {/* --- COMPONENTE MODAL --- */}
                 <BeneficiariesModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     mode={modalMode}
                     beneficiary={beneficiaryToEdit}
                     onSave={handleSaveBeneficiary}
+                    banksList={banksList} // <-- PASAMOS LA LISTA DE BANCOS AL MODAL
                 />
 
-                {/* --- CARGA (BACKDROP) --- */}
-                <Backdrop
-                    sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 999, backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
-                    open={isLoading}
-                >
+                <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 999, backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.4)' }} open={isLoading}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                         <CircularProgress color="inherit" size={60} thickness={4} />
                         <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>Procesando...</Typography>
