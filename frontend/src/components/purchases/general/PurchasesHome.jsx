@@ -55,35 +55,34 @@ const PurchasesHome = () => {
     const [editingId, setEditingId] = useState(null); 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
-        company: '', bank: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
+        company: '', entityId: '', bank: '', bankId: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
     });
 
     // --- 1. LLAMADA AL BACKEND: OBTENER DATOS INICIALES ---
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            const token = sessionStorage.getItem('session_token');
-            const headers = { 'Authorization': `Bearer ${token}` };
+    const fetchInitialData = async () => {
+        const token = sessionStorage.getItem('session_token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        setIsLoading(true);
+        try {
+            const [trxRes, entitiesRes, banksRes] = await Promise.all([
+                fetch(`${apiUrl}/purchases/getPurchases`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers })
+            ]);
+
+            if (trxRes.ok) setAllTransactions(await trxRes.json());
+            if (entitiesRes.ok) setCompaniesList(await entitiesRes.json());
+            if (banksRes.ok) setBanksList(await banksRes.json());
             
-            setIsLoading(true);
-            try {
-                // Consultamos las compras, las entidades (empresas) y los bancos en paralelo
-                const [trxRes, entitiesRes, banksRes] = await Promise.all([
-                    fetch(`${apiUrl}/purchases/transactions`, { method: 'GET', headers }),
-                    fetch(`${apiUrl}/availability/getEntities`, { method: 'GET', headers }),
-                    fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers })
-                ]);
+        } catch (error) {
+            console.error("Error al cargar la data inicial:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-                if (trxRes.ok) setAllTransactions(await trxRes.json());
-                if (entitiesRes.ok) setCompaniesList(await entitiesRes.json());
-                if (banksRes.ok) setBanksList(await banksRes.json());
-                
-            } catch (error) {
-                console.error("Error al cargar la data inicial:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
+    useEffect(() => {
         if (user) fetchInitialData();
     }, [user]);
 
@@ -131,17 +130,27 @@ const PurchasesHome = () => {
         setEditingId(null); 
         setFormData({
             date: new Date().toISOString().split('T')[0],
-            company: '', bank: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
+            company: '', entityId: '', bank: '', bankId: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
         });
         setOpenModal(true);
     };
 
     const handleOpenEditModal = (trx) => {
+        const selectedCompany = companiesList.find(c => c.name === trx.company);
+        const selectedBank = banksList.find(b => b.BankName === trx.bank);
+
         setEditingId(trx.id); 
         setFormData({
-            date: trx.date, company: trx.company, bank: trx.bank, account: trx.account,
-            dollarsBought: trx.dollarsBought, exchangeRate: trx.exchangeRate,
-            bolivares: trx.bolivares, observations: trx.observations || ''
+            date: trx.date, 
+            company: trx.company, 
+            entityId: selectedCompany ? selectedCompany.id : '',
+            bank: trx.bank, 
+            bankId: selectedBank ? selectedBank.BankID : '',
+            account: trx.account,
+            dollarsBought: trx.dollarsBought, 
+            exchangeRate: trx.exchangeRate,
+            bolivares: trx.bolivares, 
+            observations: trx.observations || ''
         });
         setOpenModal(true);
     };
@@ -166,26 +175,45 @@ const PurchasesHome = () => {
         });
     };
 
-    // TODO: Conectar este método con POST y PUT del backend en el siguiente paso
-    const handleSaveTransaction = () => {
-        if (!formData.company || !formData.bank || !formData.account || !formData.dollarsBought || !formData.exchangeRate || !formData.bolivares) {
+    // --- CONEXIÓN CON POST Y PUT DEL BACKEND ---
+    const handleSaveTransaction = async () => {
+        if (!formData.entityId || !formData.bankId || !formData.account || !formData.dollarsBought || !formData.exchangeRate || !formData.bolivares) {
             alert("Por favor llena todos los campos numéricos y de selección.");
             return;
         }
 
-        const newTransaction = {
-            id: editingId ? editingId : Math.max(0, ...allTransactions.map(t => t.id)) + 1, 
-            date: formData.date, company: formData.company, bank: formData.bank, account: formData.account,
-            dollarsBought: parseFloat(formData.dollarsBought), exchangeRate: parseFloat(formData.exchangeRate),
-            bolivares: parseFloat(formData.bolivares), observations: formData.observations
-        };
-
-        if (editingId) {
-            setAllTransactions(prev => prev.map(trx => trx.id === editingId ? newTransaction : trx));
-        } else {
-            setAllTransactions([newTransaction, ...allTransactions]);
+        if (formData.account.length !== 20) {
+            alert("El número de cuenta debe tener exactamente 20 dígitos.");
+            return;
         }
-        handleCloseModal();
+
+        const token = sessionStorage.getItem('session_token');
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId 
+            ? `${apiUrl}/purchases/updatePurchase/${editingId}` 
+            : `${apiUrl}/purchases/addPurchase`;
+
+        setIsLoading(true);
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                await fetchInitialData();
+                handleCloseModal();
+            } else {
+                const error = await response.json();
+                alert(`Error al guardar: ${error.error}`);
+            }
+        } catch (error) {
+            console.error("Error saving transaction:", error);
+            alert('Error de conexión con el servidor.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleChangePage = (event, newPage) => setPage(newPage);
@@ -231,7 +259,6 @@ const PurchasesHome = () => {
                                     </TableCell>
                                     <TableCell sx={styles.tableHeader}>Empresa</TableCell>
                                     <TableCell sx={styles.tableHeader}>Banco Pagador</TableCell>
-                                    {/* <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell> */}
                                     <TableCell align='right' sx={styles.tableHeader}>Dólares Comprados</TableCell>
                                     <TableCell align='right' sx={styles.tableHeader}>Tasa</TableCell>
                                     <TableCell align='right' sx={styles.tableHeader}>Bolívares</TableCell>
@@ -246,7 +273,6 @@ const PurchasesHome = () => {
                                             <TableCell>{formatDateToDDMMYYYY(trx.date)}</TableCell>
                                             <TableCell>{trx.company}</TableCell>
                                             <TableCell>{trx.bank}</TableCell>
-                                            {/* <TableCell>{trx.account}</TableCell> */}
                                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>${formatCurrency(trx.dollarsBought)}</TableCell>
                                             <TableCell align="right">Bs. {formatCurrency(trx.exchangeRate)}</TableCell>
                                             <TableCell align="right" sx={{ fontWeight: 'bold' }}>Bs. {formatCurrency(trx.bolivares)}</TableCell>
@@ -281,9 +307,19 @@ const PurchasesHome = () => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2 }}>
                             <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={styles.customTextField} />
                             <Autocomplete
-                                options={companiesList.map(c => c.EntityName)}
+                                options={companiesList.map(c => c.name)}
                                 value={formData.company || null}
-                                onChange={(event, newValue) => setFormData(prev => ({ ...prev, company: newValue || '' }))}
+                                onChange={(event, newValue) => {
+                                    const selectedCompany = companiesList.find(c => c.name === newValue);
+                                    setFormData(prev => ({ 
+                                        ...prev, 
+                                        company: newValue || '', 
+                                        entityId: selectedCompany ? selectedCompany.id : '',
+                                        bank: selectedCompany ? selectedCompany.bank : prev.bank,
+                                        bankId: selectedCompany ? selectedCompany.bankId : prev.bankId,
+                                        account: selectedCompany ? selectedCompany.account : prev.account
+                                    }));
+                                }}
                                 renderInput={(params) => <TextField {...params} label="Empresa" fullWidth size="small" sx={styles.customTextField} />}
                             />
                         </Box>
@@ -292,24 +328,41 @@ const PurchasesHome = () => {
                             <Autocomplete
                                 options={banksList.map(b => b.BankName)}
                                 value={formData.bank || null}
-                                onChange={(event, newValue) => setFormData(prev => ({ ...prev, bank: newValue || '' }))}
+                                onChange={(event, newValue) => {
+                                    const selectedBank = banksList.find(b => b.BankName === newValue);
+                                    setFormData(prev => ({ 
+                                        ...prev, 
+                                        bank: newValue || '', 
+                                        bankId: selectedBank ? selectedBank.BankID : '' 
+                                    }));
+                                }}
                                 renderInput={(params) => <TextField {...params} label="Banco Pagador" fullWidth size="small" sx={styles.customTextField} />}
                             />
                             <TextField 
-                                label="Número de Cuenta (Últimos 4)*" name="account" type="text" value={formData.account} 
+                                label="Número de Cuenta (20 dígitos)*" name="account" type="text" value={formData.account} 
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     if (val === '' || /^[0-9]+$/.test(val)) handleInputChange(e);
                                 }} 
                                 fullWidth size="small" sx={styles.customTextField}
-                                inputProps={{ maxLength: 4, inputMode: 'numeric', pattern: '[0-9]*' }}
+                                inputProps={{ maxLength: 20, inputMode: 'numeric', pattern: '[0-9]*' }}
                             />
                         </Box>
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                             <TextField label="Dólares Comprados ($)" name="dollarsBought" type="number" value={formData.dollarsBought} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} inputProps={{ min: 0, step: "any" }} />
                             <TextField label="Tasa (Bs.)" name="exchangeRate" type="number" value={formData.exchangeRate} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} inputProps={{ min: 0, step: "any" }} />
-                            <TextField label="Bolívares (Bs.)" name="bolivares" type="number" value={formData.bolivares} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} inputProps={{ min: 0, step: "any" }} />
+                            <TextField 
+                                label="Bolívares (Bs.)" 
+                                name="bolivares" 
+                                type="number" 
+                                value={formData.bolivares} 
+                                fullWidth 
+                                size="small" 
+                                sx={styles.customTextField} 
+                                inputProps={{ min: 0, step: "any" }} 
+                                InputProps={{ readOnly: true }} 
+                            />
                         </Box>
 
                         <TextField label="Observaciones" name="observations" multiline rows={2} value={formData.observations} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} />
