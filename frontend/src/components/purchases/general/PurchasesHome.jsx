@@ -20,7 +20,7 @@ const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.
 
 // --- DICCIONARIO DE ESTILOS UNIFICADO (CSS + MUI) ---
 const styles = {
-    container: { padding: '30px', backgroundColor: 'rgb(240, 240, 240)', minHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+    container: { padding: '30px', backgroundColor: '#f0f0f0', minHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
     titleSection: { width: '100%', maxWidth: '1200px', textAlign: 'center', marginBottom: '10px' },
     titleH2: { color: '#191c16', marginBottom: '5px', fontWeight: 600 },
     titleH3: { color: '#61608b', marginTop: 0, fontWeight: 500, fontSize: '1.2em' },
@@ -40,7 +40,7 @@ const PurchasesHome = () => {
     const [allTransactions, setAllTransactions] = useState([]);
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     
-    // --- ESTADOS DE CATÁLOGOS (Desde el backend) ---
+    // --- ESTADOS DE CATÁLOGOS  ---
     const [companiesList, setCompaniesList] = useState([]);
     const [banksList, setBanksList] = useState([]);
 
