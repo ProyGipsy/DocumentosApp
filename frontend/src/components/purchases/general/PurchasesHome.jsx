@@ -238,7 +238,6 @@ const PurchasesHome = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         inputProps={{ 'aria-label': 'buscar compras' }}
                     />
-                    <IconButton type="button" sx={styles.searchButton} aria-label="search"><SearchIcon /></IconButton>
                 </Paper>
                 
                 <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
