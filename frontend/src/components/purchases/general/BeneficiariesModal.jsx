@@ -1,4 +1,3 @@
-// BeneficiariesModal.jsx actualizado
 import React, { useState, useEffect } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, 
@@ -15,13 +14,17 @@ const darkButtonStyle = {
     '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' }
 };
 
-// Agregamos banksList a los props destructurados
+const documentPrefixes = ['V', 'E', 'J', 'G', 'P'];
+
 const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null, onSave, banksList = [] }) => {
     const [formData, setFormData] = useState({
         id: '',
         name: '',
-        bank: '',    // Texto para el Autocomplete
-        bankId: '',  // ID numérico para el backend
+        documentPrefix: '',
+        documentNumber: '',
+        email: '',
+        bank: '',
+        bankId: '',
         account: '',
         observations: ''
     });
@@ -32,13 +35,19 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
                 setFormData({
                     id: beneficiary.id || '',
                     name: beneficiary.name || '',
-                    bank: beneficiary.bank || '',   // Cargamos el nombre
-                    bankId: beneficiary.bankId || '', // Cargamos el ID
+                    documentPrefix: beneficiary.documentPrefix || '',
+                    documentNumber: beneficiary.documentNumber || '',
+                    email: beneficiary.email || '',
+                    bank: beneficiary.bank || '',
+                    bankId: beneficiary.bankId || '',
                     account: beneficiary.account || '',
                     observations: beneficiary.observations || ''
                 });
             } else {
-                setFormData({ id: '', name: '', bank: '', bankId: '', account: '', observations: '' });
+                setFormData({ 
+                    id: '', name: '', documentPrefix: '', documentNumber: '', 
+                    email: '', bank: '', bankId: '', account: '', observations: '' 
+                });
             }
         }
     }, [isOpen, mode, beneficiary]);
@@ -49,7 +58,6 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
     };
 
     const handleBankChange = (event, newValue) => {
-        // Buscamos el objeto del banco para extraer su ID
         const selectedBank = banksList.find(b => b.BankName === newValue);
         setFormData(prev => ({ 
             ...prev, 
@@ -59,11 +67,10 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
     };
 
     const handleSave = () => {
-        if (!formData.name.trim() || !formData.bankId || !formData.account.trim()) {
-            alert('Por favor, complete los campos obligatorios: Beneficiario, Banco y Número de Cuenta.');
+        if (!formData.name.trim() || !formData.documentPrefix || !formData.documentNumber.trim() || !formData.email.trim() || !formData.bankId || !formData.account.trim()) {
+            alert('Por favor, complete los campos obligatorios: Nombre, Identificación, Correo Electrónico, Banco y Número de Cuenta.');
             return;
         }
-        // Validación de 20 dígitos interceptada según lo acordado
         if (formData.account.length !== 20) {
             alert(`La cuenta debe tener 20 dígitos (actualmente: ${formData.account.length}).`);
             return;
@@ -74,10 +81,43 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
     return (
         <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: '#f4f4f4', borderBottom: '1px solid #ddd' }}>
-                {mode === 'edit' ? 'Editar Beneficiario' : 'Nuevo Beneficiario'}
+                {mode === 'edit' ? 'Editar Proveedor' : 'Nuevo Proveedor'}
             </DialogTitle>
             <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <TextField label="Nombre del Beneficiario *" name="name" value={formData.name} onChange={handleChange} fullWidth size="small" sx={customTextFieldStyle} autoFocus />
+                
+                {/* Nombre */}
+                <TextField label="Nombre del Proveedor *" name="name" value={formData.name} onChange={handleChange} fullWidth size="small" sx={customTextFieldStyle} autoFocus />
+                
+                {/* Identificación y Correo */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '80px 1fr 1.5fr', gap: 2 }}>
+                    <Autocomplete
+                        options={documentPrefixes}
+                        value={formData.documentPrefix}
+                        disableClearable
+                        onChange={(e, val) => setFormData(p => ({ ...p, documentPrefix: val }))}
+                        renderInput={(params) => <TextField {...params} label="Tipo" size="small" sx={customTextFieldStyle} />}
+                    />
+                    <TextField 
+                        label="Identificación *" 
+                        name="documentNumber" 
+                        value={formData.documentNumber} 
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^[0-9]+$/.test(val)) handleChange(e);
+                        }} 
+                        fullWidth size="small" sx={customTextFieldStyle} 
+                    />
+                    <TextField 
+                        label="Correo Electrónico *" 
+                        name="email" 
+                        type="email" 
+                        value={formData.email} 
+                        onChange={handleChange} 
+                        fullWidth size="small" sx={customTextFieldStyle} 
+                    />
+                </Box>
+
+                {/* Banco y Cuenta */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     <Autocomplete
                         options={banksList.map((option) => option.BankName)}
@@ -98,12 +138,15 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
                         inputProps={{ maxLength: 20, inputMode: 'numeric', pattern: '[0-9]*' }}
                     />
                 </Box>
+                
+                {/* Observaciones */}
                 <TextField label="Observaciones" name="observations" multiline rows={2} value={formData.observations} onChange={handleChange} fullWidth size="small" sx={customTextFieldStyle} />
+            
             </DialogContent>
             <DialogActions sx={{ padding: '16px', borderTop: '1px solid #ddd' }}>
                 <Button onClick={onClose} color="inherit" variant="text" sx={{ fontWeight: 'bold' }}>Cancelar</Button>
                 <Button onClick={handleSave} variant="contained" sx={darkButtonStyle}>
-                    {mode === 'edit' ? 'Guardar Cambios' : 'Agregar Beneficiario'}
+                    {mode === 'edit' ? 'Guardar Cambios' : 'Agregar Proveedor'}
                 </Button>
             </DialogActions>
         </Dialog>

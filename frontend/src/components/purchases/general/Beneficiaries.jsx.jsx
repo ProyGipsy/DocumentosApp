@@ -36,7 +36,7 @@ const Beneficiaries = () => {
     const [allBeneficiaries, setAllBeneficiaries] = useState([]);
     const [filteredBeneficiaries, setFilteredBeneficiaries] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [banksList, setBanksList] = useState([]); // <-- NUEVO ESTADO PARA BANCOS
+    const [banksList, setBanksList] = useState([]); 
     
     // Paginación y Carga
     const [page, setPage] = useState(0);
@@ -48,7 +48,7 @@ const Beneficiaries = () => {
     const [modalMode, setModalMode] = useState('add'); 
     const [beneficiaryToEdit, setBeneficiaryToEdit] = useState(null);
 
-    // --- 1. LLAMADA AL BACKEND: OBTENER BENEFICIARIOS Y BANCOS ---
+    // --- LLAMADA AL BACKEND: OBTENER PROVEEDORES Y BANCOS ---
     useEffect(() => {
         const fetchInitialData = async () => {
             const token = sessionStorage.getItem('session_token');
@@ -56,10 +56,9 @@ const Beneficiaries = () => {
             
             setIsLoading(true);
             try {
-                // Ejecutamos ambas peticiones en paralelo para mayor rapidez
                 const [beneficiariesRes, banksRes] = await Promise.all([
                     fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
-                    fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers }) // <-- Reutilizando el endpoint de disponibilidad
+                    fetch(`${apiUrl}/getBanksNational`, { method: 'GET', headers }) 
                 ]);
 
                 if (beneficiariesRes.ok) {
@@ -94,7 +93,9 @@ const Beneficiaries = () => {
         const results = allBeneficiaries.filter(b =>
             (b.name && b.name.toLowerCase().includes(lowerCaseSearch)) || 
             (b.bank && b.bank.toLowerCase().includes(lowerCaseSearch)) ||
-            (b.account && b.account.includes(lowerCaseSearch))
+            (b.account && b.account.includes(lowerCaseSearch)) ||
+            (b.email && b.email.toLowerCase().includes(lowerCaseSearch)) ||
+            (b.documentNumber && b.documentNumber.includes(lowerCaseSearch))
         );
         setFilteredBeneficiaries(results);
         setPage(0);
@@ -119,7 +120,7 @@ const Beneficiaries = () => {
         setIsModalOpen(true);
     };
 
-    // --- 2. LLAMADA AL BACKEND: CREAR O ACTUALIZAR BENEFICIARIO ---
+    // --- LLAMADA AL BACKEND: CREAR O ACTUALIZAR PROVEEDOR ---
     const handleSaveBeneficiary = async (savedData, mode) => {
         const token = sessionStorage.getItem('session_token');
         const headers = { 
@@ -174,35 +175,36 @@ const Beneficiaries = () => {
             <Box sx={styles.container}>
                 
                 <Box sx={styles.titleSection}>
-                    <Typography variant="h4" sx={styles.titleH2}>Gestión de Beneficiarios</Typography>
+                    <Typography variant="h4" sx={styles.titleH2}>Gestión de Proveedores</Typography>
                     <Typography variant="h6" sx={styles.titleH3}>Directorio de recepción de divisas (*)</Typography>
                 </Box>
 
                 <Paper component="form" sx={styles.searchContainer} onSubmit={(e) => e.preventDefault()}>
                     <InputBase
                         sx={styles.searchInput}
-                        placeholder="Buscar por Nombre, Banco o Cuenta..."
+                        placeholder="Buscar por Nombre, Documento, Correo, Cuenta..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        inputProps={{ 'aria-label': 'buscar beneficiarios' }}
+                        inputProps={{ 'aria-label': 'buscar proveedores' }}
                     />
                 </Paper>
                 
                 <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
                     <Button variant="contained" sx={styles.darkButton} onClick={handleAddClick}>
-                        Agregar Beneficiario
+                        Agregar Proveedor
                     </Button>
                 </Box>
 
                 <Paper sx={{ width: '90%', overflow: 'hidden', boxShadow: 3, borderRadius: 2 }}>
                     <TableContainer sx={{ maxHeight: 600 }}>
-                        <Table stickyHeader aria-label="tabla de beneficiarios">
+                        <Table stickyHeader aria-label="tabla de proveedores">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={styles.tableHeader}>Beneficiario</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Proveedor</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Identificación</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Correo</TableCell>
                                     <TableCell sx={styles.tableHeader}>Banco</TableCell>
-                                    {/* <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell> */}
-                                    <TableCell sx={styles.tableHeader}>Observaciones</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Número de Cuenta</TableCell>
                                     <TableCell align='center' sx={styles.tableHeader}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -211,11 +213,14 @@ const Beneficiaries = () => {
                                     filteredBeneficiaries.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
                                         <TableRow hover key={row.id}>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#421d83' }}>{row.name}</TableCell>
+                                            <TableCell>
+                                                {row.documentPrefix && row.documentNumber ? `${row.documentPrefix}-${row.documentNumber}` : 'N/A'}
+                                            </TableCell>
+                                            <TableCell>{row.email || 'N/A'}</TableCell>
                                             <TableCell>{row.bank}</TableCell>
-                                            {/* <TableCell>{row.account}</TableCell> */}
-                                            <TableCell>{row.observations}</TableCell>
+                                            <TableCell>{row.account ? '*****' + row.account.slice(-4) : 'N/A'}</TableCell>
                                             <TableCell align="center">
-                                                <IconButton color="primary" onClick={() => handleEditClick(row)} title="Editar Beneficiario">
+                                                <IconButton color="primary" onClick={() => handleEditClick(row)} title="Editar Proveedor">
                                                     <EditIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -223,8 +228,8 @@ const Beneficiaries = () => {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                                            <Typography variant="body1" color="textSecondary">No se encontraron beneficiarios.</Typography>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                                            <Typography variant="body1" color="textSecondary">No se encontraron proveedores.</Typography>
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -240,7 +245,7 @@ const Beneficiaries = () => {
                     mode={modalMode}
                     beneficiary={beneficiaryToEdit}
                     onSave={handleSaveBeneficiary}
-                    banksList={banksList} // <-- PASAMOS LA LISTA DE BANCOS AL MODAL
+                    banksList={banksList}
                 />
 
                 <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 999, backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.4)' }} open={isLoading}>

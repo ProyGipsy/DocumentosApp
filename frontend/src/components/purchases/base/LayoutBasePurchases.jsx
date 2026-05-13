@@ -170,7 +170,7 @@ const LayoutBasePurchases = ({ activePage, children }) => {
             <ListItemIcon>
               <BeneficiariesIcon sx={styles.beneficiariesIcon} />
             </ListItemIcon>
-            <ListItemText primary="Beneficiarios" sx={styles.beneficiariesText} />
+            <ListItemText primary="Proveedores" sx={styles.beneficiariesText} />
           </ListItemButton>
         </ListItem>
       </List>
