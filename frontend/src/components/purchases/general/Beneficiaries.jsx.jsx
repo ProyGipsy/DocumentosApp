@@ -176,7 +176,7 @@ const Beneficiaries = () => {
                 
                 <Box sx={styles.titleSection}>
                     <Typography variant="h4" sx={styles.titleH2}>Gestión de Proveedores</Typography>
-                    <Typography variant="h6" sx={styles.titleH3}>Directorio de recepción de divisas (*)</Typography>
+                    <Typography variant="h6" sx={styles.titleH3}>Directorio general para los proveedores.</Typography>
                 </Box>
 
                 <Paper component="form" sx={styles.searchContainer} onSubmit={(e) => e.preventDefault()}>

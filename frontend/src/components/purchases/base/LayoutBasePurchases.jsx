@@ -24,7 +24,7 @@ import {
 // Iconos de Material UI
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/AddCard';
-import ReceptionIcon from '@mui/icons-material/CreditScore';
+import ReceptionIcon from '@mui/icons-material/History';
 import BeneficiariesIcon from '@mui/icons-material/People';
 import AppsIcon from '@mui/icons-material/Apps';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -155,7 +155,7 @@ const LayoutBasePurchases = ({ activePage, children }) => {
             <ListItemIcon>
               <ReceptionIcon sx={styles.receptionIcon} />
             </ListItemIcon>
-            <ListItemText primary="Recepción de fondos" sx={styles.receptionText} />
+            <ListItemText primary="Historial de compras" sx={styles.receptionText} />
           </ListItemButton>
         </ListItem>
 

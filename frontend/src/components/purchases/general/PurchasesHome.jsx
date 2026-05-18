@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LayoutBasePurchases from '../base/LayoutBasePurchases';
 import { useAuth } from '../../../utils/AuthContext';
+import PurchaseModal from './PurchaseModal';
+import ValidatePurchaseModal from './ValidatePurchaseModal';
 
 // Importaciones de Material UI
 import { 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
-    Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, TableSortLabel, IconButton, Autocomplete, InputBase, Backdrop, CircularProgress
+    Typography, Button, Box, TableSortLabel, IconButton, InputBase, Backdrop, CircularProgress
 } from '@mui/material';
 
 // Iconos
 import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
+import ValidateIcon from '@mui/icons-material/DoneAll';
+import ValidatedIcon from '@mui/icons-material/RemoveDone';
 
 // --- CONFIGURACIÓN DE API ---
 const isDevelopment = import.meta.env.MODE === 'development';
@@ -26,10 +28,10 @@ const styles = {
     titleH3: { color: '#61608b', marginTop: 0, fontWeight: 500, fontSize: '1.2em' },
     searchContainer: { p: '2px 4px', display: 'flex', alignItems: 'center', width: '90%', maxWidth: '500px', marginBottom: '50px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)', backgroundColor: '#f9f9f9', border: '1px solid #cccccc00', transition: 'background-color 0.3s', '&:focus-within': { backgroundColor: '#fff' } },
     searchInput: { ml: 1, flex: 1, padding: '8px 10px', color: '#191c16', '& input::placeholder': { color: '#888888', opacity: 1 } },
-    searchButton: { p: '10px', backgroundColor: '#6d36ce', color: 'white', borderRadius: '0 8px 8px 0', width: '55px', height: '100%', '&:hover': { backgroundColor: '#975cfc' } },
     tableHeader: { backgroundColor: '#6d36ce', fontWeight: 'bold', color: '#f4f4f4', transition: 'background-color 0.3s ease', '&:hover': { backgroundColor: '#975cfc', color: '#ffffff', cursor: 'pointer' } },
     darkButton: { backgroundColor: '#6d36ce', color: '#f4f4f4', fontWeight: 'bold', borderRadius: '16px', padding: '10px 20px', boxShadow: 3, '&:hover': { backgroundColor: '#975cfc', color: '#ffffff' } },
-    customTextField: { '& label.Mui-focused': { color: '#6d36ce' }, '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#975cfc' } } }
+    customTextField: { '& label.Mui-focused': { color: '#6d36ce' }, '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#975cfc' } } },
+    successButton: { backgroundColor: '#2e7d32', color: '#ffffff', fontWeight: 'bold', borderRadius: '16px', padding: '8px 20px', boxShadow: 3, '&:hover': { backgroundColor: '#1b5e20' } }
 };
 
 const PurchasesHome = () => {
@@ -37,12 +39,16 @@ const PurchasesHome = () => {
     
     // --- ESTADOS DE LA TABLA Y BÚSQUEDA ---
     const [searchTerm, setSearchTerm] = useState('');
+    const [isFinalStatus, setIsFinalStatus] = useState(false);
     const [allTransactions, setAllTransactions] = useState([]);
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     
     // --- ESTADOS DE CATÁLOGOS  ---
-    const [companiesList, setCompaniesList] = useState([]);
     const [banksList, setBanksList] = useState([]);
+    const [originEntities, setOriginEntities] = useState([]);
+    const [destEntities, setDestEntities] = useState([]);
+    const [beneficiariesList, setBeneficiariesList] = useState([]);
+
 
     // Paginación, Orden y Carga
     const [page, setPage] = useState(0);
@@ -51,34 +57,61 @@ const PurchasesHome = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     // --- ESTADOS PARA MODALES ---
-    const [openModal, setOpenModal] = useState(false);
-    const [editingId, setEditingId] = useState(null); 
-    const [formData, setFormData] = useState({
-        date: new Date().toISOString().split('T')[0],
-        company: '', entityId: '', bank: '', bankId: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
-    });
+    const [modalState, setModalState] = useState({ open: false, editingId: null, data: null });
+    const [validateModalState, setValidateModalState] = useState({ open: false, purchase: null });
 
     // --- 1. LLAMADA AL BACKEND: OBTENER DATOS INICIALES ---
     const fetchInitialData = async () => {
         const token = sessionStorage.getItem('session_token');
         const headers = { 'Authorization': `Bearer ${token}` };
-        
+
         setIsLoading(true);
         try {
-            const [trxRes, entitiesRes, banksRes] = await Promise.all([
-                fetch(`${apiUrl}/purchases/getPurchases`, { method: 'GET', headers }),
-                fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
-                fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers })
-            ]);
+            const trxRes = await fetch(`${apiUrl}/purchases/getPurchases`, { method: 'GET', headers });
 
-            if (trxRes.ok) setAllTransactions(await trxRes.json());
-            if (entitiesRes.ok) setCompaniesList(await entitiesRes.json());
-            if (banksRes.ok) setBanksList(await banksRes.json());
-            
+            if (trxRes.ok) {
+                const trxData = await trxRes.json();
+                setAllTransactions(trxData);
+            } else {
+                console.error("Error al cargar transacciones:", trxRes.statusText);
+            }
         } catch (error) {
             console.error("Error al cargar la data inicial:", error);
         } finally {
             setIsLoading(false);
+        }
+
+        try {
+            const [originRes, destRes, beneficiariesRes, banksRes] = await Promise.all([
+                fetch(`${apiUrl}/purchases/getNationalEntities`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/purchases/getInternationalEntities`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers })
+            ]);
+
+            if (originRes.ok) {
+                const originData = await originRes.json();
+                setOriginEntities(originData);
+            }
+
+            if (destRes.ok) {
+                const destData = await destRes.json();
+                setDestEntities(destData);
+            }
+
+            if (beneficiariesRes.ok) {
+                const beneficiariesData = await beneficiariesRes.json();
+                setBeneficiariesList(beneficiariesData);
+            }
+
+            // CORRECCIÓN: Llenamos banksList con los bancos reales
+            if (banksRes.ok) {
+                const banksData = await banksRes.json();
+                setBanksList(banksData);
+            }
+            
+        } catch (error) {
+            console.error("Error al cargar los catálogos:", error);
         }
     };
 
@@ -94,9 +127,9 @@ const PurchasesHome = () => {
         }
         const lowerCaseSearch = searchTerm.toLowerCase();
         const results = allTransactions.filter(trx =>
-            (trx.company && trx.company.toLowerCase().includes(lowerCaseSearch)) ||
-            (trx.bank && trx.bank.toLowerCase().includes(lowerCaseSearch)) ||
-            (trx.account && trx.account.includes(lowerCaseSearch)) ||
+            (trx.provider && trx.provider.toLowerCase().includes(lowerCaseSearch)) ||
+            (trx.originEntity && trx.originEntity.toLowerCase().includes(lowerCaseSearch)) ||
+            (trx.destEntity && trx.destEntity.toLowerCase().includes(lowerCaseSearch)) ||
             (trx.observations && trx.observations.toLowerCase().includes(lowerCaseSearch))
         );
         setFilteredTransactions(results);
@@ -125,72 +158,41 @@ const PurchasesHome = () => {
         return Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    // --- MANEJADORES DE MODAL ---
-    const handleOpenCreateModal = () => {
-        setEditingId(null); 
-        setFormData({
-            date: new Date().toISOString().split('T')[0],
-            company: '', entityId: '', bank: '', bankId: '', account: '', dollarsBought: '', exchangeRate: '', bolivares: '', observations: ''
-        });
-        setOpenModal(true);
-    };
-
-    const handleOpenEditModal = (trx) => {
-        const selectedCompany = companiesList.find(c => c.name === trx.company);
-        const selectedBank = banksList.find(b => b.BankName === trx.bank);
-
-        setEditingId(trx.id); 
-        setFormData({
-            date: trx.date, 
-            company: trx.company, 
-            entityId: selectedCompany ? selectedCompany.id : '',
-            bank: trx.bank, 
-            bankId: selectedBank ? selectedBank.BankID : '',
-            account: trx.account,
-            dollarsBought: trx.dollarsBought, 
-            exchangeRate: trx.exchangeRate,
-            bolivares: trx.bolivares, 
-            observations: trx.observations || ''
-        });
-        setOpenModal(true);
-    };
-
-    const handleCloseModal = () => {
-        setOpenModal(false);
-        setEditingId(null);
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => {
-            const newData = { ...prev, [name]: value };
-            if (name === 'dollarsBought' || name === 'exchangeRate') {
-                const dollars = parseFloat(newData.dollarsBought);
-                const rate = parseFloat(newData.exchangeRate);
-                if (!isNaN(dollars) && !isNaN(rate)) {
-                    newData.bolivares = (dollars * rate).toFixed(2);
-                }
-            }
-            return newData;
-        });
-    };
-
     // --- CONEXIÓN CON POST Y PUT DEL BACKEND ---
-    const handleSaveTransaction = async () => {
-        if (!formData.entityId || !formData.bankId || !formData.account || !formData.dollarsBought || !formData.exchangeRate || !formData.bolivares) {
-            alert("Por favor llena todos los campos numéricos y de selección.");
+    const handleSaveTransaction = async (formData) => {
+        // 1. Validamos que todos los campos de IDs y montos estén presentes
+        const requiredFields = [
+            formData.date,
+            formData.originEntityId, formData.originBankId, formData.originAccountId,
+            formData.destEntityId, formData.destBankId, formData.destAccountId,
+            formData.providerId, 
+            formData.dollarsBought, formData.exchangeRate
+        ];
+
+        if (requiredFields.some(field => !field)) {
+            alert("Por favor completa todos los campos requeridos de Origen, Destino, Proveedor y Compra.");
             return;
         }
 
-        if (formData.account.length !== 20) {
-            alert("El número de cuenta debe tener exactamente 20 dígitos.");
-            return;
-        }
+        const payload = {
+            date: formData.date,
+            originEntityId: formData.originEntityId,
+            originBankId: formData.originBankId,
+            originAccountId: formData.originAccountId,
+            destEntityId: formData.destEntityId,
+            destBankId: formData.destBankId,
+            destAccountId: formData.destAccountId,
+            beneficiaryId: formData.providerId,
+            dollarsBought: formData.dollarsBought,
+            exchangeRate: formData.exchangeRate,
+            bolivares: formData.bolivares,
+            observations: formData.observations || ''
+        };
 
         const token = sessionStorage.getItem('session_token');
-        const method = editingId ? 'PUT' : 'POST';
-        const url = editingId 
-            ? `${apiUrl}/purchases/updatePurchase/${editingId}` 
+        const method = modalState.editingId ? 'PUT' : 'POST';
+        const url = modalState.editingId 
+            ? `${apiUrl}/purchases/updatePurchase/${modalState.editingId}` 
             : `${apiUrl}/purchases/addPurchase`;
 
         setIsLoading(true);
@@ -198,12 +200,12 @@ const PurchasesHome = () => {
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 await fetchInitialData();
-                handleCloseModal();
+                setModalState({ open: false, editingId: null, data: null });
             } else {
                 const error = await response.json();
                 alert(`Error al guardar: ${error.error}`);
@@ -211,6 +213,36 @@ const PurchasesHome = () => {
         } catch (error) {
             console.error("Error saving transaction:", error);
             alert('Error de conexión con el servidor.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleConfirmValidation = async (id, validationData) => {
+        const token = sessionStorage.getItem('session_token');
+        setIsLoading(true);
+        
+        try {
+            const response = await fetch(`${apiUrl}/purchases/validatePurchase/${id}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify(validationData)
+            });
+
+            if (response.ok) {
+                await fetchInitialData(); // Refrescamos la tabla
+                setValidateModalState({ open: false, purchase: null });
+                // Aquí podrías agregar un alert o snackbar de "Liquidación exitosa"
+            } else {
+                const error = await response.json();
+                alert(`Error al validar: ${error.error}`);
+            }
+        } catch (error) {
+            console.error("Error validando transacción:", error);
+            alert('Error de conexión con el servidor al intentar validar.');
         } finally {
             setIsLoading(false);
         }
@@ -241,7 +273,7 @@ const PurchasesHome = () => {
                 </Paper>
                 
                 <Box sx={{ width: '90%', display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
-                    <Button variant="contained" sx={styles.darkButton} onClick={handleOpenCreateModal}>
+                    <Button variant="contained" sx={styles.darkButton} onClick={() => setModalState({ open: true, editingId: null, data: null })}>
                         Registrar Compra
                     </Button>
                 </Box>
@@ -256,12 +288,12 @@ const PurchasesHome = () => {
                                             Fecha
                                         </TableSortLabel>
                                     </TableCell>
-                                    <TableCell sx={styles.tableHeader}>Empresa</TableCell>
-                                    <TableCell sx={styles.tableHeader}>Banco Pagador</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Dólares Comprados</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Tasa</TableCell>
-                                    <TableCell align='right' sx={styles.tableHeader}>Bolívares</TableCell>
-                                    <TableCell sx={styles.tableHeader}>Observaciones</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Origen (Bs.)</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Destino ($)</TableCell>
+                                    <TableCell sx={styles.tableHeader}>Proveedor</TableCell>
+                                    <TableCell align='right'  sx={styles.tableHeader}>Dólares</TableCell>
+                                    <TableCell align='right'  sx={styles.tableHeader}>Tasa</TableCell>
+                                    <TableCell align='right'  sx={styles.tableHeader}>Bolívares</TableCell>
                                     <TableCell align='center' sx={styles.tableHeader}>Acciones</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -270,14 +302,40 @@ const PurchasesHome = () => {
                                     sortedTransactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => (
                                         <TableRow hover role="checkbox" tabIndex={-1} key={trx.id}>
                                             <TableCell>{formatDateToDDMMYYYY(trx.date)}</TableCell>
-                                            <TableCell>{trx.company}</TableCell>
-                                            <TableCell>{trx.bank}</TableCell>
+                                            
+                                            {/* Mostramos Entidad y Banco para mayor claridad */}
+                                            <TableCell>
+                                                <strong>{trx.originEntity}</strong><br/>
+                                                <span style={{ fontSize: '0.85em', color: '#555' }}>{trx.originBank}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <strong>{trx.destEntity}</strong><br/>
+                                                <span style={{ fontSize: '0.85em', color: '#555' }}>{trx.destBank}</span>
+                                            </TableCell>
+                                            
+                                            <TableCell>{trx.provider}</TableCell>
+                                            
                                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>${formatCurrency(trx.dollarsBought)}</TableCell>
                                             <TableCell align="right">Bs. {formatCurrency(trx.exchangeRate)}</TableCell>
                                             <TableCell align="right" sx={{ fontWeight: 'bold' }}>Bs. {formatCurrency(trx.bolivares)}</TableCell>
-                                            <TableCell>{trx.observations}</TableCell>
+                                            
                                             <TableCell align="center">
-                                                <IconButton color="primary" onClick={() => handleOpenEditModal(trx)} title="Editar">
+                                                {trx.isValidated ? (
+                                                    <IconButton color="disabled" title="Compra Ya Validada" disabled={true}>
+                                                        <ValidatedIcon />
+                                                    </IconButton>
+                                                ) : (
+                                                    <IconButton color="success" onClick={() => setValidateModalState({ open: true, purchase: trx })} title="Validar Compra">
+                                                        <ValidateIcon />
+                                                    </IconButton>
+                                                )}
+                                                
+                                                <IconButton 
+                                                    color="primary" 
+                                                    onClick={() => setModalState({ open: true, editingId: trx.id, data: trx })} 
+                                                    title="Editar"
+                                                    disabled={!!trx.isValidated}
+                                                >
                                                     <EditIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -285,7 +343,7 @@ const PurchasesHome = () => {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                                             <Typography variant="body1" color="textSecondary">No se encontraron registros.</Typography>
                                         </TableCell>
                                     </TableRow>
@@ -296,82 +354,26 @@ const PurchasesHome = () => {
                     <TablePagination rowsPerPageOptions={[5, 10, 25]} component="div" count={filteredTransactions.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} labelRowsPerPage="Filas por página:" />
                 </Paper>
 
-                {/* --- MODAL --- */}
-                <Dialog open={openModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
-                    <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: '#f4f4f4', borderBottom: '1px solid #ddd' }}>
-                        {editingId ? 'Editar Compra' : 'Registrar Nueva Compra'}
-                    </DialogTitle>
-                    <DialogContent sx={{ paddingTop: '20px !important', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2 }}>
-                            <TextField label="Fecha" name="date" type="date" value={formData.date} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={styles.customTextField} />
-                            <Autocomplete
-                                options={companiesList.map(c => c.name)}
-                                value={formData.company || null}
-                                onChange={(event, newValue) => {
-                                    const selectedCompany = companiesList.find(c => c.name === newValue);
-                                    setFormData(prev => ({ 
-                                        ...prev, 
-                                        company: newValue || '', 
-                                        entityId: selectedCompany ? selectedCompany.id : '',
-                                        bank: selectedCompany ? selectedCompany.bank : prev.bank,
-                                        bankId: selectedCompany ? selectedCompany.bankId : prev.bankId,
-                                        account: selectedCompany ? selectedCompany.account : prev.account
-                                    }));
-                                }}
-                                renderInput={(params) => <TextField {...params} label="Empresa" fullWidth size="small" sx={styles.customTextField} />}
-                            />
-                        </Box>
+                <PurchaseModal 
+                    isOpen={modalState.open} 
+                    onClose={() => setModalState({ open: false, editingId: null, data: null })}
+                    editingId={modalState.editingId}
+                    initialData={modalState.data}
+                    onSave={handleSaveTransaction}
 
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <Autocomplete
-                                options={banksList.map(b => b.BankName)}
-                                value={formData.bank || null}
-                                onChange={(event, newValue) => {
-                                    const selectedBank = banksList.find(b => b.BankName === newValue);
-                                    setFormData(prev => ({ 
-                                        ...prev, 
-                                        bank: newValue || '', 
-                                        bankId: selectedBank ? selectedBank.BankID : '' 
-                                    }));
-                                }}
-                                renderInput={(params) => <TextField {...params} label="Banco Pagador" fullWidth size="small" sx={styles.customTextField} />}
-                            />
-                            <TextField 
-                                label="Número de Cuenta (20 dígitos)*" name="account" type="text" value={formData.account} 
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '' || /^[0-9]+$/.test(val)) handleInputChange(e);
-                                }} 
-                                fullWidth size="small" sx={styles.customTextField}
-                                inputProps={{ maxLength: 20, inputMode: 'numeric', pattern: '[0-9]*' }}
-                            />
-                        </Box>
+                    originEntities={originEntities}
+                    destEntities={destEntities}
+                    beneficiariesList={beneficiariesList}
+                    banksList={banksList} // CORRECCIÓN: Se agrega banksList como prop
+                />
 
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                            <TextField label="Dólares Comprados ($)" name="dollarsBought" type="number" value={formData.dollarsBought} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} inputProps={{ min: 0, step: "any" }} />
-                            <TextField label="Tasa (Bs.)" name="exchangeRate" type="number" value={formData.exchangeRate} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} inputProps={{ min: 0, step: "any" }} />
-                            <TextField 
-                                label="Bolívares (Bs.)" 
-                                name="bolivares" 
-                                type="number" 
-                                value={formData.bolivares} 
-                                fullWidth 
-                                size="small" 
-                                sx={styles.customTextField} 
-                                inputProps={{ min: 0, step: "any" }} 
-                                InputProps={{ readOnly: true }} 
-                            />
-                        </Box>
-
-                        <TextField label="Observaciones" name="observations" multiline rows={2} value={formData.observations} onChange={handleInputChange} fullWidth size="small" sx={styles.customTextField} />
-                    </DialogContent>
-                    
-                    <DialogActions sx={{ padding: '16px', borderTop: '1px solid #ddd' }}>
-                        <Button onClick={handleCloseModal} color="inherit" variant="text" sx={{ fontWeight: 'bold' }}>Cancelar</Button>
-                        <Button onClick={handleSaveTransaction} variant="contained" sx={styles.darkButton}>Guardar</Button>
-                    </DialogActions>
-                </Dialog>
+                <ValidatePurchaseModal 
+                    isOpen={validateModalState.open}
+                    onClose={() => setValidateModalState({ open: false, purchase: null })}
+                    purchase={validateModalState.purchase}
+                    onConfirm={handleConfirmValidation}
+                    user={user}
+                />
 
                 {/* --- LOADING BACKDROP --- */}
                 <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 999, backdropFilter: 'blur(5px)', backgroundColor: 'rgba(0, 0, 0, 0.4)' }} open={isLoading}>
