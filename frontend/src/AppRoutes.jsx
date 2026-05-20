@@ -15,6 +15,7 @@ import Agenda from './components/documents/admin/Agenda.jsx';
 
 /* Rutas para el modulo de Disponibilidad */
 import AvailabilityHome from './components/balance/general/AvailabilityHome.jsx';
+import AvailabilityReports from './components/balance/general/AvailabilityReport.jsx';
 
 /* Rutas para el modulo de Compras Divisas */
 import PurchasesHome from './components/purchases/general/PurchasesHome.jsx';
@@ -73,6 +74,11 @@ export default function AppRoutes(){
             <Route
                 path="/availability"
                 element={<AvailabilityHome />}
+            />
+
+            <Route 
+                path="/availability/reports"
+                element={<AvailabilityReports />} 
             />
 
             {/* Rutas de Compras Divisas */}

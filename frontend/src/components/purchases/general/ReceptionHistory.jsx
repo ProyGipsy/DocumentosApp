@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../utils/AuthContext';
 import LayoutBasePurchases from '../base/LayoutBasePurchases';
-
-// Importaciones de Material UI
 import { 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
     Typography, Box, TableSortLabel, InputBase, Backdrop, CircularProgress, Chip
 } from '@mui/material';
 
-// --- CONFIGURACIÓN DE API ---
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// --- DICCIONARIO DE ESTILOS UNIFICADO ---
 const styles = {
     container: { padding: '30px', backgroundColor: 'rgb(240, 240, 240)', minHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', alignItems: 'center' },
     titleSection: { width: '100%', maxWidth: '1200px', textAlign: 'center', marginBottom: '10px' },
@@ -102,6 +98,8 @@ const ReceptionHistory = () => {
     };
 
     const formatCurrency = (amount) => {
+        // Validación de seguridad por si el valor es null o undefined
+        if (amount === null || amount === undefined) return '0,00';
         return Number(amount).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
@@ -157,6 +155,10 @@ const ReceptionHistory = () => {
                                     <TableCell sx={styles.tableHeader}>Banco Receptor</TableCell>
                                     <TableCell sx={styles.tableHeader}>Referencia</TableCell>
                                     <TableCell align='center' sx={styles.tableHeader}>Estatus</TableCell>
+                                    
+                                    {/* NUEVA COLUMNA DE MONTO ESPERADO */}
+                                    <TableCell align='right' sx={styles.tableHeader}>Monto Esperado</TableCell>
+                                    
                                     <TableCell align='right' sx={styles.tableHeader}>Monto Recibido</TableCell>
                                     <TableCell sx={styles.tableHeader}>Observaciones</TableCell>
                                 </TableRow>
@@ -180,6 +182,12 @@ const ReceptionHistory = () => {
                                                     sx={{ fontWeight: 'bold' }} 
                                                 />
                                             </TableCell>
+                                            
+                                            {/* NUEVA CELDA DE MONTO ESPERADO */}
+                                            <TableCell align="right" sx={{ fontWeight: 'bold', color: '#757575' }}>
+                                                ${formatCurrency(trx.amountExpected)}
+                                            </TableCell>
+
                                             <TableCell align="right" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
                                                 ${formatCurrency(trx.amountReceived)}
                                             </TableCell>
@@ -188,7 +196,8 @@ const ReceptionHistory = () => {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                        {/* Ajustado el colSpan de 7 a 8 para que abarque la nueva columna */}
+                                        <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                                             <Typography variant="body1" color="textSecondary">No se encontraron registros de recepción.</Typography>
                                         </TableCell>
                                     </TableRow>
@@ -208,7 +217,6 @@ const ReceptionHistory = () => {
                     />
                 </Paper>
 
-                {/* --- BACKDROP CARGA --- */}
                 <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 999, backdropFilter: 'blur(5px)' }} open={isLoading}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                         <CircularProgress color="inherit" size={60} />

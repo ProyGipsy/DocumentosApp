@@ -59,7 +59,7 @@ const ValidatePurchaseModal = ({ isOpen, onClose, purchase, onConfirm, user }) =
                     <Box sx={{ backgroundColor: '#f9f9f9', padding: '12px', borderRadius: '8px', border: '1px solid #e0e0e0', mb: 1 }}>
                         <Typography variant="body2" color="textSecondary">Proveedor: <strong>{purchase.provider}</strong></Typography>
                         <Typography variant="body2" color="textSecondary">Destino Esperado: <strong>{purchase.destBank}</strong></Typography>
-                        <Typography variant="body1" sx={{ mt: 1 }}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
                             Monto Esperado: <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>${purchase.dollarsBought}</span>
                         </Typography>
                     </Box>
@@ -79,7 +79,6 @@ const ValidatePurchaseModal = ({ isOpen, onClose, purchase, onConfirm, user }) =
                     </TextField>
                 </Box>
 
-                {/* Modificado a un Box con ancho del 50% para mantener estética sin campo vacío */}
                 <Box sx={{ width: '50%' }}>
                     <TextField label="Fecha de Recepción" name="receptionDate" type="date" value={validationData.receptionDate} onChange={handleInputChange} InputLabelProps={{ shrink: true }} fullWidth size="small" sx={styles.customTextField} />
                 </Box>

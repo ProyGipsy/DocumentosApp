@@ -24,6 +24,7 @@ import {
 // Iconos de Material UI
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
+import ReportIcon from '@mui/icons-material/Description';
 import AppsIcon from '@mui/icons-material/Apps';
 import LogoutIcon from '@mui/icons-material/Logout';
 
@@ -48,7 +49,7 @@ const LayoutBaseAvailability = ({ activePage, children }) => {
   const isLector = hasRole(12);
   const isOnlyLector = isLector && !isEditor;
 
-  // Manejadores
+  // Manejadores de menú móvil
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -57,7 +58,14 @@ const LayoutBaseAvailability = ({ activePage, children }) => {
     if (mobileOpen) setMobileOpen(false);
   };
 
-  // --- CONTENIDO DEL SIDEBAR (Oscuro para que resalte el logo blanco) ---
+  // NUEVO: Función para cerrar sesión correctamente de forma segura
+  const handleLogout = (e) => {
+    e.preventDefault();
+    sessionStorage.removeItem('session_token');
+    window.location.href = `${apiUrl}/`;
+  };
+
+  // --- CONTENIDO DEL SIDEBAR ---
   const drawerContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#262626', color: '#f4f4f4' }}>
       
@@ -108,6 +116,38 @@ const LayoutBaseAvailability = ({ activePage, children }) => {
             />
           </ListItemButton>
         </ListItem>
+        <ListItem disablePadding>
+          {/* Usamos component={Link} para que MUI lo trate como un Link de React Router */}
+          <ListItemButton 
+            component={Link}
+            to="/availability/reports"
+            selected={activePage === 'reports'} 
+            onClick={closeSidebarOnMobile}
+            sx={{
+              // 1. Estado cuando está seleccionado (Click activo)
+              '&.Mui-selected': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRight: '4px solid #ffffff'
+              },
+              // 2. Estado cuando está seleccionado Y pasas el mouse (¡ESTO ELIMINA EL AZUL!)
+              '&.Mui-selected:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+              },
+              // 3. Estado cuando NO está seleccionado y pasas el mouse
+              '&:hover': { 
+                backgroundColor: 'rgba(255, 255, 255, 0.08)' 
+              }
+            }}
+          >
+            <ListItemIcon>
+              <ReportIcon sx={{ color: activePage === 'reports' ? '#ffffff' : '#b3b3b3' }} />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Informes" 
+              sx={{ color: activePage === 'reports' ? '#ffffff' : '#b3b3b3', '& .MuiTypography-root': { fontWeight: activePage === 'reports' ? 'bold' : 'normal' } }} 
+            />
+          </ListItemButton>
+        </ListItem>
       </List>
 
       <Divider sx={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
@@ -115,7 +155,6 @@ const LayoutBaseAvailability = ({ activePage, children }) => {
       {/* Menú Inferior (Redireccionamiento a Flask) */}
       <List>
         <ListItem disablePadding>
-          {/* Usamos component="a" y href para redireccionar fuera de React */}
           <ListItemButton 
             component="a" 
             href={`${apiUrl}/welcome`} 
@@ -131,9 +170,9 @@ const LayoutBaseAvailability = ({ activePage, children }) => {
 
         <ListItem disablePadding>
           <ListItemButton 
-            component="a" 
-            href={`${apiUrl}/`} 
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 77, 79, 0.1)' } }}
+            component="button"
+            onClick={handleLogout} 
+            sx={{ '&:hover': { backgroundColor: 'rgba(255, 77, 79, 0.1)' }, width: '100%', textAlign: 'left' }}
           >
             <ListItemIcon>
               <LogoutIcon sx={{ color: '#ff4d4f' }} />
