@@ -1,44 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../utils/AuthContext';
 import LayoutBaseAvailability from '../base/LayoutBaseAvailability';
 import AvailabilityTable from '../base/AvailabilityTable'; 
-import { Typography, Box, Paper, ToggleButton, ToggleButtonGroup, Autocomplete, TextField } from '@mui/material';
+import { Typography, Box, Paper, ToggleButton, ToggleButtonGroup, Autocomplete, TextField, Backdrop, CircularProgress } from '@mui/material';
 
-// --- MOCK DATA ---
-const mockData = {
-    summary: {
-        bolivares: [
-            { banco: "Banco de Venezuela", saldo: 3650.25, transito: 0.00, disponible: 3650.25 },
-            { banco: "Banesco", saldo: 556944.80, transito: 0.00, disponible: 556944.80 },
-            { banco: "BNC", saldo: 3657882.09, transito: 0.00, disponible: 3657882.09 },
-            { banco: "Mercantil", saldo: 76038878.47, transito: 8954079.01, disponible: 67084799.46 }
-        ],
-        custodia: [
-            { banco: "BNC", saldo: 332.88, transito: 0.00, disponible: 332.88 },
-            { banco: "Mercantil", saldo: 26031.97, transito: 0.00, disponible: 26031.97 }
-        ],
-        usa: [
-            { banco: "Chase", saldo: 129844.83, transito: 0.00, disponible: 129844.83 },
-            { banco: "Truist", saldo: 55337.50, transito: 0.00, disponible: 55337.50 }
-        ]
-    },
-    detailed: {
-        bolivares: [
-            { empresa: "Belleza Import 2022 C.A", saldo: 6592317.19, transito: 0.00, disponible: 6592317.19 },
-            { empresa: "Chic Import 2021 c. a.", saldo: 8875890.59, transito: 5333526.28, disponible: 3542364.31 },
-            { empresa: "Corporacion Travel Corner, c. a.", saldo: 9644.51, transito: 179623.38, disponible: -169978.87 },
-            { empresa: "Glow Cosmetics Universal C A", saldo: 52342614.35, transito: 3387388.14, disponible: 48955226.21 }
-        ],
-        custodia: [
-            { empresa: "Corporacion 362616, c. a.", saldo: 17985.42, transito: 0.00, disponible: 17985.42 },
-            { empresa: "Corporación Gipsy de Venezuela C.A", saldo: 815.52, transito: 0.00, disponible: 815.52 }
-        ],
-        usa: [
-            { empresa: "Avanti Distribuitors LLC", saldo: 78818.48, transito: 0.00, disponible: 78818.48 },
-            { empresa: "Kaleidos Corporation", saldo: 41674.06, transito: 0.00, disponible: 41674.06 }
-        ]
-    }
-};
+// --- CONFIGURACIÓN DE API ---
+const isDevelopment = import.meta.env.MODE === 'development';
+const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
 const THEMES = {
     bolivares: { main: '#2e7d32', bg: '#e8f5e9' },
@@ -54,7 +22,7 @@ const styles = {
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center',
-        paddingBottom: '60px' // Espacio extra al final para hacer scroll cómodamente
+        paddingBottom: '60px'
     },
     titleSection: { 
         width: '100%', 
@@ -123,36 +91,146 @@ const AvailabilityReport = () => {
     const [viewMode, setViewMode] = useState('base');
     const [empresaFilter, setEmpresaFilter] = useState(null);
     const [bancoFilter, setBancoFilter] = useState(null);
+    const [currentExchangeRate, setCurrentExchangeRate] = useState(0);
 
-    const currentExchangeRate = 45.25; 
+    // --- ESTADO PARA LOS DATOS GRANULARES Y ERRORES ---
+    const [reportData, setReportData] = useState({
+        bolivares: [],
+        custodia: [],
+        usa: []
+    });
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasError, setHasError] = useState(false); // NUEVO ESTADO PARA MANEJAR FALLOS DE CONEXIÓN
+
+    // --- OBTENER TASA DE CAMBIO VIVA ---
+    useEffect(() => {
+        const fetchExchangeRate = async () => {
+            try {
+                const token = sessionStorage.getItem('session_token');
+                const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+                const response = await fetch(`${apiUrl}/availability/reports/getMarketExchangeRate`, { method: 'GET', headers });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) setCurrentExchangeRate(data);
+                }
+            } catch (error) {
+                console.error("Error fetching exchange rate:", error);
+            }
+        };
+
+        fetchExchangeRate();
+    }, []);
+
     const isDolarized = viewMode === 'usd';
 
     const handleViewModeChange = (event, newMode) => {
         if (newMode !== null) setViewMode(newMode);
     };
 
-    const allEmpresas = useMemo(() => {
-        const empresas = [
-            ...mockData.detailed.bolivares.map(d => d.empresa),
-            ...mockData.detailed.custodia.map(d => d.empresa),
-            ...mockData.detailed.usa.map(d => d.empresa)
-        ];
-        return [...new Set(empresas)].sort();
-    }, []);
+    // --- CONSUMO DE ENDPOINTS EN PARALELO ---
+    useEffect(() => {
+        const fetchReportData = async () => {
+            const token = sessionStorage.getItem('session_token');
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-    const allBancos = useMemo(() => {
-        const bancos = [
-            ...mockData.summary.bolivares.map(d => d.banco),
-            ...mockData.summary.custodia.map(d => d.banco),
-            ...mockData.summary.usa.map(d => d.banco)
-        ];
-        return [...new Set(bancos)].sort();
-    }, []);
+            setIsLoading(true);
+            setHasError(false); // Reiniciamos el error al cargar
 
-    const filterData = (dataArray, key, filterValue) => {
-        if (!filterValue) return dataArray;
-        return dataArray.filter(item => item[key] === filterValue);
+            try {
+                const [resNat, resCust, resUsa] = await Promise.all([
+                    fetch(`${apiUrl}/availability/reports/getNationalBalances`, { method: 'GET', headers }),
+                    fetch(`${apiUrl}/availability/reports/getCustodyBalances`, { method: 'GET', headers }),
+                    fetch(`${apiUrl}/availability/reports/getUSABalances`, { method: 'GET', headers })
+                ]);
+
+                // Verificamos si hubo un fallo general de red (por ejemplo, servidor caído)
+                if (!resNat.ok && !resCust.ok && !resUsa.ok) {
+                    throw new Error("No se pudo obtener la data de los servidores.");
+                }
+
+                const nationalData = resNat.ok ? await resNat.json() : [];
+                const custodyData = resCust.ok ? await resCust.json() : [];
+                const usaData = resUsa.ok ? await resUsa.json() : [];
+
+                setReportData({
+                    bolivares: nationalData,
+                    custodia: custodyData,
+                    usa: usaData
+                });
+
+            } catch (error) {
+                console.error("Error de conexión al cargar la disponibilidad consolidada:", error);
+                setHasError(true); // Disparamos el estado de error
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (user) fetchReportData();
+    }, [user]);
+
+    const filteredEmpresaOptions = useMemo(() => {
+        const allData = [...reportData.bolivares, ...reportData.custodia, ...reportData.usa];
+        if (bancoFilter) {
+            const empresasConFondos = allData.filter(d => d.banco === bancoFilter).map(d => d.empresa);
+            return [...new Set(empresasConFondos.filter(Boolean))].sort();
+        }
+        return [...new Set(allData.map(d => d.empresa).filter(Boolean))].sort();
+    }, [reportData, bancoFilter]);
+
+    const filteredBancoOptions = useMemo(() => {
+        const allData = [...reportData.bolivares, ...reportData.custodia, ...reportData.usa];
+        if (empresaFilter) {
+            const bancosDeLaEmpresa = allData.filter(d => d.empresa === empresaFilter).map(d => d.banco);
+            return [...new Set(bancosDeLaEmpresa.filter(Boolean))].sort();
+        }
+        return [...new Set(allData.map(d => d.banco).filter(Boolean))].sort();
+    }, [reportData, empresaFilter]);
+
+    const pivotData = (granularArray, groupBy) => {
+        if (!granularArray || granularArray.length === 0) return [];
+
+        let filteredArray = granularArray;
+
+        if (empresaFilter) {
+            filteredArray = filteredArray.filter(item => item.empresa === empresaFilter);
+        }
+        if (bancoFilter) {
+            filteredArray = filteredArray.filter(item => item.banco === bancoFilter);
+        }
+
+        const grouped = {};
+        filteredArray.forEach(row => {
+            const key = row[groupBy];
+            if (!key) return;
+
+            if (!grouped[key]) {
+                grouped[key] = { [groupBy]: key, saldo: 0, transito: 0, disponible: 0 };
+            }
+            
+            grouped[key].saldo += (Number(row.saldo) || 0);
+            grouped[key].transito += (Number(row.transito) || 0);
+            grouped[key].disponible += (Number(row.disponible) || 0);
+        });
+
+        return Object.values(grouped);
     };
+
+    // --- PRE-CÁLCULO DE ARREGLOS PARA EVALUAR OCULTAMIENTO ---
+    const tablesData = useMemo(() => {
+        return {
+            bolivaresBancos: pivotData(reportData.bolivares, 'banco'),
+            bolivaresEmpresas: pivotData(reportData.bolivares, 'empresa'),
+            custodiaBancos: pivotData(reportData.custodia, 'banco'),
+            custodiaEmpresas: pivotData(reportData.custodia, 'empresa'),
+            usaBancos: pivotData(reportData.usa, 'banco'),
+            usaEmpresas: pivotData(reportData.usa, 'empresa')
+        };
+    }, [reportData, empresaFilter, bancoFilter]);
+
+    // Evaluación global de si hay o no datos para pintar en pantalla
+    const hasVisibleData = Object.values(tablesData).some(arr => arr.length > 0);
 
     return (
         <LayoutBaseAvailability activePage="reports">
@@ -172,88 +250,141 @@ const AvailabilityReport = () => {
                 {/* --- CONTROLES Y FILTROS UNIFICADOS --- */}
                 <Box sx={styles.controlsWrapper}>
                     <Autocomplete
-                        options={allEmpresas} value={empresaFilter}
+                        options={filteredEmpresaOptions}
+                        value={empresaFilter}
                         onChange={(event, newValue) => setEmpresaFilter(newValue)}
                         sx={styles.unifiedControl}
                         renderInput={(params) => <TextField {...params} label="Filtrar por Empresa" />}
+                        disabled={hasError}
                     />
                     
                     <Autocomplete
-                        options={allBancos} value={bancoFilter}
+                        options={filteredBancoOptions}
+                        value={bancoFilter}
                         onChange={(event, newValue) => setBancoFilter(newValue)}
                         sx={styles.unifiedControl}
                         renderInput={(params) => <TextField {...params} label="Filtrar por Banco" />}
+                        disabled={hasError}
                     />
 
                     <Box sx={styles.unifiedControl}>
-                        <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeChange}>
+                        <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeChange} disabled={hasError}>
                             <ToggleButton value="base" sx={{ fontWeight: 'bold' }}>Disponibilidad</ToggleButton>
                             <ToggleButton value="usd" sx={{ fontWeight: 'bold' }}>Disponibilidad $</ToggleButton>
                         </ToggleButtonGroup>
                     </Box>
                 </Box>
 
-                {/* --- SECCIÓN DE TABLAS (Listado Vertical Único) --- */}
+                {/* --- SECCIÓN DE TABLAS O ESTADO DE ERROR / VACÍO --- */}
                 <Box sx={{ width: '95%', maxWidth: '1400px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     
-                    {/* BOLÍVARES */}
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="Bolívares - Bancos" 
-                            data={filterData(mockData.summary.bolivares, 'banco', bancoFilter)} 
-                            colorTheme={THEMES.bolivares} isDolarized={isDolarized} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Banco" firstColumnKey="banco"
-                        />
-                    </Paper>
+                    {/* Renderizado de Feedback Alternativo (Si hay error de BD o si los filtros dejan todo vacío) */}
+                    {!isLoading && (hasError || !hasVisibleData) ? (
+                        <Paper sx={{ p: 6, textAlign: 'center', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.08)' }}>
+                            <Typography variant="h6" sx={{ color: '#555' }}>
+                                {hasError 
+                                    ? 'No se pudo cargar la disponibilidad en tiempo real.' 
+                                    : 'No se encontraron saldos bancarios para mostrar con los filtros actuales.'}
+                            </Typography>
+                            <Typography variant="body1" sx={{ color: '#888', mt: 1 }}>
+                                {hasError 
+                                    ? 'Por favor, verifica tu conexión al servidor o contacta a soporte técnico si el problema persiste.' 
+                                    : 'Intenta modificar o limpiar los filtros de Banco y Empresa para visualizar nuevamente los saldos.'}
+                            </Typography>
+                        </Paper>
+                    ) : (
+                        <>
+                            {/* BOLÍVARES */}
+                            {tablesData.bolivaresBancos.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="Bolívares - Bancos" 
+                                        data={tablesData.bolivaresBancos} 
+                                        colorTheme={THEMES.bolivares} isDolarized={isDolarized} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Banco" firstColumnKey="banco"
+                                    />
+                                </Paper>
+                            )}
 
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="Bolívares - Empresas" 
-                            data={filterData(mockData.detailed.bolivares, 'empresa', empresaFilter)} 
-                            colorTheme={THEMES.bolivares} isDolarized={isDolarized} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Empresa" firstColumnKey="empresa"
-                        />
-                    </Paper>
+                            {tablesData.bolivaresEmpresas.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="Bolívares - Empresas" 
+                                        data={tablesData.bolivaresEmpresas} 
+                                        colorTheme={THEMES.bolivares} isDolarized={isDolarized} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Empresa" firstColumnKey="empresa"
+                                    />
+                                </Paper>
+                            )}
 
-                    {/* CUSTODIA */}
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="Custodia - Bancos" 
-                            data={filterData(mockData.summary.custodia, 'banco', bancoFilter)} 
-                            colorTheme={THEMES.custodia} isDolarized={false} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Banco" firstColumnKey="banco"
-                        />
-                    </Paper>
+                            {/* CUSTODIA */}
+                            {tablesData.custodiaBancos.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="Custodia - Bancos" 
+                                        data={tablesData.custodiaBancos} 
+                                        colorTheme={THEMES.custodia} isDolarized={false} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Banco" firstColumnKey="banco"
+                                    />
+                                </Paper>
+                            )}
 
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="Custodia - Empresas" 
-                            data={filterData(mockData.detailed.custodia, 'empresa', empresaFilter)} 
-                            colorTheme={THEMES.custodia} isDolarized={false} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Empresa" firstColumnKey="empresa"
-                        />
-                    </Paper>
+                            {tablesData.custodiaEmpresas.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="Custodia - Empresas" 
+                                        data={tablesData.custodiaEmpresas} 
+                                        colorTheme={THEMES.custodia} isDolarized={false} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Empresa" firstColumnKey="empresa"
+                                    />
+                                </Paper>
+                            )}
 
-                    {/* USA / DÓLARES */}
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="USA - Bancos" 
-                            data={filterData(mockData.summary.usa, 'banco', bancoFilter)} 
-                            colorTheme={THEMES.usa} isDolarized={false} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Banco" firstColumnKey="banco"
-                        />
-                    </Paper>
+                            {/* USA / DÓLARES */}
+                            {tablesData.usaBancos.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="USA - Bancos" 
+                                        data={tablesData.usaBancos} 
+                                        colorTheme={THEMES.usa} isDolarized={false} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Banco" firstColumnKey="banco"
+                                    />
+                                </Paper>
+                            )}
 
-                    <Paper sx={styles.paperCard}>
-                        <AvailabilityTable 
-                            title="USA - Empresas" 
-                            data={filterData(mockData.detailed.usa, 'empresa', empresaFilter)} 
-                            colorTheme={THEMES.usa} isDolarized={false} exchangeRate={currentExchangeRate}
-                            firstColumnLabel="Empresa" firstColumnKey="empresa"
-                        />
-                    </Paper>
-
+                            {tablesData.usaEmpresas.length > 0 && (
+                                <Paper sx={styles.paperCard}>
+                                    <AvailabilityTable 
+                                        title="USA - Empresas" 
+                                        data={tablesData.usaEmpresas} 
+                                        colorTheme={THEMES.usa} isDolarized={false} exchangeRate={currentExchangeRate}
+                                        firstColumnLabel="Empresa" firstColumnKey="empresa"
+                                    />
+                                </Paper>
+                            )}
+                        </>
+                    )}
                 </Box>
+
+                {/* --- BACKDROP DE CARGA --- */}
+                <Backdrop
+                    sx={{
+                        color: '#fff',
+                        zIndex: (theme) => theme.zIndex.drawer + 999, 
+                        backdropFilter: 'blur(5px)', 
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2
+                    }}
+                    open={isLoading}
+                >
+                    <CircularProgress color="inherit" size={60} thickness={4} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+                        Consolidando saldos en tiempo real...
+                    </Typography>
+                </Backdrop>
+
             </Box>
         </LayoutBaseAvailability>
     );
