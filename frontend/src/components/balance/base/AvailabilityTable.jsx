@@ -1,115 +1,194 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-    TableSortLabel, Typography, Box 
+    Typography, Box, TableSortLabel 
 } from '@mui/material';
+
+// Función auxiliar para dar el formato contable estricto: (Monto) si es negativo
+const formatFinancial = (amount, symbol) => {
+    if (amount === undefined || amount === null || isNaN(amount)) return `${symbol} 0,00`;
+    const num = Number(amount);
+    const formatted = Math.abs(num).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num < 0 ? `(${symbol} ${formatted})` : `${symbol} ${formatted}`;
+};
 
 const AvailabilityTable = ({ 
     title, 
-    data, 
+    data = [], 
     colorTheme, 
     isDolarized, 
     exchangeRate, 
     firstColumnLabel, 
     firstColumnKey 
 }) => {
-    // Estado para el ordenamiento (Ascendente por defecto)
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [order, setOrder] = React.useState('asc');
+    const [orderBy, setOrderBy] = React.useState(firstColumnKey);
 
-    const handleSortToggle = () => {
-        setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+    // Determinar si la tabla debe aplicar conversión por moneda base (Bolívares) o si es fija en USD (Custodia / USA)
+    const isTableInUSD = title.toLowerCase().includes('custodia') || title.toLowerCase().includes('usa') || isDolarized;
+    const shouldApplyConversion = !title.toLowerCase().includes('custodia') && !title.toLowerCase().includes('usa') && isDolarized;
+    
+    const currencySymbol = isTableInUSD ? '$' : 'Bs.';
+    const rate = Number(exchangeRate) || 1;
+
+    // Manejo de ordenamiento de columnas
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
     };
 
-    // Función para ordenar la data basada en la primera columna (banco o empresa)
-    const sortedData = [...data].sort((a, b) => {
-        const valA = a[firstColumnKey].toString().toLowerCase();
-        const valB = b[firstColumnKey].toString().toLowerCase();
-        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-        return 0;
-    });
+    // --- PROCESAMIENTO Y NORMALIZACIÓN DE LA DATA ---
+    const processedRows = useMemo(() => {
+        return data.map(row => {
+            const rawSaldo = row.saldo !== undefined ? row.saldo : row.LedgerBalance;
+            const rawTransito = row.transito !== undefined ? row.transito : row.TransitAmount;
+            const rawDisponible = row.disponible !== undefined ? row.disponible : row.AvailableBalance;
 
-    // Cálculos de Totales
-    const totalSaldo = data.reduce((acc, curr) => acc + (curr.saldo || 0), 0);
-    const totalTransito = data.reduce((acc, curr) => acc + (curr.transito || 0), 0);
-    const totalDisponible = data.reduce((acc, curr) => acc + (curr.disponible || 0), 0);
+            const nSaldo = Number(rawSaldo) || 0;
+            const nTransito = Number(rawTransito) || 0;
+            const nDisponible = Number(rawDisponible) || 0;
 
-    // Formateador de moneda (Maneja Dólares, Bolívares y números negativos contables)
-    const formatAmount = (amount) => {
-        // 1. Convertimos si es necesario
-        const value = isDolarized ? (amount / exchangeRate) : amount;
-        
-        // 2. Definimos prefijo
-        // Excepción: Si es la tabla nativa de USA y estamos en modo 'base', igual se muestra en $
-        // (Asumiendo que las cuentas USA siempre están en dólares, aunque el global esté en Bs. Ajusta esto si no es así)
-        const prefix = (isDolarized || title === 'USA') ? '$' : 'Bs. ';
+            return {
+                ...row,
+                displayLabel: row[firstColumnKey] || '',
+                saldoValue: shouldApplyConversion ? (rate > 0 ? nSaldo / rate : 0) : nSaldo,
+                transitoValue: shouldApplyConversion ? (rate > 0 ? nTransito / rate : 0) : nTransito,
+                disponibleValue: shouldApplyConversion ? (rate > 0 ? nDisponible / rate : 0) : nDisponible,
+            };
+        });
+    }, [data, shouldApplyConversion, rate, firstColumnKey]);
 
-        // 3. Formateamos
-        const isNegative = value < 0;
-        const absoluteValue = Math.abs(value);
-        const formattedNumber = absoluteValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Ordenar las filas procesadas
+    const sortedRows = useMemo(() => {
+        const comparator = (a, b) => {
+            let valA, valB;
+            if (orderBy === firstColumnKey) {
+                valA = a.displayLabel.toLowerCase();
+                valB = b.displayLabel.toLowerCase();
+            } else {
+                valA = a[`${orderBy}Value`] || 0;
+                valB = b[`${orderBy}Value`] || 0;
+            }
 
-        // Si es negativo, usamos el formato contable (Prefijo Numero)
-        if (isNegative) {
-            return `(${prefix}${formattedNumber})`;
-        }
-        return `${prefix}${formattedNumber}`;
-    };
+            if (valB < valA) return order === 'asc' ? 1 : -1;
+            if (valB > valA) return order === 'asc' ? -1 : 1;
+            return 0;
+        };
+        return [...processedRows].sort(comparator);
+    }, [processedRows, order, orderBy, firstColumnKey]);
+
+    // --- CÁLCULO DE TOTALES ---
+    const totalSaldo = useMemo(() => processedRows.reduce((acc, row) => acc + row.saldoValue, 0), [processedRows]);
+    const totalTransito = useMemo(() => processedRows.reduce((acc, row) => acc + row.transitoValue, 0), [processedRows]);
+    const totalDisponible = useMemo(() => processedRows.reduce((acc, row) => acc + row.disponibleValue, 0), [processedRows]);
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Cabecera Principal (Ej: Bolívares, Custodia, USA) */}
-            <Typography 
-                sx={{ 
-                    padding: '8px 16px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem',
-                    color: colorTheme.main, backgroundColor: colorTheme.bg, borderBottom: `2px solid ${colorTheme.main}`
-                }}
-            >
-                {title}
-            </Typography>
+        <Box sx={{ width: '100%' }}>
+            <Box sx={{ 
+                backgroundColor: colorTheme.bg, 
+                padding: '16px 24px', 
+                borderBottom: `2px solid ${colorTheme.main}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Typography variant="h6" sx={{ color: colorTheme.main, fontWeight: 'bold', fontSize: '1.1rem' }}>
+                    {title} {shouldApplyConversion && "(Expresado en USD)"}
+                </Typography>
+            </Box>
 
-            <TableContainer sx={{ flexGrow: 1, maxHeight: 500 }}>
-                <Table stickyHeader size="small">
-                    <TableHead>
+            {/* Contenedor de la Tabla */}
+            <TableContainer>
+                <Table sx={{ minWidth: 650 }} size="medium">
+                    <TableHead sx={{ backgroundColor: '#fafafa' }}>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                                <TableSortLabel 
-                                    active={true} 
-                                    direction={sortOrder} 
-                                    onClick={handleSortToggle}
+                            <TableCell sx={{ fontWeight: 'bold', color: '#555' }}>
+                                <TableSortLabel
+                                    active={orderBy === firstColumnKey}
+                                    direction={orderBy === firstColumnKey ? order : 'asc'}
+                                    onClick={() => handleRequestSort(firstColumnKey)}
                                 >
                                     {firstColumnLabel}
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd' }}>Saldo</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd' }}>Tránsito</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd' }}>Disponible</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', color: '#555' }}>
+                                <TableSortLabel
+                                    active={orderBy === 'saldo'}
+                                    direction={orderBy === 'saldo' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('saldo')}
+                                >
+                                    Saldo
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', color: '#555' }}>
+                                <TableSortLabel
+                                    active={orderBy === 'transito'}
+                                    direction={orderBy === 'transito' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('transito')}
+                                >
+                                    Tránsito
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold', color: '#555', paddingRight: '24px' }}>
+                                <TableSortLabel
+                                    active={orderBy === 'disponible'}
+                                    direction={orderBy === 'disponible' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('disponible')}
+                                >
+                                    Disponible
+                                </TableSortLabel>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {sortedData.map((row, index) => (
-                            <TableRow hover key={index} sx={{ '& td': { borderBottom: '1px solid #eee' } }}>
-                                <TableCell>{row[firstColumnKey]}</TableCell>
-                                <TableCell align="right">{formatAmount(row.saldo)}</TableCell>
-                                <TableCell align="right">{formatAmount(row.transito)}</TableCell>
-                                <TableCell align="right">{formatAmount(row.disponible)}</TableCell>
+                        {sortedRows.length > 0 ? (
+                            sortedRows.map((row, index) => (
+                                <TableRow 
+                                    key={index}
+                                    sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: '#f9f9f9' } }}
+                                >
+                                    <TableCell component="th" scope="row" sx={{ fontWeight: 500, color: '#333' }}>
+                                        {row.displayLabel}
+                                    </TableCell>
+                                    
+                                    {/* Celdas del cuerpo con control estricto de color rojo si el valor es < 0 */}
+                                    <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: row.saldoValue < 0 ? '#d32f2f' : '#2c2538' }}>
+                                        {formatFinancial(row.saldoValue, currencySymbol)}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: row.transitoValue < 0 ? '#d32f2f' : '#2c2538' }}>
+                                        {formatFinancial(row.transitoValue, currencySymbol)}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 'bold', paddingRight: '24px', color: row.disponibleValue < 0 ? '#d32f2f' : '#2e7d32' }}>
+                                        {formatFinancial(row.disponibleValue, currencySymbol)}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} align="center" sx={{ py: 3, color: '#888', fontStyle: 'italic' }}>
+                                    No hay registros disponibles con los filtros seleccionados.
+                                </TableCell>
                             </TableRow>
-                        ))}
-                        {/* Fila de Totales */}
-                        <TableRow sx={{ backgroundColor: '#fafafa' }}>
-                            <TableCell sx={{ fontWeight: 'bold', color: colorTheme.main, borderBottom: 'none', borderTop: '2px solid #ddd' }}>
-                                Total
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', color: colorTheme.main, borderBottom: 'none', borderTop: '2px solid #ddd' }}>
-                                {formatAmount(totalSaldo)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', color: colorTheme.main, borderBottom: 'none', borderTop: '2px solid #ddd' }}>
-                                {formatAmount(totalTransito)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold', color: colorTheme.main, borderBottom: 'none', borderTop: '2px solid #ddd' }}>
-                                {formatAmount(totalDisponible)}
-                            </TableCell>
-                        </TableRow>
+                        )}
+
+                        {/* --- FILA DE TOTALES --- */}
+                        {processedRows.length > 0 && (
+                            <TableRow sx={{ backgroundColor: '#f5f5f5', borderTop: '2px solid #ddd' }}>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#262626', fontSize: '0.95rem' }}>
+                                    TOTAL CONSOLIDADO
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem', color: totalSaldo < 0 ? '#d32f2f' : '#262626' }}>
+                                    {formatFinancial(totalSaldo, currencySymbol)}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem', color: totalTransito < 0 ? '#d32f2f' : '#262626' }}>
+                                    {formatFinancial(totalTransito, currencySymbol)}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.05rem', paddingRight: '24px', color: totalDisponible < 0 ? '#d32f2f' : '#2e7d32' }}>
+                                    {formatFinancial(totalDisponible, currencySymbol)}
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
