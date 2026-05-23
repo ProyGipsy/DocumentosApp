@@ -18,7 +18,7 @@ import SearchIcon from '@mui/icons-material/Search';
 const isDevelopment = import.meta.env.MODE === 'development';
 const apiUrl = isDevelopment ? import.meta.env.VITE_API_BASE_URL_LOCAL : import.meta.env.VITE_API_BASE_URL_PROD;
 
-// --- DICCIONARIO DE ESTILOS UNIFICADO (CSS + MUI) ---
+// --- DICCIONARIO DE ESTILOS ---
 const styles = {
     // Contenedor principal
     container: {
@@ -153,7 +153,7 @@ const AvailabilityHome = () => {
     const [openCancelModal, setOpenCancelModal] = useState(false);
     const [cancelId, setCancelId] = useState(null);
 
-    // --- 1. LLAMADA AL BACKEND PARA DATOS INICIALES ---
+    // --- LLAMADA AL BACKEND PARA DATOS INICIALES ---
     useEffect(() => {
         const fetchInitialData = async () => {
             const token = sessionStorage.getItem('session_token');
@@ -194,7 +194,7 @@ const AvailabilityHome = () => {
         fetchInitialData();
     }, []);
 
-    // --- 2. CASCADA 1: ENTIDAD -> BANCOS ---
+    // --- CASCADA 1: ENTIDAD -> BANCOS ---
     useEffect(() => {
         const fetchBanksForEntity = async () => {
             if (!formData.entity || entityList.length === 0) {
@@ -218,7 +218,7 @@ const AvailabilityHome = () => {
         fetchBanksForEntity();
     }, [formData.entity, entityList, allBanksList]);
 
-    // --- 3. CASCADA 2: BANCO -> CUENTAS ---
+    // --- CASCADA 2: BANCO -> CUENTAS ---
     useEffect(() => {
         const fetchAccountsForBankAndEntity = async () => {
             if (!formData.bank || bankList.length === 0 || !formData.entity || entityList.length === 0) {
@@ -245,7 +245,7 @@ const AvailabilityHome = () => {
         fetchAccountsForBankAndEntity();
     }, [formData.bank, formData.entity, bankList, entityList]); 
 
-    // --- 4. FILTRO Y ORDENAMIENTO ---
+    // --- FILTRO Y ORDENAMIENTO ---
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredTransactions(allTransactions);
@@ -520,7 +520,6 @@ const AvailabilityHome = () => {
                 if (matchedCurrency.CurrencyID === 1) amountPlaceholder = "Ej: 1500,50 VES";
                 else if (matchedCurrency.CurrencyID === 2) amountPlaceholder = "Ej: 100,00 USD";
                 else if (matchedCurrency.CurrencyID === 10) amountPlaceholder = "Ej: 100,00 EUR";
-                else amountPlaceholder = `Monto en ${matchedCurrency.Symbol || ''}`;
             }
         }
     }
@@ -537,7 +536,7 @@ const AvailabilityHome = () => {
                     </Typography>
                 </Box>
 
-                {/* --- BARRA DE BÚSQUEDA TIPO MATERIAL UI COMPUESTA --- */}
+                {/* --- BARRA DE BÚSQUEDA --- */}
                 <Paper component="form" sx={styles.searchContainer} onSubmit={(e) => e.preventDefault()}>
                     <InputBase
                         sx={styles.searchInput}
@@ -576,8 +575,7 @@ const AvailabilityHome = () => {
                             <TableBody>
                                 {sortedTransactions.length > 0 ? (
                                     sortedTransactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((trx) => {
-                                        const trxCurrency = currencyList.find(c => c.CurrencyName === trx.currency);
-                                        const symbol = trxCurrency ? trxCurrency.Symbol : '';
+                                        const symbol = trx.currency === 'Bolívar' ? 'Bs' : trx.currency === 'Dólar' ? 'USD' : trx.currency === 'Euro' ? 'EUR' : '';
                                         const isFinalStatus = trx.status === 'Ejecutada' || trx.status === 'Anulada';
 
                                         return (
@@ -589,7 +587,7 @@ const AvailabilityHome = () => {
                                                 <TableCell>{trx.reference}</TableCell>
                                                 <TableCell>{trx.concept}</TableCell>
                                                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                                    {Number(trx.amount).toFixed(2)} {symbol}
+                                                    {`${symbol}. ${Number(trx.amount).toFixed(2)}`}
                                                 </TableCell>
                                                 <TableCell align="center">{getStatusChip(trx.status)}</TableCell>
                                                 <TableCell align="center">
@@ -707,7 +705,6 @@ const AvailabilityHome = () => {
                     </DialogActions>
                 </Dialog>
 
-                {/* --- PANTALLA DE CARGA (BLUR) --- */}
                 <Backdrop
                     sx={{
                         color: '#fff',

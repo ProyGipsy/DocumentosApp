@@ -82,7 +82,8 @@ const PurchaseModal = ({
             
             setOriginBankIsSelected(false);
             try {
-                const res = await fetch(`${apiUrl}/purchases/getBanksByNationalEntity/${formData.originEntityId}?currency_id=1`, { headers: { 'Authorization': `Bearer ${token}` }});
+                //const res = await fetch(`${apiUrl}/purchases/getBanksByNationalEntity/${formData.originEntityId}?currency_id=1`, { headers: { 'Authorization': `Bearer ${token}` }});
+                const res = await fetch(`${apiUrl}/availability/entities/${formData.originEntityId}/banks`, { headers: { 'Authorization': `Bearer ${token}` }});
                 if (res.ok) setOriginBanksList(await res.json());
             } catch (error) { 
                 console.error("Error fetching origin banks:", error);
@@ -99,7 +100,8 @@ const PurchaseModal = ({
             if (!formData.originBankId || !formData.originEntityId) { setOriginAccountsList([]); return; }
             const token = sessionStorage.getItem('session_token');
             try {
-                const res = await fetch(`${apiUrl}/purchases/getOriginAccounts/${formData.originBankId}?entity_id=${formData.originEntityId}`, { headers: { 'Authorization': `Bearer ${token}` }});
+                //const res = await fetch(`${apiUrl}/purchases/getOriginAccounts/${formData.originBankId}?entity_id=${formData.originEntityId}`, { headers: { 'Authorization': `Bearer ${token}` }});
+                const res = await fetch(`${apiUrl}/availability/banks/${formData.originBankId}/accounts?entity_id=${formData.originEntityId}`, { headers: { 'Authorization': `Bearer ${token}` }});
                 if (res.ok) setOriginAccountsList(await res.json());
             } catch (error) { 
                 console.error("Error fetching origin accounts:", error);
@@ -289,7 +291,7 @@ const PurchaseModal = ({
                         renderInput={(params) => <TextField {...params} label="Banco Proveedor" fullWidth size="small" sx={styles.customTextField} />}
                     />
                     <TextField 
-                        label="Cuenta Proveedor" name="providerAccount" type="text" value={formData.providerAccount} 
+                        label="Cuenta Proveedor" name="providerAccount" type="text" value={formData.providerAccount ? `***${formData.providerAccount.slice(-4)}` : ''} 
                         onChange={(e) => {
                             const val = e.target.value;
                             if (val === '' || /^[0-9]+$/.test(val)) handleInputChange({ target: { name: 'providerAccount', value: val }});
