@@ -83,7 +83,8 @@ const PurchasesHome = () => {
 
         try {
             const [originRes, destRes, beneficiariesRes, banksRes] = await Promise.all([
-                fetch(`${apiUrl}/purchases/getNationalEntities`, { method: 'GET', headers }),
+                //fetch(`${apiUrl}/purchases/getNationalEntities`, { method: 'GET', headers }),
+                fetch(`${apiUrl}/availability/getEntities`, { method: 'GET', headers }),
                 fetch(`${apiUrl}/purchases/getInternationalEntities`, { method: 'GET', headers }),
                 fetch(`${apiUrl}/purchases/getBeneficiaries`, { method: 'GET', headers }),
                 fetch(`${apiUrl}/availability/getBanks`, { method: 'GET', headers })
