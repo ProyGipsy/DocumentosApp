@@ -67,6 +67,7 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
     };
 
     const handleSave = () => {
+        // Validaciones base
         if (!formData.name.trim() || !formData.documentPrefix || !formData.documentNumber.trim() || !formData.email.trim() || !formData.bankId || !formData.account.trim()) {
             alert('Por favor, complete los campos obligatorios: Nombre, Identificación, Correo Electrónico, Banco y Número de Cuenta.');
             return;
@@ -75,7 +76,44 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
             alert(`La cuenta debe tener 20 dígitos (actualmente: ${formData.account.length}).`);
             return;
         }
-        onSave(formData, mode);
+
+        // --- VALIDACIÓN Y FORMATO DE IDENTIFICACIÓN (Imita las reglas de SQL Server) ---
+        let cleanNumber = formData.documentNumber.replace(/[^0-9]/g, ''); // Asegura que solo hay números
+        const prefix = formData.documentPrefix;
+
+        if (prefix === 'V' || prefix === 'E') {
+            if (cleanNumber.length > 8) {
+                alert('La cédula (V/E) no puede exceder los 8 dígitos.');
+                return;
+            }
+            // Rellena con ceros a la izquierda hasta llegar a 8 dígitos (ej. "7123456" -> "07123456")
+            cleanNumber = cleanNumber.padStart(8, '0'); 
+        } 
+        else if (prefix === 'J') {
+            if (cleanNumber.length > 9) {
+                alert('El RIF (J) no puede exceder los 9 dígitos.');
+                return;
+            }
+            // Rellena con ceros hasta llegar a 9 dígitos
+            cleanNumber = cleanNumber.padStart(9, '0');
+        } 
+        else if (prefix === 'P') {
+            if (cleanNumber.length > 12) {
+                alert('El pasaporte (P) no puede exceder los 12 dígitos.');
+                return;
+            }
+            // Mínimo de 8 dígitos según tu restricción
+            cleanNumber = cleanNumber.padStart(8, '0'); 
+        }
+
+        // Creamos una copia del estado con el número ya procesado para enviarlo al backend
+        const payloadToSave = {
+            ...formData,
+            documentNumber: cleanNumber
+        };
+
+        // Pasamos el payload formateado a la función de Beneficiaries.jsx
+        onSave(payloadToSave, mode);
     };
 
     return (
@@ -106,6 +144,7 @@ const BeneficiariesModal = ({ isOpen, onClose, mode = 'add', beneficiary = null,
                             if (val === '' || /^[0-9]+$/.test(val)) handleChange(e);
                         }} 
                         fullWidth size="small" sx={customTextFieldStyle} 
+                        inputProps={{ maxLength: 12 }} // Limita la escritura máxima a 12 caracteres (Pasaporte)
                     />
                     <TextField 
                         label="Correo Electrónico *" 
